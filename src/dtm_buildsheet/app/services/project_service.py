@@ -1147,18 +1147,47 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
 
         from ...domain.project_types import project_type, service_details
         old_type = project.project_type
-        old_details = project.service_details
+        # Older Build projects legitimately stored no service-details object.
+        # The edit form sends the same defaults explicitly, so compare canonical
+        # values instead of treating that schema hydration as a requirements edit.
+        old_details = service_details(project.service_details)
+        finalized_targets = []
+        for unit in project.build_units:
+            if unit.status == "finalized":
+                finalized_targets.append({
+                    "project_id": project.project_id,
+                    "unit_id": unit.unit_id,
+                    "individual_id": "",
+                })
+            finalized_targets.extend({
+                "project_id": project.project_id,
+                "unit_id": unit.unit_id,
+                "individual_id": individual.individual_id,
+            } for individual in unit.individuals if individual.status == "finalized")
+
+        def finalized_requirement_conflict(change: str) -> dict:
+            count = len(finalized_targets)
+            noun = "design" if count == 1 else "designs"
+            return {
+                "ok": False,
+                "error_code": "finalized_project_requirements_conflict",
+                "error": (
+                    f"This {change} affects {count} finalized {noun}. "
+                    "Reopen them to apply it; your current edits are still on screen."
+                ),
+                "change": change,
+                "finalized_targets": finalized_targets,
+                "reopen_reason": f"Project {change} changed from the project editor",
+            }
+
         previous_links = {i.individual_id: i.previous_build for u in project.build_units for i in u.individuals}
         project.project_type = project_type(body.get('project_type', old_type))
-        if project.project_type != old_type and any(
-            holder.status == 'finalized' for unit in project.build_units
-            for holder in (unit, *unit.individuals)
-        ):
-            raise ValueError('Reopen finalized work before changing the project type')
+        if project.project_type != old_type and finalized_targets:
+            return finalized_requirement_conflict("project type")
         if 'service_details' in body:
             project.service_details = service_details(body['service_details'])
-            if project.service_details != old_details and any(h.status == 'finalized' for u in project.build_units for h in (u, *u.individuals)):
-                raise ValueError('Reopen finalized work before changing service requirements')
+            if project.service_details != old_details and finalized_targets:
+                return finalized_requirement_conflict("service requirements")
         if project.project_type == 'offsite' and not all(project.service_details.get(k) for k in ('location', 'contact')):
             raise ValueError('Enter the off-site service location and contact')
         if project.project_type == 'build' and old_type != 'build':

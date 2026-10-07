@@ -538,6 +538,59 @@ window.PT_cancelEditMode = function () {
   _ptRenderEditTab(_PT.viewProject, false);
 };
 
+function _ptOfferFinalizedRequirementsResolution(result, statusEl, saveButton) {
+  const targets = Array.isArray(result?.finalized_targets)
+    ? result.finalized_targets.filter(target => target?.project_id && target?.unit_id)
+    : [];
+  if (result?.error_code !== "finalized_project_requirements_conflict" || !targets.length || !statusEl) {
+    return false;
+  }
+
+  statusEl.style.background = "#fff7df";
+  statusEl.style.color = "var(--navy)";
+  const message = document.createElement("span");
+  message.textContent = `${result.error} Any published Shop package for those designs will be withdrawn until it is reviewed and finalized again.`;
+  const action = document.createElement("button");
+  action.type = "button";
+  action.className = "btn btn-gold btn-sm";
+  action.style.marginTop = "10px";
+  action.textContent = `Reopen ${targets.length} finalized ${targets.length === 1 ? "design" : "designs"} & save`;
+  statusEl.replaceChildren(message, document.createElement("br"), action);
+  if (saveButton) saveButton.disabled = false;
+
+  action.onclick = async () => {
+    action.disabled = true;
+    if (saveButton) saveButton.disabled = true;
+    message.textContent = "Reopening finalized designs and saving your changes…";
+    try {
+      for (const target of targets) {
+        const reopened = await api(
+          _ptFinalizationUrl(target.project_id, target.unit_id, target.individual_id || "", "reopen"),
+          {reason: result.reopen_reason || "Project requirements changed from the project editor"},
+        );
+        if (!reopened?.ok) throw new Error(reopened?.error || "Could not reopen a finalized design");
+      }
+      const latest = await api(`/api/project/${encodeURIComponent(targets[0].project_id)}`);
+      if (!latest?.ok || !latest.project) throw new Error(latest?.error || "Could not reload the reopened project");
+      // Keep every field currently entered in the DOM. Only advance the save
+      // preconditions to the revisions written by the explicit reopen actions.
+      _PT.viewProject = latest.project;
+      _PT.editTabExpectedUpdatedAt = String(latest.project.updated_at || "");
+      _PT.editTabExpectedRecordRevision = String(latest.project.record_revision || "");
+      await window.PT_saveEditForm();
+    } catch (error) {
+      const text = error?.message || "Could not reopen finalized designs";
+      toast(text, "error");
+      statusEl.style.background = "#fdecea";
+      statusEl.style.color = "var(--red)";
+      message.textContent = `❌ ${text}. Your edits are still on screen.`;
+      action.disabled = false;
+      if (saveButton) saveButton.disabled = false;
+    }
+  };
+  return true;
+}
+
 window.PT_saveEditForm = async function () {
   if (!_ptCanEditProjects()) return;
   const statusEl = $("proj-edit-form-status");
@@ -620,6 +673,7 @@ window.PT_saveEditForm = async function () {
       _ptRenderBuildsTab(updated);
       $("proj-detail-agency").textContent = _ptProjName(updated);
     } else {
+      if (_ptOfferFinalizedRequirementsResolution(res, statusEl, savBtn)) return;
       const msg = res.error || "Save failed";
       toast(msg, "error");
       if (statusEl) {

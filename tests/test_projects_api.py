@@ -128,6 +128,86 @@ class TestHandleSaveProject:
         assert unit.vehicle_model == "Tahoe PPV"
         assert unit.quantity == 2
 
+    def test_adding_unit_to_legacy_finalized_build_ignores_default_service_shape(self, tmp_path):
+        paths = _paths(tmp_path)
+        created = handle_save_project(_project_body(), paths)
+        project = load_project(created["project_id"], paths)
+        assert project.service_details == {}
+        project.build_units[0].status = "finalized"
+        save_project(project, paths)
+        project = load_project(created["project_id"], paths)
+
+        result = handle_save_project({
+            "project_id": project.project_id,
+            **_revision_fields(project),
+            "project_type": "build",
+            "service_details": {
+                "location": "",
+                "contact": "",
+                "travel_hours": 0,
+                "requires_parts": True,
+                "requires_strip": False,
+                "requires_tray": False,
+                "requires_programming_qc": False,
+                "requires_finishing": False,
+                "render_vehicle": False,
+            },
+            "build_units": [
+                asdict(project.build_units[0]),
+                {
+                    "unit_id": "unit-2",
+                    "vehicle_model": "PIU",
+                    "build_type": "Admin",
+                    "quantity": 1,
+                },
+            ],
+        }, paths)
+
+        assert result["ok"] is True
+        saved = load_project(project.project_id, paths)
+        assert [unit.unit_id for unit in saved.build_units] == ["unit-1", "unit-2"]
+        assert saved.build_units[0].status == "finalized"
+
+    def test_real_requirement_change_returns_one_click_reopen_targets(self, tmp_path):
+        paths = _paths(tmp_path)
+        details = {
+            "location": "",
+            "contact": "",
+            "travel_hours": 0,
+            "requires_parts": True,
+            "requires_strip": False,
+            "requires_tray": False,
+            "requires_programming_qc": False,
+            "requires_finishing": False,
+            "render_vehicle": False,
+        }
+        created = handle_save_project(_project_body(
+            project_type="service", service_details=details,
+        ), paths)
+        project = load_project(created["project_id"], paths)
+        project.build_units[0].status = "finalized"
+        save_project(project, paths)
+        project = load_project(created["project_id"], paths)
+
+        result = handle_save_project({
+            "project_id": project.project_id,
+            **_revision_fields(project),
+            "project_type": "service",
+            "service_details": {**details, "requires_strip": True},
+        }, paths)
+
+        assert result["ok"] is False
+        assert result["error_code"] == "finalized_project_requirements_conflict"
+        assert result["finalized_targets"] == [{
+            "project_id": project.project_id,
+            "unit_id": "unit-1",
+            "individual_id": "",
+        }]
+        assert "still on screen" in result["error"]
+        saved = load_project(project.project_id, paths)
+        assert saved.service_details["requires_strip"] is False
+        assert saved.build_units[0].status == "finalized"
+
     def test_custom_build_type_is_saved_only_on_its_project_unit(self, tmp_path):
         paths = _paths(tmp_path)
         body = _project_body(build_units=[{
