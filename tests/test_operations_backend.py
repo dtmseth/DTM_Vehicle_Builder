@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 
 import pytest
@@ -573,7 +574,8 @@ class TestAcceptance:
 
 
 class TestQboObservation:
-    def test_accepted_estimate_is_shared_and_latches_acceptance(self):
+    @pytest.mark.parametrize("status", ["Accepted", "Closed"])
+    def test_accepted_estimate_is_shared_and_latches_acceptance(self, status):
         service, repository, record = _service()
 
         result = service.observe_qbo_estimate(
@@ -585,7 +587,7 @@ class TestQboObservation:
             qbo_project_id="447322633",
             qbo_estimate_id="98765",
             qbo_estimate_number="2041",
-            qbo_estimate_status="Accepted",
+            qbo_estimate_status=status,
             qbo_estimate_accepted_at="2026-09-03T14:00:00+00:00",
             qbo_estimate_last_modified_at="2026-09-03T14:15:00+00:00",
             qbo_diff_status="unchanged",
@@ -598,8 +600,11 @@ class TestQboObservation:
         assert result.record.accepted_at == "2026-09-03T14:00:00+00:00"
         assert result.event.event_type.value == "qbo_observed"
         assert repository.list_events("vehicle-1")[-1].workstream == OperationsWorkstream.QBO
+        assert json.loads(result.event.previous_value)["acceptance_status"] == "not_accepted"
+        assert json.loads(result.event.new_value)["acceptance_status"] == "accepted"
 
-    def test_pending_estimate_never_overwrites_manual_acceptance(self):
+    @pytest.mark.parametrize("status", ["Pending", "Accepted", "Closed"])
+    def test_observation_preserves_manual_acceptance_without_a_new_transition(self, status):
         service, _, record = _service()
         accepted = service.change_acceptance(
             vehicle_id="vehicle-1",
@@ -619,12 +624,46 @@ class TestQboObservation:
             expected_revision=accepted.record.revision,
             qbo_estimate_id="98765",
             qbo_estimate_number="2041",
-            qbo_estimate_status="Pending",
+            qbo_estimate_status=status,
         )
 
         assert observed.record.acceptance_status == AcceptanceStatus.ACCEPTED
         assert observed.record.acceptance_source == "manual"
-        assert observed.record.qbo_estimate_status == "Pending"
+        assert observed.record.qbo_estimate_status == status
+        assert json.loads(observed.event.previous_value)["acceptance_status"] == "accepted"
+        assert json.loads(observed.event.new_value)["acceptance_status"] == "accepted"
+
+    def test_acceptance_event_data_distinguishes_refresh_reversal_and_reacceptance(self):
+        service, repository, _ = _service()
+        observation = dict(
+            vehicle_id="vehicle-1", actor=_actor(AppRole.BUILDER_EDITOR),
+            source_client="builder_desktop", qbo_estimate_id="98765",
+            qbo_estimate_status="Accepted",
+        )
+        first = service.observe_qbo_estimate(request_id="first-acceptance", **observation)
+        refresh = service.observe_qbo_estimate(request_id="refresh", **observation)
+        assert json.loads(first.event.previous_value)["acceptance_status"] == "not_accepted"
+        assert json.loads(first.event.new_value)["acceptance_status"] == "accepted"
+        assert json.loads(refresh.event.previous_value)["acceptance_status"] == "accepted"
+        assert json.loads(refresh.event.new_value)["acceptance_status"] == "accepted"
+
+        reverse = service.change_acceptance(
+            vehicle_id="vehicle-1", new_status="not_accepted", acceptance_source="manual",
+            actor=_actor(AppRole.APP_ADMIN), request_id="reverse",
+            source_client="builder_desktop", correction_reason="Recheck acceptance",
+        )
+        assert reverse.event.previous_value == "accepted"
+        assert reverse.event.new_value == "not_accepted"
+        reaccepted = service.observe_qbo_estimate(request_id="reacceptance", **observation)
+        before = json.loads(reaccepted.event.previous_value)
+        after = json.loads(reaccepted.event.new_value)
+        assert before["estimate_status"] == after["estimate_status"] == "Accepted"
+        assert before["acceptance_status"] == "not_accepted"
+        assert after["acceptance_status"] == "accepted"
+        assert first.event.event_id != reaccepted.event.event_id
+        event_count = len(repository.list_events("vehicle-1"))
+        service.observe_qbo_estimate(request_id="reacceptance", **observation)
+        assert len(repository.list_events("vehicle-1")) == event_count
 
 
 class TestScheduling:

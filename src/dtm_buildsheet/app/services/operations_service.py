@@ -805,6 +805,9 @@ class OperationsService:
 
         now = _utc_iso(self._clock())
         previous = {
+            # Notification consumers need the actual acceptance transition, not
+            # just the Estimate status (which may already be Accepted).
+            "acceptance_status": current.acceptance_status.value,
             "estimate_id": current.qbo_estimate_id,
             "estimate_number": current.qbo_estimate_number,
             "estimate_status": current.qbo_estimate_status,
@@ -850,6 +853,7 @@ class OperationsService:
                 updated.acceptance_changed_at = now
 
         current_value = {
+            "acceptance_status": updated.acceptance_status.value,
             "estimate_id": updated.qbo_estimate_id,
             "estimate_number": updated.qbo_estimate_number,
             "estimate_status": updated.qbo_estimate_status,

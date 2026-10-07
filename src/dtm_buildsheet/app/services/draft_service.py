@@ -121,6 +121,39 @@ def _matching_single_speaker(draft: BuildDraft, part: DraftPart) -> DraftPart | 
     return None
 
 
+def _matching_draft_singleton_accessory(
+    draft: BuildDraft, part: DraftPart,
+) -> DraftPart | None:
+    """Find an already-added automatic accessory that is shared by the build.
+
+    Some automatically selected hardware serves the whole vehicle rather than
+    one parent assembly.  The Inner Edge photocell is the first such item: a
+    front FST and rear RST share one LCPHOTO.  New picker rows carry an explicit
+    singleton product key; matching the SKU/category as a fallback also repairs
+    drafts whose first photocell predates that marker.
+    """
+    marker = (part.picker_config or {}).get("draft_singleton_accessory")
+    if not isinstance(marker, dict) or not str(marker.get("product_id") or "").strip():
+        return None
+    product_id = str(marker["product_id"]).strip()
+    part_number = part.part_number.strip().casefold()
+    category = part.accessory_category.strip().casefold()
+    for existing in draft.parts:
+        existing_marker = (existing.picker_config or {}).get("draft_singleton_accessory")
+        same_marker = (
+            isinstance(existing_marker, dict)
+            and str(existing_marker.get("product_id") or "").strip() == product_id
+        )
+        legacy_match = (
+            bool(part_number and category)
+            and existing.part_number.strip().casefold() == part_number
+            and existing.accessory_category.strip().casefold() == category
+        )
+        if same_marker or legacy_match:
+            return existing
+    return None
+
+
 def handle_list_drafts(paths: AppPaths) -> dict:
     drafts = list_drafts(paths.workspace_drafts_dir)
     return {"ok": True, "drafts": [draft_summary(d) for d in drafts]}
@@ -532,9 +565,9 @@ def _reuse_console_mic_clip_for_radio(radio: DraftPart) -> None:
     """Point a guided radio at the console-owned radio mic clip.
 
     The console owns the physical C-MCB/Mag Mic hardware when the operator
-    confirms it is the same clip.  The radio kit retains its install component
-    so the shop still sees a microphone instruction, but it must no longer
-    describe or bill a second mount of its own.
+    confirms it is the same mic. The radio keeps a saved setup reference but
+    must not retain a second manifest component or billable child for that one
+    physical item.
     """
     picker_config = dict(radio.picker_config or {})
     choices = dict(picker_config.get("choices") or {})
@@ -546,23 +579,10 @@ def _reuse_console_mic_clip_for_radio(radio: DraftPart) -> None:
     choices.pop("micLocCustom", None)
     picker_config["choices"] = choices
 
-    components = list(radio.components or [])
-    console_component = {
-        "label": "Radio microphone",
-        "part_type": "radio_mic_clip",
-        "location": "ON CENTER CONSOLE",
-        "detail": "Uses the selected center-console mic clip",
-        "quantity": 1,
-    }
-    replaced = False
-    for index, component in enumerate(components):
-        if component.get("part_type") == "radio_mic_clip":
-            components[index] = console_component
-            replaced = True
-            break
-    if not replaced:
-        components.append(console_component)
-    radio.components = components
+    radio.components = [
+        component for component in (radio.components or [])
+        if component.get("part_type") != "radio_mic_clip"
+    ]
 
     details = [
         detail for detail in (picker_config.get("details") or [])
@@ -571,8 +591,8 @@ def _reuse_console_mic_clip_for_radio(radio: DraftPart) -> None:
         }
     ]
     details.append({
-        "label": "Radio microphone mount",
-        "value": "Uses the selected center-console mic clip",
+        "label": "Radio microphone hardware",
+        "value": "Same physical mic as Center Console — shown once there",
         "key": "micClipRelation",
     })
     picker_config["details"] = details
@@ -726,6 +746,28 @@ def handle_add_part_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict
             return {"ok": False, "error": "name is required"}
         draft = load_draft_for_request(draft_id, paths)
         part = draft_part_from_payload(body, paths, require_complete_supply=True)
+        singleton = _matching_draft_singleton_accessory(draft, part)
+        if singleton is not None:
+            singleton.picker_config = dict(singleton.picker_config or {})
+            singleton.picker_config["draft_singleton_accessory"] = dict(
+                part.picker_config["draft_singleton_accessory"]
+            )
+            draft.user_modified = True
+            draft.audit_trail.append({
+                "action": "automatic_accessory_reused",
+                "line_id": singleton.line_id,
+                "name": singleton.name,
+                "at": draft.updated_at,
+            })
+            save_draft(draft, paths.workspace_drafts_dir)
+            return {
+                "ok": True,
+                "draft_id": draft_id,
+                "line_id": singleton.line_id,
+                "name": singleton.name,
+                "deduplicated": True,
+                "draft_summary": draft_summary(draft),
+            }
         matching_speaker = _matching_single_speaker(draft, part)
         if matching_speaker is not None:
             matching_speaker.quantity = 2

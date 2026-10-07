@@ -375,10 +375,12 @@ location" rows.
     console setup owns the control-head position, so radio setup does not ask for it again.
     The selected radio-unit SKU determines whether it is an all-in-one or split system, so the
     setup never repeats that decision; only a split system asks for the radio-brick location.
-    When a center-console radio mic clip is already present, radio setup asks whether it is the
-    same physical clip or an additional radio clip; console setup asks the inverse when radio was
-    configured first. Reusing the console clip leaves one physical clip/Mag Mic line while the
-    radio component retains its install note.
+    When center-console radio mic hardware is already present, radio setup asks whether it is the
+    same physical mic or an additional radio mic; console setup asks the inverse when radio was
+    configured first. The check recognizes either a console bracket or a standalone console Mag
+    Mic. Reusing it leaves one physical clip/Mag Mic manifest line; the radio's saved setup records
+    that reference without repeating the same mic as another component row. Choosing a genuinely
+    different mic is reserved for an extra radio or PA, such as a rear-mounted unit.
     cylinder and whip antennas are restricted to rear-left roof (or Custom); a Custom antenna can
     keep its exact shop label while independently choosing where the antenna appears on the vehicle
     render. Mic location is top plate of console (or Custom). Choosing either Magnetic Mic option also adds its real, QB-linked

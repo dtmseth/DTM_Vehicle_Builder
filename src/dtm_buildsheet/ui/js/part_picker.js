@@ -68,6 +68,10 @@ const _PICKER_COLORS = {
 };
 const _PICKER_COLOR_ORDER = ["red", "blue", "amber", "white", "green", "purple"];
 const _COLORS_PER_HEAD = { single: 1, duo: 2, trio: 3 };
+// One photocell serves every compatible interior bar in a vehicle. The
+// catalog still exposes it from each bar so a front-only or rear-only build
+// receives one automatically; this set prevents front + rear from billing two.
+const _PICKER_DRAFT_SINGLETON_ACCESSORIES = new Set(["whelen_lcphoto"]);
 const _LIGHT_CATEGORIES = [
   { id: "warning",      label: "Warning",      icon: "🚨" },
   { id: "scene",        label: "Scene",        icon: "💡" },
@@ -4814,9 +4818,16 @@ function _pickerConsolePedestalLocation(choice) {
   return "FLOOR PEDESTAL";
 }
 
-function _pickerExistingConsoleRadioMicClip() {
+function _pickerExistingConsoleRadioMicHardware() {
   const parts = (typeof _meDraft !== "undefined" && _meDraft?.parts) || [];
+  // Prefer the Mag Mic itself when both it and a manufacturer bracket are
+  // present. Older logic only noticed radioMicClip, so a standalone
+  // Gamber-Johnson Mag Mic was invisible to radio setup and could be added a
+  // second time for the same physical microphone.
   return parts.find(part =>
+    part.part_type === "radio_mic_clip"
+    && part.picker_config?.console_component_key === "magneticMic"
+  ) || parts.find(part =>
     part.part_type === "radio_mic_clip"
     && part.picker_config?.console_component_key === "radioMicClip"
   ) || null;
@@ -4828,13 +4839,15 @@ function _pickerExistingRadioSystem() {
 }
 
 function _pickerConsoleRadioMicRelationRequired(setup = _pickerState.consoleSetup) {
-  return !!setup?.choices?.radioMicClip && !!_pickerExistingRadioSystem();
+  const choices = setup?.choices || {};
+  const addsConsoleMicHardware = !!choices.radioMicClip || choices.addMagMic === true;
+  return addsConsoleMicHardware && !!_pickerExistingRadioSystem();
 }
 
 function _pickerConsoleRadioMicReconciliationQuestion(setup) {
   if (!_pickerConsoleRadioMicRelationRequired(setup)) return "";
   const relation = setup.choices.radioMicClipRelation;
-  return `<div class="console-motion-location"><span>A radio setup already includes a microphone mount. Is this the same clip?</span><div><button type="button" class="console-location-choice${relation === "use_for_existing_radio" ? " is-selected" : ""}" data-console-radio-mic-relation="use_for_existing_radio">Yes — use this console clip for that radio</button><button type="button" class="console-location-choice${relation === "additional_console_clip" ? " is-selected" : ""}" data-console-radio-mic-relation="additional_console_clip">No — this is an additional mic clip</button></div></div>`;
+  return `<div class="console-motion-location console-mic-reconciliation"><div class="console-mic-copy"><strong>Is this the same physical radio mic?</strong><small>The Radio Communications setup already has microphone hardware. Reuse it for the normal single console radio mic; the build sheet will keep one physical Mag Mic line.</small></div><div class="console-mic-actions"><button type="button" class="console-location-choice${relation === "use_for_existing_radio" ? " is-selected" : ""}" data-console-radio-mic-relation="use_for_existing_radio">Same physical mic — keep one line</button><button type="button" class="console-location-choice${relation === "additional_console_clip" ? " is-selected" : ""}" data-console-radio-mic-relation="additional_console_clip">Different physical mic — add another line</button></div><small class="console-mic-extra-note">Only choose a different mic for an actual extra radio or PA, such as a rear-mounted unit.</small></div>`;
 }
 
 function _pickerConsoleMagMicQuestion(setup) {
@@ -4953,7 +4966,7 @@ function _pickerRenderConsoleSetup() {
   details.innerHTML = `<section class="console-setup" data-console-setup>
     <header class="console-setup-header"><div><span class="guided-chip">CONSOLE</span><h2>Set Up Center Console</h2><p>The base SKU stays exactly as selected. Add the hardware the shop will install.</p></div><button class="guided-close" type="button" onclick="_pickerClearSelection()" title="Close">✕</button></header>${error}
     <section class="console-faceplate-section"><div class="console-section-heading"><div><div class="console-section-kicker">1 · Base console</div><h3>Exact SKU</h3></div></div>${kitSummary}${recommendation}</section>
-    <section class="console-components-section"><div class="console-section-heading"><div><div class="console-section-kicker">2 · Components</div><h3>Installed hardware</h3><p>Every selected part stays on the build sheet. A covered part is simply not billed twice.</p></div></div>${_pickerConsoleComponentSection(setup, "armRest", "Armrest", "Choose an armrest, if this console needs one.")}${printerFlow}${_pickerConsoleComponentSection(setup, "motionAttachment", "Motion attachment", "Choose a motion device, if this console needs one.")}${pedestalSection}${_pickerConsoleComponentSection(setup, "dockingStation", "Docking station", "Choose the computer dock or cradle that belongs on this console.")}${micClipSection}${_pickerConsoleRadioMicReconciliationQuestion(setup)}${_pickerConsoleMagMicQuestion(setup)}</section>
+    <section class="console-components-section"><div class="console-section-heading"><div><div class="console-section-kicker">2 · Components</div><h3>Installed hardware</h3><p>Every selected part stays on the build sheet. A covered part is simply not billed twice.</p></div></div>${_pickerConsoleComponentSection(setup, "armRest", "Armrest", "Choose an armrest, if this console needs one.")}${printerFlow}${_pickerConsoleComponentSection(setup, "motionAttachment", "Motion attachment", "Choose a motion device, if this console needs one.")}${pedestalSection}${_pickerConsoleComponentSection(setup, "dockingStation", "Docking station", "Choose the computer dock or cradle that belongs on this console.")}${micClipSection}${_pickerConsoleMagMicQuestion(setup)}${_pickerConsoleRadioMicReconciliationQuestion(setup)}</section>
     <section class="console-faceplate-section console-faceplate-section--order"><div class="console-section-heading"><div><div class="console-section-kicker">3 · Faceplate lineup</div><h3>Core and radio faceplates are always stocked</h3><p>Every console receives a Core and radio faceplate. Vehicle-specific kits also include their OEM relocation plate and, when listed, a cupholder faceplate. Drag rows to give the shop the install order.</p>${faceplateBrandNote}</div><label class="console-faceplate-search"><span>Add another faceplate</span><input id="picker-console-faceplate-search" value="${esc(setup.faceplateSearch || "")}" placeholder="Search optional faceplates, pockets…"></label></div><div class="console-faceplate-order" id="picker-console-faceplate-order">${_pickerConsoleOrderCards(setup)}</div><div class="console-extra-faceplates">${_pickerConsoleFaceplateCards(setup)}</div></section>
     ${wingSection ? `<section class="console-components-section"><div class="console-section-heading"><div><div class="console-section-kicker">Optional vehicle fitment</div><h3>Console wings</h3><p>Choose vehicle-specific side wings only when the build needs them.</p></div></div>${wingSection}</section>` : ""}
   </section>`;
@@ -5082,6 +5095,9 @@ function _pickerRenderConsoleSetup() {
   }));
   details.querySelectorAll("[data-console-add-mag-mic]").forEach(button => button.addEventListener("click", () => {
     setup.choices.addMagMic = button.dataset.consoleAddMagMic === "yes";
+    if (!setup.choices.addMagMic && !setup.choices.radioMicClip) {
+      setup.choices.radioMicClipRelation = "";
+    }
     _pickerRenderConsoleSetup();
     _pickerUpdateFooter();
   }));
@@ -5531,10 +5547,10 @@ const _SYSTEM_DEFS = {
         _systemLocationStep("antennaLoc", "Where will the radio antenna go?", c.antennaStyle === "cylinder" || c.antennaStyle === "whip" ? "Cylinder and whip antennas normally use the rear left roof." : "Choose the roof or cargo-window location.", c.antennaStyle === "cylinder" || c.antennaStyle === "whip" ? [_SYSTEM_LOC.radioAntenna[0]] : _SYSTEM_LOC.radioAntenna, { vehiclePlacement: true }),
         _systemLocationStep("speakerLoc", "Where will the radio speaker go?", "Pick the location the shop should mount the speaker.", _SYSTEM_LOC.radioSpeaker),
         ...(() => {
-          const consoleClip = _pickerExistingConsoleRadioMicClip();
-          const useConsoleClip = !!consoleClip && c.micClipRelation === "use_console_clip";
+          const consoleMicHardware = _pickerExistingConsoleRadioMicHardware();
+          const useConsoleClip = !!consoleMicHardware && c.micClipRelation === "use_console_clip";
           return [
-            ...(consoleClip ? [_systemStep("micClipRelation", "choice", "A console radio mic clip is already selected. Is it for this radio?", "Confirm whether the console-mounted clip is the radio microphone mount or whether this radio needs an additional clip.", [["use_console_clip", "Use the console mic clip for this radio", "Keep one shared clip and avoid a duplicate mic mount"], ["additional_radio_clip", "Add an additional radio mic clip", "Continue to choose this radio's separate mount and location"]])] : []),
+            ...(consoleMicHardware ? [_systemStep("micClipRelation", "choice", "Use the radio mic already on the center console?", "The Center Console setup already added microphone hardware. Choose Same physical mic for the normal radio mic so it appears only once on the build sheet.", [["use_console_clip", "Same physical mic — reuse it", "Keep one console radio mic line"], ["additional_radio_clip", "Different physical mic — add another", "Only for an actual extra radio or PA, such as a rear-mounted unit"]])] : []),
             ...(useConsoleClip ? [] : [
               _systemStep("micMount", "choice", "What microphone mount should the shop use?", "Choose the mounting style that matches the supplied radio kit.", [["manufacturer_clip", "Manufacturer clip", "Clip supplied by the radio manufacturer"], ["magnetic_no_bracket", "Magnetic Mic without bracket", "Magnetic Mic mount without its bracket"], ["magnetic_with_bracket", "Magnetic Mic with bracket", "Magnetic Mic mount with its bracket"]]),
               _systemLocationStep("micLoc", "Where will the radio microphone mount?", "Top plate is the standard location; use Custom for a shop-specific location.", _SYSTEM_LOC.radioMic),
@@ -6216,12 +6232,14 @@ function _systemComponentRows(kind, c) {
       antennaPickerConfig,
     );
     add("radio_speaker", "Radio speaker", "radio_speaker", answer("speakerLoc"), "Shop mounting location");
-    const usesConsoleClip = c.micClipRelation === "use_console_clip" && !!_pickerExistingConsoleRadioMicClip();
-    add(
-      "radio_microphone", "Radio microphone", "radio_mic_clip",
-      usesConsoleClip ? "ON CENTER CONSOLE" : answer("micLoc"),
-      usesConsoleClip ? "Uses the selected center-console mic clip" : answer("micMount"),
-    );
+    const usesConsoleClip = c.micClipRelation === "use_console_clip" && !!_pickerExistingConsoleRadioMicHardware();
+    // The console-owned row is the one physical mic. Keeping a second
+    // display-only radio component made the manifest look like two mics even
+    // though only one SKU was billed, so a shared mic is referenced only in
+    // the saved radio answers and is not repeated as another manifest line.
+    if (!usesConsoleClip) {
+      add("radio_microphone", "Radio microphone", "radio_mic_clip", answer("micLoc"), answer("micMount"));
+    }
   } else if (kind === "radar") {
     if (c.split === "yes") {
       add("radar_display", "Radar display unit", "radar_display_unit", "", "Separate display unit");
@@ -6568,6 +6586,14 @@ function _pickerChosenAccessoryRows(parentName, locName, parentLineId) {
       const [pidPart, sku] = pick.split("::");
       const opt = g.options.find(o => o.product_id === pidPart);
       if (!opt) continue;
+      const pickerConfig = {};
+      if (Object.keys(rules[pick] || {}).length) {
+        pickerConfig.accessory_quantity = {...rules[pick]};
+      }
+      if ((g.automatic_option_ids || []).includes(pidPart)
+          && _PICKER_DRAFT_SINGLETON_ACCESSORIES.has(pidPart)) {
+        pickerConfig.draft_singleton_accessory = {product_id: pidPart};
+      }
       rows.push({
         name: `${parentName} · ${opt.model}`,
         location: locName, manufacturer: opt.manufacturer_label || "",
@@ -6575,9 +6601,7 @@ function _pickerChosenAccessoryRows(parentName, locName, parentLineId) {
         parent_line_id: parentLineId || "",
         accessory_category: g.category,
         accessory_parent_product: parentProduct,
-        picker_config: Object.keys(rules[pick] || {}).length
-          ? { accessory_quantity: { ...rules[pick] } }
-          : {},
+        picker_config: pickerConfig,
       });
     }
   }

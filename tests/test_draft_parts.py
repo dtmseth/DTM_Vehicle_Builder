@@ -405,6 +405,47 @@ class TestAddPart:
         assert loaded.parts[0].quantity == 2
         assert any(entry["action"] == "part_merged" for entry in loaded.audit_trail)
 
+    def test_front_and_rear_inner_edges_share_one_automatic_photocell(self, tmp_path):
+        paths = _paths(tmp_path)
+        draft = _saved_draft(paths)
+        first = handle_add_part_to_draft(draft.draft_id, {
+            "name": "Front Interior Light Bar · LOGIC LEVEL PHOTOCELL OPTION",
+            "part_number": "LCPHOTO",
+            "quantity": 1,
+            "new_or_used": "New",
+            "parent_line_id": "front-inner-edge",
+            "accessory_category": "other",
+            "accessory_parent_product": "whelen_fst",
+        }, paths)
+        second = handle_add_part_to_draft(draft.draft_id, {
+            "name": "Rear Interior Light Bar · LOGIC LEVEL PHOTOCELL OPTION",
+            "part_number": "LCPHOTO",
+            "quantity": 1,
+            "new_or_used": "New",
+            "parent_line_id": "rear-inner-edge",
+            "accessory_category": "other",
+            "accessory_parent_product": "whelen_rst",
+            "picker_config": {
+                "draft_singleton_accessory": {"product_id": "whelen_lcphoto"},
+            },
+        }, paths)
+
+        assert first["ok"] is True
+        assert second["ok"] is True
+        assert second["deduplicated"] is True
+        assert second["line_id"] == first["line_id"]
+        loaded = load_draft(draft.draft_id, paths.workspace_drafts_dir)
+        photocells = [part for part in loaded.parts if part.part_number == "LCPHOTO"]
+        assert len(photocells) == 1
+        assert photocells[0].quantity == 1
+        assert photocells[0].picker_config["draft_singleton_accessory"] == {
+            "product_id": "whelen_lcphoto",
+        }
+        assert any(
+            entry["action"] == "automatic_accessory_reused"
+            for entry in loaded.audit_trail
+        )
+
     def test_speakers_with_different_locations_remain_separate(self, tmp_path):
         paths = _paths(tmp_path)
         draft = _saved_draft(paths)
@@ -662,14 +703,24 @@ class TestConsoleSetupReplacement:
         draft = _saved_draft(paths, [console, radio, radio_mag_mic, radio_cable])
 
         result = handle_replace_console_setup_parts(draft.draft_id, console.line_id, {
-            "rows": [{
-                "name": "Center Console · Radio Mic Clip", "part_number": "C-MCB",
-                "part_type": "radio_mic_clip", "accessory_category": "console_component",
-                "picker_config": {
-                    "console_setup_owner_line_id": console.line_id,
-                    "console_component_key": "radioMicClip",
+            "rows": [
+                {
+                    "name": "Center Console · Radio Mic Clip", "part_number": "C-MCB",
+                    "part_type": "radio_mic_clip", "accessory_category": "console_component",
+                    "picker_config": {
+                        "console_setup_owner_line_id": console.line_id,
+                        "console_component_key": "radioMicClip",
+                    },
                 },
-            }],
+                {
+                    "name": "Center Console · Mag Mic", "part_number": "MMSU-1",
+                    "part_type": "radio_mic_clip", "accessory_category": "console_component",
+                    "picker_config": {
+                        "console_setup_owner_line_id": console.line_id,
+                        "console_component_key": "magneticMic",
+                    },
+                },
+            ],
             "printer": None,
             "printer_cables": [],
             "radio_reconciliation": {
@@ -685,10 +736,14 @@ class TestConsoleSetupReplacement:
         assert choices["micClipRelation"] == "use_console_clip"
         assert choices["micMount"] == ""
         assert choices["micLoc"] == ""
-        assert saved_radio.components[-1] == {
-            "label": "Radio microphone", "part_type": "radio_mic_clip",
-            "location": "ON CENTER CONSOLE",
-            "detail": "Uses the selected center-console mic clip", "quantity": 1,
+        assert not any(
+            component.get("part_type") == "radio_mic_clip"
+            for component in saved_radio.components
+        )
+        assert saved_radio.picker_config["details"][-1] == {
+            "label": "Radio microphone hardware",
+            "value": "Same physical mic as Center Console — shown once there",
+            "key": "micClipRelation",
         }
         assert not any(
             part.parent_line_id == radio.line_id and part.accessory_category == "magnetic_mic"
@@ -696,6 +751,10 @@ class TestConsoleSetupReplacement:
         )
         assert any(part.line_id == radio_cable.line_id for part in loaded.parts)
         assert any(part.part_number == "C-MCB" for part in loaded.parts)
+        assert [
+            part.part_number for part in loaded.parts
+            if part.part_number in {"MMSU-1", "MMSU-1B"}
+        ] == ["MMSU-1"]
         audit = loaded.audit_trail[-1]
         assert audit["radio_mic_clip_reconciled"] is True
 
