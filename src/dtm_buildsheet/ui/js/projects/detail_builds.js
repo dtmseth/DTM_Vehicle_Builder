@@ -523,6 +523,25 @@ function _ptOpenFinalizationModal(title, bodyHtml, saveLabel, onSave) {
   modal?.classList.add("open");
 }
 
+function _ptShowFinalizationError(message, invalidFields = []) {
+  const body = $("build-finalization-body");
+  if (!body) return;
+  let alert = body.querySelector(".build-finalization-error");
+  if (!alert) {
+    alert = document.createElement("div");
+    alert.className = "build-finalization-error";
+    alert.setAttribute("role", "alert");
+    body.prepend(alert);
+  }
+  alert.textContent = message;
+  body.querySelectorAll("[data-final-warning]").forEach(textarea => {
+    const invalid = invalidFields.includes(textarea);
+    textarea.classList.toggle("is-invalid", invalid);
+    textarea.setAttribute("aria-invalid", invalid ? "true" : "false");
+  });
+  invalidFields[0]?.focus();
+}
+
 function _ptFinalizationChecksHtml(checks) {
   const items = Array.isArray(checks) ? checks : [];
   if (!items.length) return "";
@@ -604,15 +623,37 @@ window.PT_reviewFinalization = async function (projectId, unitId, individualId, 
     ? warnings.map(warning => `<label class="build-final-warning"><span><strong>${esc(warning.title)}</strong><small>${esc(warning.message)}</small></span><textarea data-final-warning="${esc(warning.id)}" rows="2" placeholder="Acknowledge why this is correct for this build…"></textarea></label>`).join("")
     : `<div class="build-final-clear"><strong>✓ Equipment checks clear</strong><span>No review warnings were found.</span></div>`;
   _ptOpenFinalizationModal("Finalize design", `<div class="build-final-intro"><span class="build-final-step">2</span><div><h3>Review and lock this design</h3><p>The PDF is current. Resolve each warning with a short note, then finalize the design.</p></div></div>${warningHtml}${_ptFinalizationChecksHtml(check.checks)}<div class="build-final-lock-note">Finalizing records the signed-in user and time, then locks design edits until someone reopens it with a reason.</div>`, "Finalize design", async () => {
-    const acknowledgements = [...document.querySelectorAll("[data-final-warning]")].map(textarea => ({ id: textarea.dataset.finalWarning, note: textarea.value.trim() }));
-    if (acknowledgements.some(item => item.note.length < 3)) { toast("Add a short acknowledgement for every warning", "error"); return; }
-    const result = await api(_ptFinalizationUrl(projectId, unitId, individualId, "finalize"), { fingerprint: check.fingerprint, acknowledgements });
-    if (!result?.ok) { toast(result?.message || result?.error || "Could not finalize design", "error"); return; }
-    _ptCloseFinalizationModal();
-    toast("Design finalized and locked", "success");
-    await _ptLoadAll();
-    const updated = _PT.projects.find(item => item.project_id === projectId);
-    if (updated) { _PT.viewProject = updated; _ptRenderOverview(updated); }
+    const fields = [...document.querySelectorAll("[data-final-warning]")];
+    const invalidFields = fields.filter(textarea => textarea.value.trim().length < 3);
+    const acknowledgements = fields.map(textarea => ({ id: textarea.dataset.finalWarning, note: textarea.value.trim() }));
+    if (invalidFields.length) {
+      const message = "Add a short acknowledgement for every warning before finalizing.";
+      _ptShowFinalizationError(message, invalidFields);
+      toast(message, "error");
+      return;
+    }
+    const save = $("build-finalization-save");
+    if (save) save.disabled = true;
+    try {
+      const result = await api(_ptFinalizationUrl(projectId, unitId, individualId, "finalize"), { fingerprint: check.fingerprint, acknowledgements });
+      if (!result?.ok) {
+        const message = result?.message || result?.error || "Could not finalize design";
+        _ptShowFinalizationError(message);
+        toast(message, "error");
+        return;
+      }
+      _ptCloseFinalizationModal();
+      toast("Design finalized and locked", "success");
+      await _ptLoadAll();
+      const updated = _PT.projects.find(item => item.project_id === projectId);
+      if (updated) { _PT.viewProject = updated; _ptRenderOverview(updated); }
+    } catch (error) {
+      const message = error?.message || "Could not finalize design";
+      _ptShowFinalizationError(message);
+      toast(message, "error");
+    } finally {
+      if (save && $("build-finalization-modal")?.classList.contains("open")) save.disabled = false;
+    }
   });
 };
 

@@ -71,6 +71,10 @@ def test_reference_photo_ui_uses_project_photos_and_group_assignments():
     assert 'if (result?.ok) applyPresence(result.presence || {});' in script
     assert '_ptHasCompletedBuild' not in build_script
     assert 'Finalize design' in build_script
+    assert '_ptShowFinalizationError' in build_script
+    assert 'invalidFields[0]?.focus()' in build_script
+    assert '.build-finalization-error{' in styles
+    assert 'z-index:2000' in styles
     assert 'statusEl = options.statusEl || $("proj-action-status")' in build_script
     assert "This finalized design already has a PDF in Shop Documents." in build_script
     assert "/shop-publication/republish" in build_script
