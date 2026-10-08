@@ -1,14 +1,18 @@
 """Tests for the preset service (Phase 2)."""
 from __future__ import annotations
 
+import base64
+import io
 import json
 from dataclasses import asdict
 from pathlib import Path
 
 import pytest
+from openpyxl import Workbook
 
 from dtm_buildsheet.app.services.preset_service import (
     find_duplicate,
+    import_from_workbook,
     list_presets,
     load_preset,
     load_preset_dict,
@@ -128,8 +132,12 @@ class TestValidatePresetPayload:
                 "customer_condition": "used",
             }],
         }
-        with pytest.raises(ValueError, match="where.*come from"):
+        with pytest.raises(ValueError, match='Preset part 1.*Transferred radio.*where.*come from'):
             validate_preset_payload(preset)
+
+    def test_vehicle_types_must_be_a_list(self):
+        with pytest.raises(ValueError, match="vehicle_types.*list"):
+            validate_preset_payload({**_MINIMAL_PRESET, "vehicle_types": "PIU"})
 
     def test_picker_and_renderer_fields_preserved(self):
         component = {"part_number": "BSFW50ZT", "quantity": 1}
@@ -570,7 +578,7 @@ class TestSavePresetDuplicates:
     def test_placement_overrides_saved_and_loaded(self, tmp_path):
         paths = _paths_empty(tmp_path)
         res = save_preset(
-            {"agency_ids": [], "build_types": ["Patrol"], "vehicle_types": ["Sedan"],
+            {"agency_ids": [], "build_types": ["Patrol"], "vehicle_types": ["PIU"],
              "tag": "", "parts": [],
              "placement_overrides": {"key1": {"dx": 0.05, "dy": -0.1}}},
             paths,
@@ -578,6 +586,62 @@ class TestSavePresetDuplicates:
         assert res["ok"]
         full = load_preset_dict(res["preset_id"], paths)
         assert full["placement_overrides"] == {"key1": {"dx": 0.05, "dy": -0.1}}
+
+    def test_unknown_vehicle_layout_is_rejected(self, tmp_path):
+        paths = _paths_empty(tmp_path)
+        result = save_preset(
+            {"agency_ids": [], "build_types": [], "vehicle_types": ["BROKEN VEHICLE"],
+             "tag": "", "parts": []},
+            paths,
+        )
+
+        assert result["ok"] is False
+        assert "Unknown compatible vehicle layout" in result["error"]
+
+    def test_vehicle_alias_is_saved_as_canonical_layout_id(self, tmp_path):
+        paths = _paths_empty(tmp_path)
+        result = save_preset(
+            {"agency_ids": [], "build_types": [], "vehicle_types": ["piu"],
+             "tag": "", "parts": []},
+            paths,
+        )
+
+        assert result["ok"] is True
+        saved = load_preset_dict(result["preset_id"], paths)
+        assert saved["vehicle_types"] == ["PIU"]
+
+
+def test_preset_modal_uses_layout_backed_vehicle_picker_and_import_issue_editor():
+    source = Path("src/dtm_buildsheet/ui/js/settings/presets_mgr.js").read_text(encoding="utf-8")
+    markup = Path("src/dtm_buildsheet/ui/index.html").read_text(encoding="utf-8")
+
+    assert "_selectedVehicleKeys = new Set()" in source
+    assert "Unknown layout:" in source
+    assert "data-import-part-source" in source
+    assert "Complete the highlighted imported-part details" in source
+    assert 'id="pem-vehicle-search"' in markup
+    assert 'id="pem-vehicle-selected"' in markup
+    assert 'id="pem-part-issues"' in markup
+
+
+def test_workbook_import_reports_customer_used_part_missing_source(tmp_path):
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Build Sheet"
+    sheet.append(["✓", "Part", "New/Used", "Source", "Manufacturer", "Model / Part #", "Location", "Color", "Qty"])
+    sheet.append(["✓", "Customer Radio", "Used", "", "Motorola", "APX", "Console", "", 1])
+    stream = io.BytesIO()
+    workbook.save(stream)
+
+    result = import_from_workbook(base64.b64encode(stream.getvalue()).decode("ascii"), _paths_empty(tmp_path))
+
+    assert result["ok"] is True
+    assert result["part_issues"] == [{
+        "index": 0,
+        "part_number": 1,
+        "name": "Customer Radio",
+        "error": "Enter where the customer-supplied used part will come from",
+    }]
 
 
 # ── load_preset_dict ──────────────────────────────────────────────────────────

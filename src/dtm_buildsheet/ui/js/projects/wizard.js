@@ -500,12 +500,14 @@ async function _ptSaveProject(conflictResolution = "") {
     if (res.ok) {
       _ptCloseCreationConflictModal();
       _PT.editId = res.project_id;
-      if (_PT.units.some(unit => (unit.individuals || []).some(ind =>
+      const needsQuoteReconcile = _PT.units.some(unit => (unit.individuals || []).some(ind =>
         (ind.quote_references || []).some(ref => ref.state !== "obsolete")
-      ))) {
-        await window.PT_reconcileQuoteReferences?.();
+      ));
+      if (res.project) {
+        const savedIndex = _PT.projects.findIndex(project => project.project_id === res.project_id);
+        if (savedIndex >= 0) _PT.projects.splice(savedIndex, 1, res.project);
+        else _PT.projects.unshift(res.project);
       }
-      await _ptLoadAll();
       const updated = _PT.projects.find(p => p.project_id === _PT.editId);
       toast(
         res.resolution === "merge" ? "New vehicles merged into the existing project" :
@@ -517,6 +519,11 @@ async function _ptSaveProject(conflictResolution = "") {
         if (updated) _ptShowDetail(updated);
         else _ptShowList();
       }, 300);
+      if (needsQuoteReconcile) {
+        // QuickBooks is advisory here; the locally saved project should never
+        // wait for an external connection before the user gets control back.
+        Promise.resolve(window.PT_reconcileQuoteReferences?.()).catch(() => null);
+      }
     } else {
       if (res.error_code === "project_exists_for_agency_year" && res.existing_project) {
         _ptOpenCreationConflictModal(res);

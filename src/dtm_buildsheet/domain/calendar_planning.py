@@ -248,7 +248,7 @@ def _team(settings, ids):
 
 def _hours(spec, team):
     if spec.get('hours') is not None:
-        return number(spec['hours'], 'Labor hours', .25, 4000) + spec.get('travel_hours', 0) + (team['strip_hours'] if spec.get('include_strip') else 0)
+        return number(spec['hours'], 'Labor hours', .25, 4000) + (team['strip_hours'] if spec.get('include_strip') else 0)
     if spec.get('kind') in ('service', 'offsite'):
         raise ValueError('Enter estimated labor hours for service work')
     kind = spec.get('kind', 'strip_build')

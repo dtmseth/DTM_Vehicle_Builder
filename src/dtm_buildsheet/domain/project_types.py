@@ -27,16 +27,20 @@ def service_details(value):
         result[key] = value.get(key, default)
         if not isinstance(result[key], bool):
             raise ValueError(f'{key} must be true or false')
-    travel = value.get('travel_hours', 0)
-    if isinstance(travel, bool):
-        raise ValueError('Travel allowance must be a number')
+    # Older clients called this a travel allowance.  In practice users were
+    # entering the complete expected time for each service vehicle, so accept
+    # that legacy value as the initial estimate while emitting the clearer
+    # field going forward.
+    estimate = value.get('estimated_hours', value.get('travel_hours', 0))
+    if isinstance(estimate, bool):
+        raise ValueError('Estimated labor hours must be a number')
     try:
-        travel = float(travel)
+        estimate = float(estimate)
     except (TypeError, ValueError):
-        raise ValueError('Travel allowance must be a number') from None
-    if not math.isfinite(travel) or not 0 <= travel <= 100:
-        raise ValueError('Travel allowance must be between 0 and 100 labor hours')
-    result['travel_hours'] = travel
+        raise ValueError('Estimated labor hours must be a number') from None
+    if not math.isfinite(estimate) or not 0 <= estimate <= 4000:
+        raise ValueError('Estimated labor hours must be between 0 and 4000 hours')
+    result['estimated_hours'] = estimate
     return result
 
 

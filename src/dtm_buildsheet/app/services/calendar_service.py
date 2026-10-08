@@ -642,7 +642,11 @@ class CalendarService:
             raise ValueError("Choose a job type")
         spec["kind"] = kind
         if record and record.project_type != 'build':
-            spec['travel_hours'] = record.service_details.get('travel_hours', 0) if kind == 'offsite' else 0
+            spec.pop('travel_hours', None)
+            if spec.get('hours') is None:
+                estimate = record.service_details.get('estimated_hours', 0)
+                if estimate:
+                    spec['hours'] = estimate
             spec['include_strip'] = record.service_details.get('requires_strip', False)
             spec['include_finishing'] = record.service_details.get('requires_finishing', False)
         if 'accepted_date_source' in edit:

@@ -2764,7 +2764,16 @@
     <!-- Vehicle types -->
     <div class="form-group" style="margin-bottom:12px">
       <label>Compatible Vehicles <span style="font-weight:400;color:var(--muted)">(leave blank for any)</span></label>
-      <div id="pem-vehicle-checks" style="max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:5px;padding:8px"></div>
+      <div class="pem-vehicle-picker">
+        <div class="pem-vehicle-search-row">
+          <input id="pem-vehicle-search" type="search" placeholder="Search saved vehicle layouts…" autocomplete="off">
+          <span id="pem-vehicle-count" aria-live="polite"></span>
+        </div>
+        <div id="pem-vehicle-selected" class="pem-vehicle-selected" aria-live="polite"></div>
+        <div id="pem-vehicle-checks" class="pem-vehicle-options"></div>
+        <div id="pem-vehicle-error" class="pem-field-error" role="alert" hidden></div>
+        <p class="pem-field-help">Selections are linked to saved vehicle layouts, so a preset cannot store an unknown vehicle ID.</p>
+      </div>
     </div>
 
     <!-- Tag (General presets only) -->
@@ -2779,6 +2788,7 @@
       <span id="pem-part-count" style="font-weight:600">—</span>
       <button class="btn btn-secondary btn-sm" id="pem-export-btn" style="margin-left:auto">Export to Workbook ↓</button>
     </div>
+    <div id="pem-part-issues" class="pem-part-issues" role="alert" hidden></div>
 
     <div class="modal-actions">
       <button class="btn btn-secondary" id="pem-cancel">Cancel</button>

@@ -1451,6 +1451,7 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
         result = {
             "ok": True,
             "project_id": project.project_id,
+            "project": asdict(project),
             "path": str(path),
             "updated_at": project.updated_at,
             "record_revision": project.record_revision,

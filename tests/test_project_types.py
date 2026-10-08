@@ -7,6 +7,7 @@ import pytest
 from pptx import Presentation
 
 from dtm_buildsheet.app.adapters.wiring import build_local_bundle
+from dtm_buildsheet.app.routes import projects as project_routes
 from dtm_buildsheet.app.services import agency_service
 from dtm_buildsheet.app.services.calendar_service import CalendarService
 from dtm_buildsheet.app.services.finalization_service import handle_finalization_check
@@ -15,6 +16,7 @@ from dtm_buildsheet.app.services.project_service import handle_save_project, han
 from dtm_buildsheet.domain.project_codec import project_from_dict
 from dtm_buildsheet.domain.project_models import BuildUnit, IndividualUnit
 from dtm_buildsheet.domain.project_types import with_project_work
+from dtm_buildsheet.domain.vehicle_naming import vehicle_model_label
 from dtm_buildsheet.domain.operations_models import OperationsActor, VehicleOperations, AcceptanceStatus, VehicleAvailabilityStatus
 from dtm_buildsheet.inputs.project_entry import new_project, save_project, load_project
 from dtm_buildsheet.inputs.project_drafts import new_draft, save_draft
@@ -138,17 +140,67 @@ def test_optional_service_deadline_and_existing_build_default(paths):
     assert preview(service)['plan']['jobs'][0]['deadline']=='2026-10-31'
 
 
-def test_offsite_travel_uses_team_capacity_and_location_readiness(paths):
-    project=create(paths,'offsite',service_details={'location':'Agency garage','contact':'Pat 555-0100','travel_hours':3.6,'requires_parts':False})
+def test_offsite_estimate_uses_team_capacity_and_location_readiness(paths):
+    project=create(paths,'offsite',service_details={'location':'Agency garage','contact':'Pat 555-0100','estimated_hours':3.6,'requires_parts':False})
     service=scheduler(paths,project)
     record=service.bundle.operations._records['service'];record.parts_status='';record.vehicle_availability_status=VehicleAvailabilityStatus.READY_FOR_PICKUP
     first=preview(service)['plan']['jobs'][0]
-    assert first['hours']==7.2 and first['end']=='2026-09-15T12:00'
+    assert first['hours']==3.6 and first['end']=='2026-09-15T10:00'
     assert not first['blocked']
     summary=OperationsReadService(service.bundle.operations).list_vehicle_summaries(ACTOR,projects=[project])['vehicles'][0]
     assert summary['ready_to_build'] and summary['parts_and_vehicle_ready']
     assert set(summary['applicable_workstreams'])=={'shop','final_finish'}
     assert record.parts_status=='' and record.vehicle_availability_status=='ready_for_pickup'
+
+
+def test_legacy_travel_value_becomes_the_service_estimate_without_double_counting(paths):
+    project=create(paths,'offsite',ident='legacy-estimate',service_details={
+        'location':'Agency garage','contact':'Pat 555-0100','travel_hours':3.6,
+    })
+    assert project.service_details['estimated_hours']==3.6
+    assert 'travel_hours' not in project.service_details
+
+
+def test_unknown_vehicle_identity_round_trips_without_a_fake_layout():
+    project=project_from_dict({'project_id':'unknown-service','build_units':[{
+        'unit_id':'unknown-group','vehicle_model':'','vehicle_identity':{
+            'source':'unknown','make':'Unknown','model':'Unknown',
+            'display_name':'Unknown vehicle','layout_id':'',
+        },
+    }]})
+    identity=project.build_units[0].vehicle_identity
+    assert identity.source=='unknown'
+    assert identity.make==identity.model=='Unknown'
+    assert identity.display_name=='Unknown vehicle'
+    assert not identity.layout_id and not project.build_units[0].vehicle_model
+    assert vehicle_model_label(project.build_units[0])=='Unknown vehicle'
+
+
+def test_cloud_project_save_schedules_operations_projection(monkeypatch, paths):
+    saved=handle_save_project({
+        'project_type':'service',
+        'customer':{'agency':'Agency','agency_id':'agency','build_year':'2026'},
+        'build_units':[{
+            'unit_id':'unknown-fleet','vehicle_model':'','quantity':30,
+            'vehicle_identity':{
+                'source':'unknown','make':'Unknown','model':'Unknown',
+                'display_name':'Unknown vehicle','layout_id':'',
+            },
+            'individuals':[{'individual_id':f'vehicle-{index}'} for index in range(30)],
+        }],
+    },paths)
+    scheduled=[]
+    monkeypatch.setattr(project_routes,'_operations_mutation_context',lambda:('repository','actor',None))
+    monkeypatch.setattr(project_routes.wiring,'_cloud_flag_enabled',lambda:True)
+    monkeypatch.setattr(project_routes,'_schedule_operations_project_sync',
+                        lambda project_id,*args: scheduled.append(project_id))
+
+    result=project_routes._sync_saved_project(saved,paths)
+
+    assert result['operations_sync']=={'ok':True,'scheduled':True}
+    assert scheduled==[saved['project_id']]
+    assert result['project']['project_id']==saved['project_id']
+    assert len(result['project']['build_units'][0]['individuals'])==30
 
 
 def test_service_stripping_and_finishing_are_explicit(paths):

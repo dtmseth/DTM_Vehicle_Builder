@@ -42,6 +42,7 @@ function _ptNewVehicleIdentity(layoutId, defaultYear = "") {
 
 function _ptVehicleIdentityLabel(identity, fallback = "") {
   if (!identity) return fallback || "Choose vehicle";
+  if (identity.source === "unknown") return "Unknown vehicle";
   if (identity.source === "custom") return identity.display_name || identity.model || fallback || "Custom vehicle";
   const parts = [identity.model_year, identity.make, identity.model, identity.package].filter(Boolean);
   return parts.join(" ") || identity.display_name || fallback || "Choose vehicle";
@@ -54,16 +55,18 @@ function _ptVehicleDisplayName(unit) {
 function _ptVehiclePickerMarkup(unit, prefix) {
   const identity = _ptVehicleIdentity(unit, prefix === "proj" ? $("proj-build-year")?.value : $("et-build-year")?.value);
   const custom = identity.source === "custom";
+  const unknown = identity.source === "unknown";
   const categories = _PT_VEHICLE_CATEGORIES.map(([value, label]) =>
     `<option value="${value}"${value === identity.category ? " selected" : ""}>${label}</option>`
   ).join("");
   return `<div class="vehicle-guided-picker" data-picker-prefix="${esc(prefix)}">
     <input type="hidden" class="${prefix === "proj" ? "proj-u-vehicle" : "et-u-vehicle"}" value="${esc(identity.layout_id)}">
     <div class="vehicle-picker-tabs" role="tablist">
-      <button type="button" class="vehicle-picker-tab${custom ? "" : " active"}" data-vehicle-mode="catalog">Year / Make / Model</button>
+      <button type="button" class="vehicle-picker-tab${!custom && !unknown ? " active" : ""}" data-vehicle-mode="catalog">Year / Make / Model</button>
       <button type="button" class="vehicle-picker-tab${custom ? " active" : ""}" data-vehicle-mode="custom">Custom vehicle</button>
+      <button type="button" class="vehicle-picker-tab${unknown ? " active" : ""}" data-vehicle-mode="unknown">Unknown for now</button>
     </div>
-    <div class="vehicle-picker-catalog"${custom ? " hidden" : ""}>
+    <div class="vehicle-picker-catalog"${custom || unknown ? " hidden" : ""}>
       <div class="vehicle-quick-row">
         <span>Quick choices</span>
         <button type="button" data-police-quick="Ford|Police Interceptor Utility|">Ford PIU</button>
@@ -97,7 +100,7 @@ function _ptVehiclePickerMarkup(unit, prefix) {
           <div class="vehicle-search-menu" hidden></div>
         </div></label>
       </div>
-      <p class="vehicle-catalog-note">Future years stay selectable and use the newest available model list. Search to find specialty manufacturers; vehicle-type tags identify unusual results.</p>
+      <p class="vehicle-catalog-note">The year menu shows next year and earlier. Type any future year through 2040 to use it. Future years use the newest available model list.</p>
     </div>
     <div class="vehicle-picker-custom"${custom ? "" : " hidden"}>
       <div class="vehicle-custom-grid">
@@ -105,6 +108,9 @@ function _ptVehiclePickerMarkup(unit, prefix) {
         <label><span>Name or description</span><input class="vehicle-custom-name" maxlength="80" value="${esc(custom ? (identity.display_name || identity.model) : "")}" placeholder="Example: Polaris Ranger XP 1000"></label>
       </div>
       <p class="vehicle-catalog-note">Use this for snowmobiles, ATVs/UTVs, trailers, boats, and specialty equipment.</p>
+    </div>
+    <div class="vehicle-picker-unknown"${unknown ? "" : " hidden"}>
+      <p class="vehicle-catalog-note"><strong>Make and model are not known yet.</strong> The project can be saved now and the vehicle can be identified later. This is especially useful for service visits.</p>
     </div>
     <div class="vehicle-layout-status" aria-live="polite"></div>
   </div>`;
@@ -254,6 +260,41 @@ async function _ptResolveVehicleLayout(row, unit) {
   const picker = row.querySelector(".vehicle-guided-picker");
   const hidden = row.querySelector(".proj-u-vehicle, .et-u-vehicle");
   const status = row.querySelector(".vehicle-layout-status");
+  if (identity.source === "unknown") {
+    unit.vehicle_model = "";
+    unit.preset_id = "";
+    identity.layout_id = "";
+    identity.display_name = "Unknown vehicle";
+    if (hidden) hidden.value = "";
+    const selected = row.querySelector(".proj-preset-selected");
+    if (selected) {
+      const empty = document.createElement("span");
+      empty.className = "proj-preset-none";
+      empty.textContent = "No preset selected";
+      selected.replaceChildren(empty);
+    }
+    if (status) {
+      status.className = "vehicle-layout-status ready";
+      status.textContent = "Vehicle details can be added later";
+    }
+    row.querySelector(".proj-unit-vehicle-summary")?.replaceChildren(document.createTextNode(identity.display_name));
+    return;
+  }
+  const identityMissing = identity.source === "custom"
+    ? !(identity.display_name || identity.model)
+    : identity.source === "catalog" && (!identity.model_year || !identity.make || !identity.model);
+  if (identityMissing) {
+    unit.vehicle_model = "";
+    identity.layout_id = "";
+    if (hidden) hidden.value = "";
+    if (status) {
+      status.className = "vehicle-layout-status warning";
+      status.textContent = identity.source === "custom"
+        ? "Enter a name for the custom vehicle"
+        : "Choose a year, make, and model";
+    }
+    return;
+  }
   const untouchedLegacy = identity.source === "legacy" && picker?.dataset.vehicleDirty !== "true";
   let layoutId = untouchedLegacy
     ? (identity.layout_id || unit.vehicle_model)
@@ -304,9 +345,17 @@ function _ptReadVehiclePicker(row, unit) {
   const picker = row?.querySelector(".vehicle-guided-picker");
   if (!picker) return;
   const isCustom = !picker.querySelector(".vehicle-picker-custom")?.hidden;
+  const isUnknown = !picker.querySelector(".vehicle-picker-unknown")?.hidden;
   const current = _ptVehicleIdentity(unit);
   if (current.source === "legacy" && picker.dataset.vehicleDirty !== "true") return;
-  if (isCustom) {
+  if (isUnknown) {
+    unit.vehicle_model = "";
+    unit.vehicle_identity = {
+      ...current, source: "unknown", model_year: "", make: "Unknown", model: "Unknown",
+      package: "", category: "automobile", catalog_source: "", catalog_make_id: "",
+      catalog_model_id: "", layout_id: "", display_name: "Unknown vehicle",
+    };
+  } else if (isCustom) {
     const name = picker.querySelector(".vehicle-custom-name")?.value.trim() || "";
     unit.vehicle_identity = {
       ...current, source: "custom", model_year: "", make: "", model: name,
@@ -331,6 +380,7 @@ function _ptReadVehiclePicker(row, unit) {
 
 function _ptVehicleIdentityError(unit) {
   const identity = _ptVehicleIdentity(unit);
+  if (identity.source === "unknown") return "";
   if (identity.source === "custom" && !(identity.display_name || identity.model)) return "Enter a name for the custom vehicle.";
   if (identity.source === "catalog" && (!identity.model_year || !identity.make || !identity.model)) return "Choose a year, make, and model for every unit group.";
   if (!unit.vehicle_model && !identity.layout_id) return "Wait for the vehicle layout to finish preparing before saving.";
@@ -362,16 +412,20 @@ async function _ptWireVehiclePicker(row, unit) {
   const status = picker.querySelector(".vehicle-layout-status");
   let modelItems = [];
   let packageItems = [];
+  const minYear = 1995;
   const maxYear = 2040;
-  const yearItems = Array.from({length: maxYear - 1994}, (_, index) => ({
-    name: String(maxYear - index), value: String(maxYear - index), vehicle_types: [],
+  const latestMenuYear = Math.min(maxYear, new Date().getFullYear() + 1);
+  const yearOption = value => {
+    const text = String(value || "").trim();
+    const numeric = Number(text);
+    return /^\d{4}$/.test(text) && numeric >= minYear && numeric <= maxYear
+      ? {name: text, value: text, vehicle_types: []}
+      : null;
+  };
+  const yearItems = Array.from({length: latestMenuYear - minYear + 1}, (_, index) => ({
+    name: String(latestMenuYear - index), value: String(latestMenuYear - index), vehicle_types: [],
   }));
-  if (unit.vehicle_identity.model_year && !yearItems.some(item => item.value === unit.vehicle_identity.model_year)) {
-    yearItems.unshift({name: unit.vehicle_identity.model_year, value: unit.vehicle_identity.model_year, vehicle_types: []});
-  }
-  _ptSetVehicleSearchValue(picker, "year", unit.vehicle_identity.model_year ? {
-    name: unit.vehicle_identity.model_year, value: unit.vehicle_identity.model_year, vehicle_types: [],
-  } : null);
+  _ptSetVehicleSearchValue(picker, "year", yearOption(unit.vehicle_identity.model_year));
 
   const renderPackages = () => {
     const matches = (_PT.vehiclePoliceCatalog || []).filter(item =>
@@ -486,7 +540,12 @@ async function _ptWireVehiclePicker(row, unit) {
 
   _ptWireVehicleSearch(yearSearch, async query => {
     const folded = String(query || "").trim();
-    return folded ? yearItems.filter(item => item.name.includes(folded)) : yearItems;
+    if (!folded) return yearItems;
+    const matches = yearItems.filter(item => item.name.includes(folded));
+    const typedYear = yearOption(folded);
+    return typedYear && !matches.some(item => item.value === typedYear.value)
+      ? [typedYear, ...matches]
+      : matches;
   }, () => _ptClearVehicleSearchSelection(yearSearch));
 
   _ptWireVehicleSearch(makeSearch, fetchMakes, () => {
@@ -507,12 +566,30 @@ async function _ptWireVehiclePicker(row, unit) {
 
   picker.querySelectorAll("[data-vehicle-mode]").forEach(button => button.addEventListener("click", async () => {
     picker.dataset.vehicleDirty = "true";
-    const custom = button.dataset.vehicleMode === "custom";
+    const mode = button.dataset.vehicleMode;
+    const custom = mode === "custom";
+    const unknown = mode === "unknown";
+    const previousSource = unit.vehicle_identity.source;
     picker.querySelectorAll("[data-vehicle-mode]").forEach(tab => tab.classList.toggle("active", tab === button));
-    picker.querySelector(".vehicle-picker-catalog").hidden = custom;
+    picker.querySelector(".vehicle-picker-catalog").hidden = custom || unknown;
     picker.querySelector(".vehicle-picker-custom").hidden = !custom;
+    picker.querySelector(".vehicle-picker-unknown").hidden = !unknown;
     _ptReadVehiclePicker(row, unit);
-    if (custom && picker.querySelector(".vehicle-custom-name")?.value) await _ptResolveVehicleLayout(row, unit);
+    if (custom) await _ptResolveVehicleLayout(row, unit);
+    else if (unknown) await _ptResolveVehicleLayout(row, unit);
+    else if (mode === "catalog") {
+      if (previousSource === "unknown") {
+        unit.vehicle_identity = {
+          ...unit.vehicle_identity, source: "catalog", model_year: "", make: "", model: "",
+          package: "", catalog_source: "NHTSA vPIC", catalog_make_id: "",
+          catalog_model_id: "", layout_id: "", display_name: "",
+        };
+        _ptSetVehicleSearchValue(picker, "year", null);
+        _ptSetVehicleSearchValue(picker, "make", null);
+        _ptSetVehicleSearchValue(picker, "model", null);
+      }
+      await _ptResolveVehicleLayout(row, unit);
+    }
   }));
 
   picker.querySelectorAll("[data-police-quick]").forEach(button => button.addEventListener("click", async () => {
@@ -531,9 +608,9 @@ async function _ptWireVehiclePicker(row, unit) {
           Number(quickEntry.to_year || quickEntry.from_year),
         ));
       }
-      const yearOption = yearItems.find(item => item.value === quickYear);
-      if (!yearOption) throw new Error("The shortcut's model year is not available");
-      if (!_ptPoliceVehicleAvailable(quickEntry, yearOption.value)) {
+      const selectedYearOption = yearOption(quickYear);
+      if (!selectedYearOption) throw new Error("Enter a model year from 1995 through 2040");
+      if (!_ptPoliceVehicleAvailable(quickEntry, selectedYearOption.value)) {
         throw new Error(`${quickEntry.model} is not available for ${quickYear}`);
       }
       const quickType = /f-?150|silverado|ram/i.test(quickEntry.model) ? "Truck" : "SUV / MPV";
@@ -543,11 +620,11 @@ async function _ptWireVehiclePicker(row, unit) {
       // Quick choices are entries from the already-loaded police
       // catalog. Applying those option objects is immediate and requires no
       // external catalog request.
-      _ptSetVehicleSearchValue(picker, "year", yearOption);
+      _ptSetVehicleSearchValue(picker, "year", selectedYearOption);
       _ptSetVehicleSearchValue(picker, "make", makeOption);
       _ptSetVehicleSearchValue(picker, "model", modelOption);
       unit.vehicle_identity = {
-        ...unit.vehicle_identity, source: "catalog", model_year: yearOption.value,
+        ...unit.vehicle_identity, source: "catalog", model_year: selectedYearOption.value,
         make: makeOption.name, model: modelOption.name, package: "",
         category: "automobile", catalog_source: "NHTSA vPIC",
         catalog_make_id: "", catalog_model_id: "",
@@ -599,6 +676,6 @@ async function _ptWireVehiclePicker(row, unit) {
     _ptReadVehiclePicker(row, unit);
     await _ptResolveVehicleLayout(row, unit);
   });
-  await loadMakes();
+  if (unit.vehicle_identity.source !== "unknown") await loadMakes();
   await _ptResolveVehicleLayout(row, unit);
 }

@@ -61,6 +61,16 @@ refetches `/api/agencies`, and agency create/delete/rename/import events refresh
 table labels and an already-open creator. Mutable API GET requests use `cache: "no-store"`, so a
 browser response cache cannot reintroduce an outdated list.
 
+Compatible vehicles use a searchable multi-select backed only by canonical IDs from
+`vehicle_layouts.json`. The UI shows make/model labels, selected chips, and whether artwork is ready;
+unknown legacy IDs must be removed before saving. The save service also resolves known aliases to
+canonical IDs and rejects unknown IDs, so direct API callers cannot create a broken preset reference.
+
+Workbook import reviews canonical supply data before save. A customer-supplied used part with no
+source is shown by part name in an inline attention panel where the user can enter its origin. The
+modal blocks save until all imported supply details are complete; server errors use human-readable
+one-based part numbers and names rather than internal array indexes.
+
 `blank_custom` is hardcoded in `preset_service` (no file on disk) — it's the only preset
 that survives a fresh install with no cloud connection.
 

@@ -16,6 +16,7 @@ from ...domain.supply import (
     normalized_supply_fields,
     supply_validation_error,
 )
+from ...config.loader import resolve_vehicle_type
 from ...paths import AppPaths
 from ...storage.local import LocalStorageProvider
 from ...storage.safety import validate_safe_id
@@ -87,7 +88,7 @@ def validate_preset_payload(payload: dict) -> dict:
         if "supply_type" in raw:
             error = supply_validation_error(raw)
             if error:
-                raise ValueError(f"Preset parts[{i}]: {error}")
+                raise ValueError(f'Preset part {i + 1} ("{name}"): {error}')
         part: dict = {"name": name}
         for field, default in _PART_DEFAULTS.items():
             value = raw.get(field, default)
@@ -112,12 +113,16 @@ def validate_preset_payload(payload: dict) -> dict:
 
     po = payload.get("placement_overrides")
 
+    raw_vehicle_types = payload.get("vehicle_types", [])
+    if not isinstance(raw_vehicle_types, list):
+        raise ValueError("Preset 'vehicle_types' must be a list")
+
     return {
         "schema_version": max(int(payload.get("schema_version", 1)), 4),
         "preset_id": preset_id,
         "label": label,
         "description": str(payload.get("description", "")).strip(),
-        "vehicle_types": [str(v) for v in payload.get("vehicle_types", [])],
+        "vehicle_types": [str(v) for v in raw_vehicle_types],
         "agency_ids": [str(a) for a in agency_ids],
         "build_types": [str(b) for b in build_types],
         "tag": str(payload.get("tag", "")).strip(),
@@ -364,6 +369,27 @@ def save_preset(payload: dict, paths: AppPaths, overwrite: bool = False) -> dict
     working = dict(payload)  # shallow copy — do not mutate caller's dict
     exclude_id = str(working.get("preset_id") or "").strip()
 
+    try:
+        from ..services.config_service import load_config_file
+        raw_vehicle_types = working.get("vehicle_types") or []
+        if not isinstance(raw_vehicle_types, list):
+            raise ValueError("Preset 'vehicle_types' must be a list")
+        layouts = load_config_file("vehicle_layouts.json", paths)
+        vehicles = layouts.get("vehicles") or {}
+        canonical_vehicle_types = []
+        for raw_vehicle_type in raw_vehicle_types:
+            vehicle_type = resolve_vehicle_type(str(raw_vehicle_type), layouts)
+            if vehicle_type not in vehicles:
+                raise ValueError(
+                    f'Unknown compatible vehicle layout "{raw_vehicle_type}". '
+                    "Choose a saved vehicle layout."
+                )
+            if vehicle_type not in canonical_vehicle_types:
+                canonical_vehicle_types.append(vehicle_type)
+        working["vehicle_types"] = canonical_vehicle_types
+    except (OSError, ValueError) as exc:
+        return {"ok": False, "error": str(exc)}
+
     dup = find_duplicate(working, paths, exclude_id=exclude_id)
     if dup and not overwrite:
         return {
@@ -496,9 +522,22 @@ def import_from_workbook(file_b64: str, paths: AppPaths) -> dict:
     finally:
         tmp_path.unlink(missing_ok=True)
 
+    parts = [asdict(p) for p in project.parts]
+    part_issues = []
+    for index, part in enumerate(parts):
+        error = supply_validation_error(part)
+        if error:
+            part_issues.append({
+                "index": index,
+                "part_number": index + 1,
+                "name": str(part.get("name") or "Unnamed part"),
+                "error": error,
+            })
+
     return {
         "ok": True,
-        "parts": [asdict(p) for p in project.parts],
+        "parts": parts,
+        "part_issues": part_issues,
         "suggested_label": "Imported Preset",
         "vehicle_types": [],
         "build_types": [],

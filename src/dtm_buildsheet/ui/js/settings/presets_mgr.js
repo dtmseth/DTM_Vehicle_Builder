@@ -7,6 +7,7 @@
   let _importParts = null;              // parts array from workbook import, held while modal is open
   let _importPlacementOverrides = {};   // placement_overrides from build editor draft
   let _contextProject = null;           // project passed from build editor for post-save update prompt
+  let _selectedVehicleKeys = new Set(); // canonical vehicle-layout IDs only
 
   let _BT_OPTIONS = ["Patrol", "Unmarked", "Admin", "K-9", "Fire"];  // overwritten from API
 
@@ -69,8 +70,118 @@
     if (!keys || !keys.length) return "(any)";
     return keys.map(k => {
       const v = _vehicles.find(x => x.key === k);
-      return v ? `${v.make} ${v.model}` : k;
+      return v ? v.label : k;
     }).join(", ");
+  }
+
+  function _vehicleSelectionError() {
+    const known = new Set(_vehicles.map(vehicle => vehicle.key));
+    const unknown = [..._selectedVehicleKeys].filter(key => !known.has(key));
+    return unknown.length
+      ? `Remove unknown vehicle layout${unknown.length === 1 ? "" : "s"}: ${unknown.join(", ")}`
+      : "";
+  }
+
+  function _renderVehicleChoices(selectedKeys = null) {
+    if (selectedKeys) _selectedVehicleKeys = new Set(selectedKeys.filter(Boolean));
+    const options = $("pem-vehicle-checks");
+    const selected = $("pem-vehicle-selected");
+    const count = $("pem-vehicle-count");
+    const error = $("pem-vehicle-error");
+    if (!options || !selected) return;
+
+    const query = ($("pem-vehicle-search")?.value || "").trim().toLocaleLowerCase();
+    const visible = _vehicles.filter(vehicle =>
+      !query || `${vehicle.label} ${vehicle.key}`.toLocaleLowerCase().includes(query)
+    );
+    if (count) count.textContent = `${visible.length} of ${_vehicles.length}`;
+
+    selected.innerHTML = [..._selectedVehicleKeys].map(key => {
+      const vehicle = _vehicles.find(item => item.key === key);
+      const label = vehicle?.label || `Unknown layout: ${key}`;
+      return `<span class="pem-vehicle-chip${vehicle ? "" : " invalid"}">
+        ${esc(label)} <button type="button" data-remove-vehicle="${esc(key)}" aria-label="Remove ${esc(label)}">×</button>
+      </span>`;
+    }).join("");
+    selected.querySelectorAll("[data-remove-vehicle]").forEach(button => {
+      button.addEventListener("click", () => {
+        _selectedVehicleKeys.delete(button.dataset.removeVehicle);
+        _renderVehicleChoices();
+        _updateNamePreview();
+      });
+    });
+
+    options.innerHTML = visible.map(vehicle => `
+      <label class="pem-vehicle-option">
+        <input type="checkbox" value="${esc(vehicle.key)}" ${_selectedVehicleKeys.has(vehicle.key) ? "checked" : ""}>
+        <strong>${esc(vehicle.label)}</strong>
+        <span>Layout ID: ${esc(vehicle.key)} · <span class="${vehicle.placeholder ? "warning" : ""}">${vehicle.placeholder ? "Layout artwork needed" : "Layout ready"}</span></span>
+      </label>`).join("") || `<p class="pem-agency-empty">No saved vehicle layouts match “${esc(query)}”.</p>`;
+    options.querySelectorAll("input[type='checkbox']").forEach(checkbox => {
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) _selectedVehicleKeys.add(checkbox.value);
+        else _selectedVehicleKeys.delete(checkbox.value);
+        _renderVehicleChoices();
+        _updateNamePreview();
+      });
+    });
+
+    const message = _vehicleSelectionError();
+    if (error) {
+      error.hidden = !message;
+      error.textContent = message;
+    }
+  }
+
+  function _importPartIssues() {
+    return (_importParts || []).flatMap((part, index) => {
+      if (String(part?.supply_type || "").toLowerCase() !== "customer_supplied") return [];
+      const condition = String(part.customer_condition || "").toLowerCase();
+      if (!condition) return [{index, kind: "condition", part}];
+      if (condition === "used" && !String(part.customer_source || part.source || "").trim()) {
+        return [{index, kind: "source", part}];
+      }
+      return [];
+    });
+  }
+
+  function _renderImportPartIssues() {
+    const panel = $("pem-part-issues");
+    if (!panel) return;
+    const issues = _importPartIssues();
+    panel.hidden = !issues.length;
+    if (!issues.length) {
+      panel.replaceChildren();
+      return;
+    }
+    panel.innerHTML = `<h4>${issues.length} imported part${issues.length === 1 ? " needs" : "s need"} attention</h4>
+      <p>Complete these workbook details before saving the preset.</p>
+      ${issues.map(({index, kind, part}) => `<div class="pem-part-issue">
+        <label>Part ${index + 1}: ${esc(part.name || "Unnamed part")}
+          <span>${kind === "source" ? "Customer-supplied / Used" : "Customer-supplied condition missing"}</span>
+        </label>
+        ${kind === "source"
+          ? `<input data-import-part-source="${index}" value="${esc(part.customer_source || part.source || "")}" placeholder="Example: removed from Unit 214">`
+          : `<select data-import-part-condition="${index}"><option value="">Choose New or Used</option><option value="new">New</option><option value="used">Used</option></select>`}
+      </div>`).join("")}`;
+    panel.querySelectorAll("[data-import-part-source]").forEach(input => {
+      input.addEventListener("change", () => {
+        const part = _importParts?.[Number(input.dataset.importPartSource)];
+        if (!part) return;
+        part.customer_source = input.value.trim();
+        part.source = part.customer_source;
+        _renderImportPartIssues();
+      });
+    });
+    panel.querySelectorAll("[data-import-part-condition]").forEach(select => {
+      select.addEventListener("change", () => {
+        const part = _importParts?.[Number(select.dataset.importPartCondition)];
+        if (!part) return;
+        part.customer_condition = select.value;
+        part.new_or_used = "Used";
+        _renderImportPartIssues();
+      });
+    });
   }
 
   function _findDuplicate(agencyIds, buildTypes, vehicleTypes, excludeId) {
@@ -184,7 +295,6 @@
   }
 
   async function _loadVehicles() {
-    if (_vehicles.length) return;
     try {
       const res = await api("/api/layouts");
       const rawVehicles = res?.vehicles || {};
@@ -192,7 +302,9 @@
         key,
         make: v.make || key,
         model: v.model || "",
-      }));
+        label: [v.make || "", v.model || key].filter(Boolean).join(" "),
+        placeholder: Boolean(v.placeholder),
+      })).sort((a, b) => a.label.localeCompare(b.label));
     } catch (_) {
       _vehicles = [];
     }
@@ -210,16 +322,9 @@
     if (agencySearch) agencySearch.value = "";
     _renderAgencyChoices((preset?.agency_ids || [])[0] || "");
 
-    // Populate vehicle multi-select
-    const vContainer = $("pem-vehicle-checks");
-    if (vContainer) {
-      vContainer.innerHTML = _vehicles.map(v => `
-        <label style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:13px;cursor:pointer">
-          <input type="checkbox" value="${esc(v.key)}"
-            ${(preset?.vehicle_types || []).includes(v.key) ? "checked" : ""}>
-          ${esc(v.make)} ${esc(v.model)}
-        </label>`).join("") || "";
-    }
+    const vehicleSearch = $("pem-vehicle-search");
+    if (vehicleSearch) vehicleSearch.value = "";
+    _renderVehicleChoices(preset?.vehicle_types || []);
 
     // Populate build type checkboxes
     const btContainer = $("pem-bt-checks");
@@ -247,6 +352,7 @@
     } else if (partCountEl) {
       partCountEl.textContent = _importParts ? `${_importParts.length} parts (imported)` : "New preset — no parts yet";
     }
+    _renderImportPartIssues();
 
     const exportBtn = $("pem-export-btn");
     if (exportBtn) exportBtn.style.display = _editId ? "" : "none";
@@ -261,6 +367,7 @@
     _importParts = null;
     _importPlacementOverrides = {};
     _contextProject = null;
+    _selectedVehicleKeys.clear();
   }
 
   function _getSelectedValues(containerId) {
@@ -279,7 +386,7 @@
   function _updateNamePreview() {
     const agencyIds   = _getSelectedAgency();
     const buildTypes  = _getSelectedValues("pem-bt-checks");
-    const vehicleKeys = _getSelectedValues("pem-vehicle-checks");
+    const vehicleKeys = [..._selectedVehicleKeys];
     const tag         = ($("pem-tag")?.value || "").trim();
 
     const tagRow = $("pem-tag-row");
@@ -320,9 +427,24 @@
   async function _saveModal() {
     const agencyIds   = _getSelectedAgency();
     const buildTypes  = _getSelectedValues("pem-bt-checks");
-    const vehicleKeys = _getSelectedValues("pem-vehicle-checks");
+    const vehicleKeys = [..._selectedVehicleKeys];
     const tag         = ($("pem-tag")?.value || "").trim();
     const description = ($("pem-description")?.value || "").trim();
+
+    const vehicleError = _vehicleSelectionError();
+    if (vehicleError) {
+      _renderVehicleChoices();
+      $("pem-vehicle-search")?.focus();
+      toast(vehicleError, "error");
+      return;
+    }
+    const partIssues = _importPartIssues();
+    if (partIssues.length) {
+      _renderImportPartIssues();
+      $("pem-part-issues")?.querySelector("input,select")?.focus();
+      toast("Complete the highlighted imported-part details before saving", "error");
+      return;
+    }
 
     // Client-side duplicate check (fast path — avoids round-trip in common case)
     const dup = _findDuplicate(agencyIds, buildTypes, vehicleKeys, _editId);
@@ -521,7 +643,7 @@
       exportBtn._pmWired = true;
       exportBtn.onclick = () => { if (_editId) pmExport(_editId, _editId); };
     }
-    ["pem-agency-checks", "pem-vehicle-checks", "pem-bt-checks"].forEach(id => {
+    ["pem-agency-checks", "pem-bt-checks"].forEach(id => {
       const el = $(id);
       if (el && !el._pmWired) {
         el._pmWired = true;
@@ -539,6 +661,11 @@
       agencySearch.addEventListener("input", () => {
         _renderAgencyChoices(_getSelectedAgency()[0] || "");
       });
+    }
+    const vehicleSearch = $("pem-vehicle-search");
+    if (vehicleSearch && !vehicleSearch._pmWired) {
+      vehicleSearch._pmWired = true;
+      vehicleSearch.addEventListener("input", () => _renderVehicleChoices());
     }
   }
 

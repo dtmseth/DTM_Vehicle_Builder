@@ -47,7 +47,13 @@ def vehicle_model_label(build_unit: BuildUnit, individual: IndividualUnit | None
     individual_model = _short_model_value(
         getattr(individual, "model", "") if individual else "", make,
     )
-    return configured_model or individual_model or "Vehicle"
+    identity = getattr(build_unit, "vehicle_identity", None)
+    identity_model = str(
+        getattr(identity, "display_name", "")
+        or getattr(identity, "model", "")
+        or ""
+    ).strip()
+    return configured_model or individual_model or identity_model or "Vehicle"
 
 
 def project_agency_abbreviation(project: ProjectRecord) -> str:

@@ -475,11 +475,11 @@
     <label>Scheduled start<input id="calendar-job-start" type="date" value="${text(placement?.date||s.start_date||j?.start?.slice(0,10)||missing?.original_start||'')}"><small>Leave blank for the nearest opening</small></label>
     <div class="calendar-ready" id="calendar-job-ready" role="status">${j?.ready&&!placement?`Build completes · ${dateTime(j.end)} · Ready for delivery · ${dateTime(j.ready)}`:'Calculating booking dates…'}</div>
     ${j&&!j.custom&&!j.saved?`<label class="calendar-checkbox calendar-project-checkbox"><input id="calendar-include-project" type="checkbox" ${placement?.includeProject?'checked':''}>Schedule the rest of this project</label>`:''}
-    ${j?.project_type==='offsite'?`<p class="calendar-help">${text(j.service_details?.location||'')} · ${text(j.service_details?.contact||'')} · Travel: ${j.service_details?.travel_hours||0} labor hours</p>`:''}
+    ${j?.project_type==='offsite'?`<p class="calendar-help">${text(j.service_details?.location||'')} · ${text(j.service_details?.contact||'')} · Estimate: ${j.service_details?.estimated_hours||0} labor hours per vehicle</p>`:''}
     <div id="calendar-booking-overview" class="calendar-booking-overview"></div>
     <details class="calendar-advanced" ${custom||j?.custom||['service','offsite'].includes(j?.project_type)?'open':''}><summary>Advanced</summary><div class="calendar-fields">
     <label>Job type<select id="calendar-job-kind">${Object.entries(kinds).filter(([k])=>k!=='checks'&&(!['service','offsite'].includes(j?.project_type)||k===j.project_type)).map(([k,v])=>`<option value="${k}" ${k===(j?.kind||s.kind||(custom?'service':'strip_build'))?'selected':''}>${v}</option>`).join('')}</select></label>
-    <label>Estimated labor hours${["service","offsite"].includes(j?.project_type)?" per vehicle":""}<input id="calendar-job-hours" type="number" min="0.25" max="4000" step="any" placeholder="Team default" value="${text(s.hours_manual||['service','offsite'].includes(j?.kind||s.kind)?s.hours||j?.hours||'':'')}"></label>
+    <label>Estimated labor hours${["service","offsite"].includes(j?.project_type)?" per vehicle":""}<input id="calendar-job-hours" type="number" min="0.25" max="4000" step="any" placeholder="Team default" value="${text(['service','offsite'].includes(j?.kind||s.kind)?(s.hours_manual||s.hours||j?.hours||j?.service_details?.estimated_hours||''):(s.hours_manual||''))}"></label>
     </div>${j?.vin?`<p class="calendar-help">VIN ${text(j.vin)}</p>`:''}
     ${editable&&!custom&&!j?.custom&&_operationsCanEditAcceptanceDate()?btn('Edit acceptance date','calendar-job-accepted-edit'):''}
     ${editable&&j&&!j.custom&&canEdit()?btn('Edit delivery deadline','calendar-job-deadline'):''}

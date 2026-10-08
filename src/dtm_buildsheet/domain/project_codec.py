@@ -26,7 +26,7 @@ _REFERENCE_MEDIA_TYPES = {"photo", "video"}
 _REFERENCE_SOURCE_KINDS = {"company_reference", "shop_completed"}
 _QUOTE_REFERENCE_STATES = {"current", "obsolete"}
 _QUOTE_MATCH_STATUSES = {"pending", "linked", "not_found", "multiple", "linked_elsewhere"}
-_VEHICLE_SOURCES = {"catalog", "custom", "legacy"}
+_VEHICLE_SOURCES = {"catalog", "custom", "legacy", "unknown"}
 _VEHICLE_CATEGORIES = {"automobile", "snowmobile", "atv_utv", "trailer", "boat", "other"}
 
 

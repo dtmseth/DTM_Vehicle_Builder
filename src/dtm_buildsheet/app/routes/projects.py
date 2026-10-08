@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+import threading
 from http.server import BaseHTTPRequestHandler
 
 from ...inputs.project_entry import load_project
@@ -49,6 +51,10 @@ from ..services.operations_service import OperationsServiceError
 from .http import send_json
 
 
+_log = logging.getLogger(__name__)
+_operations_project_sync_lock = threading.Lock()
+
+
 def _operations_mutation_context():
     try:
         bundle = wiring.get_active_bundle()
@@ -84,6 +90,12 @@ def _sync_saved_project(result: dict, paths: AppPaths) -> dict:
     if unavailable is not None:
         result["operations_sync"] = unavailable
         return result
+    if wiring._cloud_flag_enabled():  # noqa: SLF001
+        _schedule_operations_project_sync(
+            result["project_id"], paths, repository, actor,
+        )
+        result["operations_sync"] = {"ok": True, "scheduled": True}
+        return result
     try:
         project = load_project(result["project_id"], paths)
         result["operations_sync"] = OperationsProjectSyncService(
@@ -95,6 +107,38 @@ def _sync_saved_project(result: dict, paths: AppPaths) -> dict:
             "error": "The project was saved, but Operations could not be synchronized",
         }
     return result
+
+
+def _schedule_operations_project_sync(
+    project_id: str,
+    paths: AppPaths,
+    repository,
+    actor,
+) -> None:
+    """Project saves are local-first; project-to-Operations writes follow.
+
+    SharePoint-backed Operations projection can require one request per vehicle.
+    Keeping it off the request thread makes a 30-vehicle project return at the
+    speed of the local JSON write.  The lock serializes rapid consecutive saves
+    so an older projection cannot finish after a newer one.
+    """
+
+    def run() -> None:
+        try:
+            with _operations_project_sync_lock:
+                project = load_project(project_id, paths)
+                OperationsProjectSyncService(repository).sync_project(project, actor)
+        except Exception:
+            _log.exception(
+                "Background Operations synchronization failed for project %s",
+                project_id,
+            )
+
+    threading.Thread(
+        target=run,
+        name=f"operations-project-sync-{project_id}",
+        daemon=True,
+    ).start()
 
 
 def _sync_project_lifecycle(result: dict, paths: AppPaths, *, reason: str = "") -> dict:

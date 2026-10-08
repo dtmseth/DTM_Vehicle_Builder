@@ -851,6 +851,32 @@
     .pem-agency-option:hover{background:var(--active-bg,#f0f4ff)}
     .pem-agency-option--general{margin-bottom:3px;border-bottom:1px solid var(--border);border-radius:4px 4px 0 0;color:var(--muted)}
     .pem-agency-empty{margin:0;padding:7px 6px;color:var(--muted);font-size:12px}
+    .pem-vehicle-picker{border:1px solid var(--border);border-radius:8px;padding:9px;background:#fff}
+    .pem-vehicle-search-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .pem-vehicle-search-row input{flex:1;min-width:0;box-sizing:border-box}
+    .pem-vehicle-search-row span{flex:0 0 auto;color:var(--muted);font-size:11px;font-weight:650;white-space:nowrap}
+    .pem-vehicle-selected{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+    .pem-vehicle-selected:empty{display:none}
+    .pem-vehicle-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 7px;border-radius:999px;background:var(--active-bg,#f0f4ff);border:1px solid #bbc8e8;color:var(--navy);font-size:11px;font-weight:700}
+    .pem-vehicle-chip.invalid{background:#fff0f0;border-color:#e2a3a3;color:var(--red)}
+    .pem-vehicle-chip button{border:0;background:transparent;color:inherit;font-size:14px;line-height:1;cursor:pointer;padding:0}
+    .pem-vehicle-options{max-height:210px;overflow-y:auto;border:1px solid var(--border);border-radius:6px}
+    .pem-vehicle-option{display:grid;grid-template-columns:auto 1fr;gap:2px 9px;padding:9px 10px;border-bottom:1px solid var(--border);cursor:pointer}
+    .pem-vehicle-option:last-child{border-bottom:0}
+    .pem-vehicle-option:hover{background:var(--active-bg,#f0f4ff)}
+    .pem-vehicle-option input{grid-row:1 / span 2;margin-top:3px}
+    .pem-vehicle-option strong{font-size:13px;color:var(--navy)}
+    .pem-vehicle-option span{font-size:11px;color:var(--muted)}
+    .pem-vehicle-option .warning{color:#9a5b00;font-weight:650}
+    .pem-field-help{margin:7px 1px 0;color:var(--muted);font-size:11px;line-height:1.35}
+    .pem-field-error{margin-top:8px;padding:8px 10px;border:1px solid #e2a3a3;border-radius:6px;background:#fff0f0;color:#8b1e1e;font-size:12px;font-weight:650}
+    .pem-part-issues{margin:0 0 16px;padding:12px;border:1px solid #e0aa45;border-radius:8px;background:#fff8e7}
+    .pem-part-issues h4{margin:0 0 4px;color:#6b4c12;font-size:13px}
+    .pem-part-issues>p{margin:0 0 10px;color:#76591f;font-size:12px;line-height:1.4}
+    .pem-part-issue{display:grid;grid-template-columns:minmax(140px,1fr) minmax(180px,1.4fr);gap:10px;align-items:center;margin-top:8px}
+    .pem-part-issue label{font-size:12px;font-weight:650;color:var(--text)}
+    .pem-part-issue label span{display:block;color:var(--muted);font-size:10px;font-weight:500;margin-top:2px}
+    .pem-part-issue input,.pem-part-issue select{width:100%;box-sizing:border-box}
 
     /* Build editor preset loader */
     .pbe-load-preset-modal{max-width:620px}
@@ -1334,7 +1360,9 @@
     .vehicle-picker-tabs{display:flex;border-bottom:1px solid var(--border);background:#f5f6fa}
     .vehicle-picker-tab{border:0;border-right:1px solid var(--border);background:transparent;padding:8px 12px;color:var(--muted);font:inherit;font-size:11px;font-weight:700;cursor:pointer}
     .vehicle-picker-tab.active{background:#fff;color:var(--navy);box-shadow:inset 0 -2px 0 var(--gold)}
-    .vehicle-picker-catalog,.vehicle-picker-custom{padding:10px 12px}
+    .vehicle-picker-catalog,.vehicle-picker-custom,.vehicle-picker-unknown{padding:10px 12px}
+    .vehicle-picker-unknown{background:#f8fafc}
+    .vehicle-picker-unknown .vehicle-catalog-note{margin:0;font-size:11px}
     .vehicle-quick-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:9px}
     .vehicle-quick-row>span{margin-right:2px;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.045em}
     .vehicle-quick-row button{border:1px solid #bcc6db;border-radius:999px;background:#f7f9fd;padding:4px 9px;color:var(--navy);font:inherit;font-size:10px;font-weight:700;cursor:pointer}

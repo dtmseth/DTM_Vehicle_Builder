@@ -348,7 +348,9 @@ def test_picker_uses_clear_layout_language_and_custom_categories():
     assert "const makeChoices = await fetchMakes(selectedMake)" not in source
     assert "requires no" in source and "external catalog request" in source
     assert "const maxYear = 2040" in source
-    assert "Future years stay selectable" in source
+    assert "const latestMenuYear = Math.min(maxYear, new Date().getFullYear() + 1)" in source
+    assert "Type any future year through 2040" in source
+    assert "? [typedYear, ...matches]" in source
     assert '_ptSetVehicleSearchValue(picker, "make", makeOption)' in source
     assert '_ptSetVehicleSearchValue(picker, "model", modelOption)' in source
     assert "clip-path:polygon" in styles

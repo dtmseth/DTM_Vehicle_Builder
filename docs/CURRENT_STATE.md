@@ -184,8 +184,9 @@ not been rerun. No release or live-data mutation occurred. Restart the app to lo
 
 Build / Service / Off-Site Service are implemented in project creation/editing and the Projects type
 filter. Existing projects default to Build. Accepted service vehicles use an explicit per-vehicle labor
-estimate, optional manual deadline, and selected strip/finishing requirements. Off-site travel occupies
-team capacity, and its location/contact are required. All types remain visible in Calendar regardless
+estimate, optional manual deadline, and selected strip/finishing requirements. The project form uses that
+same total estimate directly; it does not add a separate travel allowance. Off-site location/contact are
+required. All types remain visible in Calendar regardless
 of the Projects filter. Operations reads type/requirements from Builder metadata without a shared-list
 schema migration; non-applicable workstreams retain their statuses and show N/A.
 

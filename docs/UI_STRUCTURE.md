@@ -46,8 +46,9 @@ stored field from server-side Builder data and uses a create-only command, so it
 existing row or alter production state. The browser shows the full VIN in a native confirmation
 before calling it. Once an Operations row exists, the header action loads the preview only when
 clicked instead of issuing a second SharePoint list query on every tab open. Ordinary project saves
-automatically upsert only the narrow Builder-owned projection; production statuses and dates are
-preserved. The bulk control is now a legacy/import fallback and includes only new Active and
+commit the local project first and queue the narrow Builder-owned Operations projection in the
+background, so SharePoint latency and fleet size do not hold the save dialog open; production statuses
+and dates are preserved. The bulk control is now a legacy/import fallback and includes only new Active and
 Completed projections,
 uses the same create-only POST once per vehicle, shows progress, and stops on the first failure.
 Completed Builder projects enter the Completed tab without invented historical workstream dates.
@@ -127,9 +128,11 @@ project's Operations rows and immutable status history after explicit confirmati
 
 Both the new-project wizard and existing-project editor use the same guided Year → Make → Model →
 Package picker. Ford PIU, Dodge Durango Pursuit, Chevrolet Tahoe PPV, and the clearly marked upcoming
-Dodge Charger PPV are persistent quick choices. Future project years through 2040 remain selectable,
-reuse the newest available model list, and keep current police-vehicle lines available without waiting
-for a future catalog confirmation. Quick choices immediately apply the local police-catalog entry. Common
+Dodge Charger PPV are persistent quick choices. The opened Year menu stays compact by listing next year
+and earlier; users can type and select any future project year through 2040. Future years reuse the newest
+available model list and keep current police-vehicle lines available without waiting
+for a future catalog confirmation. **Unknown for now** is a separate valid identity with no fabricated
+layout, intended for service projects whose vehicle has not been identified yet. Quick choices immediately apply the local police-catalog entry. Common
 make names and maintained police-model names are normalized identically in shortcuts and searchable results.
 PIU is stored as Ford's purpose-built Police Interceptor Utility model, not as an Explorer package.
 All four controls are large searchable comboboxes. Makes are filtered by the newest applicable catalog
