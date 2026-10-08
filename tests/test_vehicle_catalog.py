@@ -106,7 +106,7 @@ def test_police_overlay_includes_quick_choices_and_special_service_models():
     assert ("Jeep", "Wagoneer", "Command Operations Vehicle") in names
 
 
-def test_police_overlay_is_bounded_to_actual_model_years():
+def test_police_overlay_keeps_current_lines_available_for_future_model_years():
     names_2026 = {
         (item["make"], item["model"], item["package"])
         for item in vehicle_catalog_service.list_police_vehicles(2026)
@@ -114,6 +114,14 @@ def test_police_overlay_is_bounded_to_actual_model_years():
     names_2027 = {
         (item["make"], item["model"], item["package"])
         for item in vehicle_catalog_service.list_police_vehicles(2027)
+    }
+    names_2028 = {
+        (item["make"], item["model"], item["package"])
+        for item in vehicle_catalog_service.list_police_vehicles(2028)
+    }
+    names_2040 = {
+        (item["make"], item["model"], item["package"])
+        for item in vehicle_catalog_service.list_police_vehicles(2040)
     }
 
     assert ("Ford", "Police Interceptor Utility", "") in names_2026
@@ -126,7 +134,11 @@ def test_police_overlay_is_bounded_to_actual_model_years():
         item for item in vehicle_catalog_service.list_police_vehicles(2027)
         if item["make"] == "Dodge" and item["model"] == "Charger"
     )["availability"] == "upcoming"
-    assert ("Dodge", "Durango", "Pursuit") not in names_2027
+    assert ("Dodge", "Durango", "Pursuit") in names_2027
+    assert ("Chevrolet", "Tahoe", "PPV") in names_2028
+    assert ("Chevrolet", "Tahoe", "SSV") in names_2028
+    assert ("Ford", "F-150", "Police Responder") not in names_2028
+    assert ("Chevrolet", "Tahoe", "PPV") in names_2040
 
 
 def test_nhtsa_results_are_deduplicated_and_normalized(monkeypatch):
@@ -292,7 +304,7 @@ def test_future_project_year_uses_newest_available_catalog(monkeypatch):
     )
 
     assert [item["name"] for item in vehicle_catalog_service.list_makes(2031)] == ["Ford"]
-    assert requested_years == [vehicle_catalog_service.datetime.now().year + 2]
+    assert requested_years == [vehicle_catalog_service.datetime.now().year]
 
 
 def test_models_for_automotive_make_use_vehicle_type_filtered_endpoint(monkeypatch):
@@ -335,6 +347,8 @@ def test_picker_uses_clear_layout_language_and_custom_categories():
     assert 'data-police-quick="Dodge|Charger|PPV"' in source
     assert "const makeChoices = await fetchMakes(selectedMake)" not in source
     assert "requires no" in source and "external catalog request" in source
+    assert "const maxYear = 2040" in source
+    assert "Future years stay selectable" in source
     assert '_ptSetVehicleSearchValue(picker, "make", makeOption)' in source
     assert '_ptSetVehicleSearchValue(picker, "model", modelOption)' in source
     assert "clip-path:polygon" in styles

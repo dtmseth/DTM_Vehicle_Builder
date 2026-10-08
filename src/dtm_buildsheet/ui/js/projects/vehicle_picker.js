@@ -97,7 +97,7 @@ function _ptVehiclePickerMarkup(unit, prefix) {
           <div class="vehicle-search-menu" hidden></div>
         </div></label>
       </div>
-      <p class="vehicle-catalog-note">The dropdown shows common car, truck, and SUV brands. Search to find specialty manufacturers; vehicle-type tags identify unusual results.</p>
+      <p class="vehicle-catalog-note">Future years stay selectable and use the newest available model list. Search to find specialty manufacturers; vehicle-type tags identify unusual results.</p>
     </div>
     <div class="vehicle-picker-custom"${custom ? "" : " hidden"}>
       <div class="vehicle-custom-grid">
@@ -339,7 +339,11 @@ function _ptVehicleIdentityError(unit) {
 
 function _ptPoliceVehicleAvailable(item, year) {
   const modelYear = Number(year || 0);
-  return Boolean(modelYear) && modelYear >= Number(item.from_year) && modelYear <= Number(item.to_year || item.from_year);
+  const fromYear = Number(item.from_year);
+  const toYear = Number(item.to_year || item.from_year);
+  return Boolean(modelYear) && modelYear >= fromYear && (
+    modelYear <= toYear || item.future_selectable === true
+  );
 }
 
 async function _ptWireVehiclePicker(row, unit) {
@@ -358,7 +362,7 @@ async function _ptWireVehiclePicker(row, unit) {
   const status = picker.querySelector(".vehicle-layout-status");
   let modelItems = [];
   let packageItems = [];
-  const maxYear = new Date().getFullYear() + 2;
+  const maxYear = 2040;
   const yearItems = Array.from({length: maxYear - 1994}, (_, index) => ({
     name: String(maxYear - index), value: String(maxYear - index), vehicle_types: [],
   }));
@@ -536,7 +540,7 @@ async function _ptWireVehiclePicker(row, unit) {
       const makeOption = {name: quickEntry.make, id: "", vehicle_types: [quickType]};
       const modelOption = {name: quickEntry.model, id: "", vehicle_types: [quickType]};
 
-      // Quick choices are entries from the already-loaded, year-bounded police
+      // Quick choices are entries from the already-loaded police
       // catalog. Applying those option objects is immediate and requires no
       // external catalog request.
       _ptSetVehicleSearchValue(picker, "year", yearOption);

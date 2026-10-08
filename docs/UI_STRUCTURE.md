@@ -127,13 +127,14 @@ project's Operations rows and immutable status history after explicit confirmati
 
 Both the new-project wizard and existing-project editor use the same guided Year → Make → Model →
 Package picker. Ford PIU, Dodge Durango Pursuit, Chevrolet Tahoe PPV, and the clearly marked upcoming
-Dodge Charger PPV are persistent quick choices; choosing one moves Year to a supported model year when
-needed and immediately applies a locally validated police-catalog entry without waiting for NHTSA. Common
+Dodge Charger PPV are persistent quick choices. Future project years through 2040 remain selectable,
+reuse the newest available model list, and keep current police-vehicle lines available without waiting
+for a future catalog confirmation. Quick choices immediately apply the local police-catalog entry. Common
 make names and maintained police-model names are normalized identically in shortcuts and searchable results.
 PIU is stored as Ford's purpose-built Police Interceptor Utility model, not as an Explorer package.
-All four controls are large searchable comboboxes. Makes are filtered by the selected year so a make
-with no models for that year is omitted; the Package control appears only when the exact selected
-year/make/model has a verified police or special-service offering. Default make menus show common passenger
+All four controls are large searchable comboboxes. Makes are filtered by the newest applicable catalog
+year so a make with no models is omitted; the Package control appears only when the exact selected
+year/make/model has a maintained police or special-service offering. Default make menus show common passenger
 car, truck, and SUV/MPV choices, while typed make search can reach the broader NHTSA vPIC catalog.
 Every result carries vehicle-type tags, and motorcycle, trailer, bus, incomplete, low-speed, and
 off-road manufacturers are visibly marked as specialty results instead of crowding the default

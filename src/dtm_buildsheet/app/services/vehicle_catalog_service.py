@@ -60,26 +60,26 @@ _COMMON_MAKE_NAMES = {name.casefold(): name for name in _COMMON_AUTOMOTIVE_MAKES
 POLICE_VEHICLES = (
     # Ford markets the Explorer-platform PI Utility as a purpose-built model,
     # not as an Explorer package, so its package value intentionally stays empty.
-    {"make": "Ford", "model": "Police Interceptor Utility", "package": "", "from_year": 2013, "to_year": 2026, "quick_choice": True},
-    {"make": "Dodge", "model": "Durango", "package": "Pursuit", "from_year": 2018, "to_year": 2026, "quick_choice": True},
+    {"make": "Ford", "model": "Police Interceptor Utility", "package": "", "from_year": 2013, "to_year": 2026, "quick_choice": True, "future_selectable": True},
+    {"make": "Dodge", "model": "Durango", "package": "Pursuit", "from_year": 2018, "to_year": 2026, "quick_choice": True, "future_selectable": True},
     # Previewed at the 2026 Police Fleet Expo; keep visibly upcoming until
     # Stellantis publishes final ordering specifications.
-    {"make": "Dodge", "model": "Charger", "package": "PPV", "from_year": 2027, "to_year": 2027, "quick_choice": True, "availability": "upcoming"},
-    {"make": "Chevrolet", "model": "Tahoe", "package": "PPV", "from_year": 2015, "to_year": 2027, "quick_choice": True},
-    {"make": "Chevrolet", "model": "Tahoe", "package": "SSV", "from_year": 2015, "to_year": 2027},
+    {"make": "Dodge", "model": "Charger", "package": "PPV", "from_year": 2027, "to_year": 2027, "quick_choice": True, "availability": "upcoming", "future_selectable": True},
+    {"make": "Chevrolet", "model": "Tahoe", "package": "PPV", "from_year": 2015, "to_year": 2027, "quick_choice": True, "future_selectable": True},
+    {"make": "Chevrolet", "model": "Tahoe", "package": "SSV", "from_year": 2015, "to_year": 2027, "future_selectable": True},
     {"make": "Ford", "model": "F-150", "package": "Police Responder", "from_year": 2018, "to_year": 2024},
     {"make": "Ford", "model": "F-150 Lightning", "package": "SSV", "from_year": 2023, "to_year": 2025},
     {"make": "Ford", "model": "Expedition", "package": "SSV", "from_year": 2018, "to_year": 2024},
     {"make": "Ford", "model": "Transit", "package": "PTV", "from_year": 2015, "to_year": 2024},
-    {"make": "Chevrolet", "model": "Silverado 1500", "package": "PPV", "from_year": 2023, "to_year": 2026},
-    {"make": "Chevrolet", "model": "Silverado 1500", "package": "SSV", "from_year": 2022, "to_year": 2026},
-    {"make": "Chevrolet", "model": "Blazer EV", "package": "PPV", "from_year": 2024, "to_year": 2027},
-    {"make": "Ram", "model": "1500", "package": "SSV", "from_year": 2012, "to_year": 2026},
-    {"make": "Ram", "model": "2500", "package": "SSV", "from_year": 2014, "to_year": 2026},
-    {"make": "Ram", "model": "3500", "package": "SSV", "from_year": 2014, "to_year": 2026},
-    {"make": "Jeep", "model": "Wagoneer", "package": "Command Operations Vehicle", "from_year": 2025, "to_year": 2026},
-    {"make": "Jeep", "model": "Grand Wagoneer", "package": "Command Operations Vehicle", "from_year": 2025, "to_year": 2026},
-    {"make": "Ram", "model": "2500 HD", "package": "Emergency Response Vehicle", "from_year": 2027, "to_year": 2027},
+    {"make": "Chevrolet", "model": "Silverado 1500", "package": "PPV", "from_year": 2023, "to_year": 2026, "future_selectable": True},
+    {"make": "Chevrolet", "model": "Silverado 1500", "package": "SSV", "from_year": 2022, "to_year": 2026, "future_selectable": True},
+    {"make": "Chevrolet", "model": "Blazer EV", "package": "PPV", "from_year": 2024, "to_year": 2027, "future_selectable": True},
+    {"make": "Ram", "model": "1500", "package": "SSV", "from_year": 2012, "to_year": 2026, "future_selectable": True},
+    {"make": "Ram", "model": "2500", "package": "SSV", "from_year": 2014, "to_year": 2026, "future_selectable": True},
+    {"make": "Ram", "model": "3500", "package": "SSV", "from_year": 2014, "to_year": 2026, "future_selectable": True},
+    {"make": "Jeep", "model": "Wagoneer", "package": "Command Operations Vehicle", "from_year": 2025, "to_year": 2026, "future_selectable": True},
+    {"make": "Jeep", "model": "Grand Wagoneer", "package": "Command Operations Vehicle", "from_year": 2025, "to_year": 2026, "future_selectable": True},
+    {"make": "Ram", "model": "2500 HD", "package": "Emergency Response Vehicle", "from_year": 2027, "to_year": 2027, "future_selectable": True},
     {"make": "Dodge", "model": "Charger", "package": "Pursuit", "from_year": 2006, "to_year": 2023},
     {"make": "Ford", "model": "Crown Victoria", "package": "Police Interceptor", "from_year": 1992, "to_year": 2011},
     {"make": "Ford", "model": "Taurus", "package": "Police Interceptor Sedan", "from_year": 2013, "to_year": 2019},
@@ -104,7 +104,16 @@ def _valid_year(value: object) -> int:
 
 def _catalog_year(value: object) -> int:
     """Use the newest available catalog for farther-future project years."""
-    return min(_valid_year(value), datetime.now().year + 2)
+    return min(_valid_year(value), datetime.now().year)
+
+
+def _police_vehicle_available(item: dict, model_year: int) -> bool:
+    """Keep current vehicle lines selectable for unconfirmed future years."""
+    from_year = int(item["from_year"])
+    to_year = int(item.get("to_year", from_year))
+    return model_year >= from_year and (
+        model_year <= to_year or bool(item.get("future_selectable"))
+    )
 
 
 def _read_persistent_cache(path: Path) -> dict:
@@ -395,6 +404,7 @@ def list_models(
 
 def list_police_vehicles(year: object | None = None) -> list[dict]:
     model_year = _valid_year(year) if year not in (None, "") else None
-    return [dict(item) for item in POLICE_VEHICLES if model_year is None or (
-        model_year >= int(item["from_year"]) and model_year <= int(item.get("to_year", model_year))
-    )]
+    return [
+        dict(item) for item in POLICE_VEHICLES
+        if model_year is None or _police_vehicle_available(item, model_year)
+    ]
