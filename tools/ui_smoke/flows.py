@@ -83,6 +83,18 @@ def _open_build_editor(page, base_url: str) -> None:
     page.wait_for_timeout(_SETTLE_MS)
 
 
+def _open_manifest_edit(page, *, line_id: str | None = None, row=None) -> None:
+    """Open Edit through the manifest's Edit/Duplicate action menu."""
+    scope = row if row is not None else page
+    selector = ".me-part-action-edit"
+    if line_id:
+        selector += f"[data-lid='{line_id}']"
+    edit = scope.locator(selector).first
+    menu = edit.locator("xpath=ancestor::details")
+    menu.locator("summary").click()
+    edit.click()
+
+
 def flow_tab_load(page, base_url: str) -> None:
     """Flow 1 — every tab/stab/inner-stab activates with zero console errors."""
     projection_project = _api(base_url, "/api/project/save", {
@@ -901,7 +913,10 @@ def flow_load_preset_from_build_editor(page, base_url: str) -> None:
     )
     assert note_categories == ["INSTALLATION NOTES", "DELIVERY REQUIREMENTS"], \
         f"build notes must expose only installation and delivery fields, got {note_categories!r}"
-    page.wait_for_selector("#pbe-load-preset-top")
+    actions = page.locator("#pbe-build-actions-menu")
+    assert actions.is_visible()
+    actions.locator("summary").click()
+    page.wait_for_selector("#pbe-load-preset-top", state="visible")
     assert page.locator("#pbe-load-preset-top").is_visible()
     assert page.locator("#pbe-load-preset-btn").is_visible()
     assert page.evaluate("""
@@ -1091,14 +1106,17 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         page.click("[data-console-component-open='armRest']")
         page.wait_for_selector("[data-console-component-choice='gamber_johnson_7160_0429']")
         armrest_brands = page.locator(".console-component-picker .console-catalog-card-brand").all_text_contents()
-        assert armrest_brands and all(brand.strip() == "Gamber Johnson" for brand in armrest_brands), (
+        catalog_armrest_brands = [brand.strip() for brand in armrest_brands if brand.strip() != "Customer supplied"]
+        assert "Customer supplied" in [brand.strip() for brand in armrest_brands]
+        assert catalog_armrest_brands and all(brand == "Gamber Johnson" for brand in catalog_armrest_brands), (
             f"armrests must follow the selected Gamber Johnson console, got {armrest_brands!r}"
         )
         page.click("[data-console-component-choice='gamber_johnson_7160_0429']")
         page.click("[data-console-component-open='motionAttachment']")
         page.wait_for_selector("[data-console-component-choice='gamber_johnson_7160_0220']")
         motion_brands = page.locator(".console-component-picker .console-catalog-card-brand").all_text_contents()
-        assert motion_brands and all(brand.strip() == "Gamber Johnson" for brand in motion_brands), (
+        catalog_motion_brands = [brand.strip() for brand in motion_brands if brand.strip() != "Customer supplied"]
+        assert catalog_motion_brands and all(brand == "Gamber Johnson" for brand in catalog_motion_brands), (
             f"motion attachments must follow the selected Gamber Johnson console, got {motion_brands!r}"
         )
         page.click("[data-console-component-choice='gamber_johnson_7160_0220']")
@@ -1130,7 +1148,8 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         page.click("[data-console-component-open='dockingStation']")
         page.wait_for_selector("[data-console-component-choice='gamber_johnson_7160_1982_10']")
         dock_brands = page.locator(".console-component-picker .console-catalog-card-brand").all_text_contents()
-        assert dock_brands and all(brand.strip() == "Gamber Johnson" for brand in dock_brands), (
+        catalog_dock_brands = [brand.strip() for brand in dock_brands if brand.strip() != "Customer supplied"]
+        assert catalog_dock_brands and all(brand == "Gamber Johnson" for brand in catalog_dock_brands), (
             f"docking stations must follow the selected Gamber Johnson console, got {dock_brands!r}"
         )
         page.click("[data-console-component-choice='gamber_johnson_7160_1982_10']")
@@ -1191,7 +1210,7 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
     # Reopening the console must return to the Details setup with every real
     # choice intact, rather than treating the SKU like a fresh generic part.
     console_parent = page.locator("tr.me-parent-row").filter(has_text="Center Console")
-    console_parent.locator(".me-edit-btn").click()
+    _open_manifest_edit(page, row=console_parent)
     page.wait_for_selector("[data-console-setup]")
     page.wait_for_function("() => _pickerState?.consoleSetup?.active && !_pickerState.consoleSetup.loading")
     restored = page.evaluate("() => _pickerState.consoleSetup.choices")
@@ -1223,7 +1242,7 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
     # the base. Covered hardware must remain present and gain billing metadata
     # instead of disappearing from the build.
     console_parent = page.locator("tr.me-parent-row").filter(has_text="Center Console")
-    console_parent.locator(".me-edit-btn").click()
+    _open_manifest_edit(page, row=console_parent)
     page.wait_for_selector("[data-console-use-recommendation='gamber_johnson_7170_0734_09']")
     page.click("[data-console-use-recommendation='gamber_johnson_7170_0734_09']")
     assert page.evaluate("() => _pickerState.consoleSetup.choices.consoleChoice.part_number") == "7170-0734-09"
@@ -1295,7 +1314,7 @@ def flow_edit_preserves_fields(page, base_url: str) -> None:
 
     before = fetch_part()
 
-    page.click(".me-edit-btn")
+    _open_manifest_edit(page)
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_timeout(_SETTLE_MS)
 
@@ -1399,7 +1418,7 @@ def flow_custom_location_group_spacing(page, base_url: str) -> None:
     })
     line_id = added["line_id"]
     _open_build_editor(page, base_url)
-    page.click(f".me-edit-btn[data-lid='{line_id}']")
+    _open_manifest_edit(page, line_id=line_id)
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_function(
         "document.querySelector('#picker-add-btn')?.textContent?.trim() === 'Save edits'"
@@ -1409,7 +1428,7 @@ def flow_custom_location_group_spacing(page, base_url: str) -> None:
 
     assert page.evaluate("() => _pickerCustomPlacementHeadCount()") == 4
     assert page.locator("#picker-loc-dots .picker-custom-dot").count() == 4
-    assert "place all 4 light heads as one group" in page.locator(".picker-location-placement-controls").inner_text().lower()
+    assert "place all 4 items as one group" in page.locator(".picker-location-placement-controls").inner_text().lower()
 
     page.locator("[data-custom-spacing]").evaluate("""element => {
         element.value = '0.10';
@@ -1555,7 +1574,7 @@ def flow_tint_and_round_location_allocation(page, base_url: str) -> None:
     # Editing either row reopens the full linked allocation with each line's
     # own note restored. Updating one must not overwrite the other.
     lower = next(part for part in allocated if part["location"] == "Lower Kick Panels")
-    page.click(f".me-edit-btn[data-lid='{lower['line_id']}']")
+    _open_manifest_edit(page, line_id=lower["line_id"])
     page.wait_for_selector("#picker-panel.open")
     # The panel opens before its async edit hydration finishes.  Wait for the
     # edit-only footer state so we do not interact with the previous add UI.
@@ -1596,8 +1615,8 @@ def flow_tint_and_round_location_allocation(page, base_url: str) -> None:
     }""", {"draftId": draft_id, "lineId": deleted["line_id"]})
     assert delete_result.get("ok"), f"could not delete allocated manifest row: {delete_result!r}"
     page.evaluate("id => loadDraftManifest(id)", draft_id)
-    page.wait_for_selector(f".me-edit-btn[data-lid='{remaining['line_id']}']")
-    page.click(f".me-edit-btn[data-lid='{remaining['line_id']}']")
+    page.wait_for_selector(f".me-part-action-edit[data-lid='{remaining['line_id']}']", state="attached")
+    _open_manifest_edit(page, line_id=remaining["line_id"])
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_function(
         "() => _pickerState?.editLineId "
@@ -2107,7 +2126,7 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
     custom_draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
     custom = next(p for p in custom_draft["draft"]["parts"] if p.get("part_number") == "SMOKE-CUSTOM")
     assert custom.get("part_type") == category_value
-    page.click(f".me-edit-btn[data-lid='{custom['line_id']}']")
+    _open_manifest_edit(page, line_id=custom["line_id"])
     page.wait_for_selector("#picker-custom-part-modal.open")
     assert not page.locator("#picker-panel.open").is_visible()
     assert page.input_value("#picker-custom-part-price") == "12.5"
@@ -2513,7 +2532,7 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     assert magnetic_mic and magnetic_mic.get("part_number") == "MMSU-1B", \
         f"a bracketed radio Mag Mic must be a real billable child line, got {magnetic_mic!r}"
     parent = page.locator("tr.me-parent-row").filter(has_text="Radio Communications")
-    parent.locator(".me-edit-btn").click()
+    _open_manifest_edit(page, row=parent)
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'radio'")
     page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radio']")
@@ -2681,7 +2700,7 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     page.evaluate("pickerClose()")
     page.wait_for_selector("#picker-panel.open", state="hidden")
 
-    parent.locator(".me-edit-btn").click()
+    _open_manifest_edit(page, row=parent)
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'radar' && Object.keys(_pickerState.radio.choices || {}).length > 0")
     page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radar']")
@@ -2728,7 +2747,9 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     assert not any(part.get("part_type") == "rear_radar_antenna_mount" for part in updated["draft"]["parts"]), \
         "an omitted rear antenna must not create a billable draft line"
 
-    page.locator("tr.me-parent-row").filter(has_text="Radar System").locator(".me-edit-btn").click()
+    _open_manifest_edit(
+        page, row=page.locator("tr.me-parent-row").filter(has_text="Radar System")
+    )
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'radar'")
     assert page.evaluate("() => _pickerState.radio.choices.rearLoc") == "__none__", \
@@ -2797,7 +2818,7 @@ def flow_camera_system_workflow(page, base_url: str) -> None:
     assert camera_components["front_camera"]["location"] == "Upper windshield"
     assert camera_components["rear_camera"]["location"] == "Upper rear window"
     parent = page.locator("tr.me-parent-row").filter(has_text="Camera System")
-    parent.locator(".me-edit-btn").click()
+    _open_manifest_edit(page, row=parent)
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'camera'")
     page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='camera']")

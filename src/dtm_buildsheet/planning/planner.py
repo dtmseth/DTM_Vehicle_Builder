@@ -64,6 +64,15 @@ _BAR_ASSET_KEY: dict[str, str] = {
     "rear_interior_light_bar": "interior-rear",
 }
 
+_CUSTOM_LIGHT_RENDER_SPEC_BY_STYLE: dict[str, str] = {
+    "tracer_3lamp": "tracer_3lamp",
+    "tracer_5lamp": "tracer_5lamp",
+    "tracer_6lamp": "tracer_6lamp",
+    "interior_light_bar_front": "interior_light_bar_front",
+    "rear_interior_light_bar": "rear_interior_light_bar",
+    "roof_light_bar": "roof_light_bar",
+}
+
 # Interior bars are shown only in their windshield-facing vehicle view.  The
 # top view is reserved for exterior equipment and makes windshield bars look
 # like they are mounted on the roof.
@@ -217,6 +226,43 @@ def _synthesize_spec(pt, location_key: str) -> dict:
         "quantity_rules":           list(render.get("quantity_rules") or []),
         "images":                   dict(render.get("images") or {}),
         "_parts_db_render":          True,
+    }
+
+
+def _custom_light_render(part) -> dict:
+    """Return a validated-enough custom-light recipe saved on a draft row."""
+    picker_config = getattr(part, "picker_config", {}) or {}
+    raw = picker_config.get("custom_light") if isinstance(picker_config, dict) else None
+    if not isinstance(raw, dict) or raw.get("enabled") is not True:
+        return {}
+    heads = raw.get("heads")
+    if not isinstance(heads, list) or not heads:
+        return {}
+    cleaned_heads = []
+    for index, head in enumerate(heads):
+        if not isinstance(head, dict):
+            continue
+        colors = [str(color).strip().lower() for color in (head.get("colors") or []) if str(color).strip()]
+        if colors:
+            cleaned_heads.append({"head_index": index, "colors": colors})
+    if not cleaned_heads:
+        return {}
+    render_style = str(raw.get("render_style") or "").strip()
+    if not render_style:
+        render_style = "tracer_5lamp" if raw.get("size_rule_id") == "tracer" else "light_head"
+    if render_style != "light_head" and render_style not in _CUSTOM_LIGHT_RENDER_SPEC_BY_STYLE:
+        render_style = "light_head"
+    module_count = 0
+    if render_style.startswith("tracer_"):
+        try:
+            module_count = int(render_style.removeprefix("tracer_").removesuffix("lamp"))
+        except ValueError:
+            module_count = 0
+    return {
+        "render_style": render_style,
+        "module_count": module_count,
+        "size_rule_id": str(raw.get("size_rule_id") or "sm"),
+        "heads": cleaned_heads,
     }
 
 
@@ -533,11 +579,13 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
         if not part.include:
             continue
 
-        # One-off custom parts are billable manifest lines, deliberately not
-        # inventory/catalog products. They belong in generated documentation
-        # but have no vehicle artwork or placement requirement.
+        # One-off custom parts remain billable MISC PART lines. Rendering is
+        # still opt-in, but an operator can now explicitly supply the metadata
+        # (size and per-head colors) that a catalog SKU would otherwise
+        # provide automatically.
         custom = (getattr(part, "picker_config", {}) or {}).get("custom_part")
-        if isinstance(custom, dict):
+        custom_light = _custom_light_render(part) if isinstance(custom, dict) else {}
+        if isinstance(custom, dict) and not custom_light:
             planned_parts.append(
                 PlannedPart(
                     part_id="custom_part",
@@ -550,14 +598,43 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             )
             continue
 
-        spec = config.parts_by_name.get(part.name.upper())
+        custom_style_spec_id = _CUSTOM_LIGHT_RENDER_SPEC_BY_STYLE.get(
+            custom_light.get("render_style", "")
+        ) if custom_light else None
+        custom_style_spec = (
+            config.parts_by_id.get(custom_style_spec_id)
+            if custom_style_spec_id else None
+        )
+        spec = ({
+            "part_id": "custom_light",
+            "display_name": part.name,
+            "category": "warning",
+            "render_kind": "light",
+            "default_views": [],
+            "asset_key": "",
+            "is_fixture": False,
+            "render_quantity_policy": "quantity_as_slots",
+            "default_color_profile": "",
+            "size_rule_id": custom_light.get("size_rule_id", "sm"),
+            "accessory_of": None,
+            "group_shapes": False,
+            "model_remaps": {},
+            "co_part_rules": [],
+            "location_asset_rules": {},
+            "size_per_view": {},
+            "quantity_rules": [],
+            "images": {},
+        } if custom_light and not custom_style_spec else ({
+            **custom_style_spec,
+            "display_name": part.name,
+        } if custom_style_spec else config.parts_by_name.get(part.name.upper())))
         # ── category-level resolution ──────────────────────────────────
         # When a part matches the legacy catalog, use that spec ONLY for
         # legacy Excel imports (no line_id).  Picker-created parts with a
         # line_id always resolve through the part_type so rendering
         # parameters (quantity_rules, color_profile, asset_key) are not
         # contaminated by catalog entries designed for specific locations.
-        if spec is not None and part.line_id:
+        if spec is not None and part.line_id and not custom_light:
             spec = None
 
         if spec is None:
@@ -597,7 +674,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
 
         # Tracer housings always render as their lamp-row shape, even when the
         # line was picker-created (synthesized spec carries no model_remaps).
-        if part.part_number:
+        if part.part_number and not custom_light:
             tracer_id = _TRACER_RENDER_BY_SKU.get((part.part_number or "").strip().upper())
             if tracer_id and tracer_id in config.parts_by_id:
                 spec = config.parts_by_id[tracer_id]
@@ -708,13 +785,14 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             continue
 
         profile_id, raw_color_token = resolve_profile(part, spec, manifest)
-        product_render = _parts_db_render_for_part(
+        product_render = {} if custom_light else _parts_db_render_for_part(
             part.part_number,
             _get_svc(),
             candidates=_part_number_candidates(part),
         )
         explicit_size_rule = (
-            product_render.get("size_rule_id")
+            custom_light.get("size_rule_id")
+            or product_render.get("size_rule_id")
             or spec.get("size_rule_id")
             or ""
         )
@@ -723,7 +801,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             manifest,
             explicit_size_class=str(explicit_size_rule),
         )
-        lib_entry = next(
+        lib_entry = {} if custom_light else next(
             (
                 config.parts_lib_by_model[key]
                 for key in model_lookup_keys(part.part_number)
@@ -810,15 +888,15 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 slot_count = int(location.get("render_slot_count", 1))
             elif quantity_policy == "quantity_as_slots":
                 slot_count = max(1, part.quantity or 1)
-
             if inner_edge:
                 slot_count = inner_edge["lamp_count"]
 
-            qty_overrides = apply_quantity_rules(spec, part.quantity)
+            placement_quantity = part.quantity
+            qty_overrides = apply_quantity_rules(spec, placement_quantity)
             if not qty_overrides:
                 loc_rules = location.get("quantity_rules")
                 if loc_rules:
-                    qty_overrides = apply_quantity_rules_list(loc_rules, part.quantity)
+                    qty_overrides = apply_quantity_rules_list(loc_rules, placement_quantity)
             numbered_siren_slot = _NUMBERED_SIREN_SLOT_INDEX.get(part.name.strip().upper())
             if (
                 numbered_siren_slot is not None
@@ -834,6 +912,12 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 }
             if qty_overrides.get("slot_count"):
                 slot_count = int(qty_overrides["slot_count"])
+            if custom_light.get("module_count"):
+                # A custom Tracer is one billable housing whose visual module
+                # count is independent of line quantity. Reuse the authored
+                # Tracer fixture/spacing while repeating the easy picker color
+                # recipe across the physical lamp row.
+                slot_count = int(custom_light["module_count"])
             if outer_edge:
                 slot_count = outer_edge["head_count"]
             slot_indices: list[int] | None = qty_overrides.get("slot_indices")
@@ -878,6 +962,10 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 and slot_count > 1
                 and effective_pattern == "single"
             ):
+                effective_pattern = "horizontal"
+            if custom_light and slot_count > 1 and effective_pattern == "single":
+                effective_pattern = "horizontal"
+            if custom_light.get("module_count"):
                 effective_pattern = "horizontal"
             if inner_edge:
                 if inner_edge["product_id"] == "whelen_rst":
@@ -995,7 +1083,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 size_class=size_class,
                 color_profile=profile_id,
                 quantity_policy=quantity_policy,
-                ordered_quantity=part.quantity,
+                ordered_quantity=placement_quantity,
                 location_slot_count=int(location.get("slot_count", 1)),
                 anchor={
                     "x": anchor_x,
@@ -1041,13 +1129,22 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 compound_group_style=compound_group_style,
                 compound_item_spacing=compound_item_spacing,
                 line_id=part.line_id,
+                custom_layout=(
+                    str((part.picker_config or {}).get("custom_location", {}).get("layout") or "")
+                    if custom_point is not None else ""
+                ),
+                custom_group_id=(
+                    str(custom_point.get("group_id") or "")
+                    if custom_point is not None else ""
+                ),
+                custom_point_index=(custom_point_index if custom_point is not None else None),
             )
 
             if quantity_policy == "location_slots":
                 placement_quantity = (
-                    max(1, (part.quantity + compound_group_size - 1) // compound_group_size)
-                    if compound_group_style and part.quantity
-                    else part.quantity
+                    max(1, (placement_quantity + compound_group_size - 1) // compound_group_size)
+                    if compound_group_style and placement_quantity
+                    else placement_quantity
                 )
                 if custom_point is None and placement_quantity and placement_quantity != placement.location_slot_count and not slot_indices:
                     is_side_light = view == "side" and spec["render_kind"] in ("light", "bar")
@@ -1056,10 +1153,10 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                             f"[{part.name}] @ '{location_key}' ({view}): "
                             f"workbook qty {part.quantity} ≠ location slot count {placement.location_slot_count}"
                         )
-            elif quantity_policy == "single_per_line" and part.quantity > 1:
+            elif quantity_policy == "single_per_line" and placement_quantity > 1:
                 placement.warnings.append(
                     f"[{part.name}] @ '{location_key}' ({view}): "
-                    f"qty {part.quantity} recorded but this part renders once per line item"
+                    f"qty {placement_quantity} recorded but this part renders once per line item"
                 )
 
             orientation = location.get("orientation", "h")
@@ -1076,7 +1173,13 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                     # example red/white + blue/white VXEs at TAIL LIGHTS)
                     # collapses to an unrecognized combined raw_color label
                     # and resolves no lamp asset at all.
-                    color_token = resolve_custom_head_color_token(part, index - 1) or color_token
+                    custom_palette_count = len(custom_light.get("heads") or [])
+                    custom_palette_index = (
+                        (index - 1) % custom_palette_count
+                        if custom_light.get("module_count") and custom_palette_count
+                        else index - 1
+                    )
+                    color_token = resolve_custom_head_color_token(part, custom_palette_index) or color_token
                 asset_path = resolve_asset_path(
                     render_kind=spec["render_kind"],
                     asset_key=effective_asset_key,

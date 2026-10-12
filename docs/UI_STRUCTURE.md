@@ -104,7 +104,7 @@ without changing the current view, so a project or draft opened during loading s
 #proj-build-editor     — embedded build editor (in-place, no tab switch)
     #pbe-header        — unit context bar + "← Back to Project" button
     #pbe-preview-section — preview canvas (pvLoad / pvReload)
-    #pbe-manifest-section — draft manifest editor (loadDraftManifest)
+    #pbe-manifest-section — draft manifest editor (loadDraftManifest) + warned Reset Build action
     #pbe-footer        — Load Preset / Save as New Preset / Apply to Group actions + Return button
 ```
 

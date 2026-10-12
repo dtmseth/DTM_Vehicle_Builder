@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import io
 import json
 import logging
@@ -499,50 +498,6 @@ def clone_preset(preset_id: str, paths: AppPaths) -> dict:
         json.dumps(validated, indent=2) + "\n",
     )
     return {"ok": True, "preset_id": new_id, "label": validated["label"]}
-
-
-def import_from_workbook(file_b64: str, paths: AppPaths) -> dict:
-    """Decode base64 xlsx, parse parts via excel_reader, return preset payload."""
-    import tempfile
-    from ...inputs.excel_reader import load_input
-
-    try:
-        raw_bytes = base64.b64decode(file_b64)
-    except Exception:
-        return {"ok": False, "error": "Invalid base64 data"}
-
-    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
-        tmp.write(raw_bytes)
-        tmp_path = Path(tmp.name)
-    try:
-        project = load_input(tmp_path)
-    except Exception as exc:
-        _log.warning("import_from_workbook: parse failed: %s", exc)
-        return {"ok": False, "error": f"Could not parse workbook: {exc}"}
-    finally:
-        tmp_path.unlink(missing_ok=True)
-
-    parts = [asdict(p) for p in project.parts]
-    part_issues = []
-    for index, part in enumerate(parts):
-        error = supply_validation_error(part)
-        if error:
-            part_issues.append({
-                "index": index,
-                "part_number": index + 1,
-                "name": str(part.get("name") or "Unnamed part"),
-                "error": error,
-            })
-
-    return {
-        "ok": True,
-        "parts": parts,
-        "part_issues": part_issues,
-        "suggested_label": "Imported Preset",
-        "vehicle_types": [],
-        "build_types": [],
-        "agency_ids": [],
-    }
 
 
 def export_preset_workbook(preset_id: str, paths: AppPaths) -> bytes:

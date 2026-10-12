@@ -459,6 +459,7 @@ def resolve_build_lines(paths: AppPaths, draft) -> tuple[list[dict], list[dict]]
                         "reason": reason,
                     })
                     continue
+                resolved = _apply_quote_override(resolved, picker_config)
                 qty = _component_quantity(component)
                 lines.append({
                     **resolved,

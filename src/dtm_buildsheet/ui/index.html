@@ -1086,8 +1086,6 @@
         <span>Presets</span>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-secondary" id="pm-export-template-btn" style="font-size:12px;padding:4px 12px">Export Blank Template</button>
-          <button class="btn btn-secondary" id="pm-import-btn" style="font-size:12px;padding:4px 12px">⬆ Import from Workbook</button>
-          <input type="file" id="pm-import-input" accept=".xlsx" style="display:none">
           <button class="btn btn-primary" id="pm-add-btn" style="font-size:12px;padding:4px 12px">+ New Preset</button>
         </div>
       </div>
@@ -1647,9 +1645,15 @@
         <div class="card-title">
           Build Preview
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-secondary btn-sm" id="pbe-load-preset-top">Load Preset</button>
-            <button class="btn btn-secondary btn-sm" id="pbe-create-preset-top" style="display:none">Save as New Preset?</button>
-            <button class="btn btn-secondary btn-sm" id="pbe-apply-group-top" style="display:none">Apply to Entire Unit Group</button>
+            <details class="proj-build-action-menu pbe-build-action-menu" id="pbe-build-actions-menu">
+              <summary class="btn btn-secondary btn-sm">Build Actions</summary>
+              <div class="proj-build-action-menu-items">
+                <button type="button" id="pbe-load-preset-top">Load Preset</button>
+                <button type="button" id="pbe-create-preset-top" style="display:none">Save as New Preset</button>
+                <button type="button" id="pbe-apply-group-top" style="display:none">Apply to Entire Unit Group</button>
+                <button type="button" id="pbe-review-estimate-top" hidden>Review Estimate Parts</button>
+              </div>
+            </details>
             <span class="pv-spinner spinner" id="pv-spinner" style="display:none;border-color:rgba(30,39,97,.25);border-top-color:var(--navy)"></span>
             <button class="btn btn-secondary btn-sm" id="btn-reload-preview" title="Reload preview">↺ Refresh</button>
           </div>
@@ -1713,6 +1717,12 @@
               <input type="number" id="pv-insp-size-h" min="0.05" max="12" step="0.01" value="" class="pv-insp-num" placeholder="—">
             </div>
 
+            <div class="pv-insp-row" id="pv-insp-head-scale-row" hidden>
+              <span class="pv-insp-lbl">Head scale</span>
+              <input type="range" id="pv-insp-head-scale" min="25" max="200" step="5" value="100" class="pv-insp-range">
+              <input type="number" id="pv-insp-head-scale-num" min="25" max="200" step="5" value="100" class="pv-insp-num">
+            </div>
+
             <div class="pv-insp-row">
               <span class="pv-insp-lbl">Layer</span>
               <input type="number" id="pv-insp-layer" min="-10" max="10" step="1" value="0" class="pv-insp-num" style="width:70px" title="Z-order layer. Higher = on top. 0 = default.">
@@ -1735,6 +1745,7 @@
         <div class="card-title">
           <span>Build Manifest (<span id="me-parts-count">0</span>)</span>
           <div style="display:flex;gap:6px;align-items:center">
+            <button class="btn btn-danger btn-sm" id="pbe-reset-build-btn" type="button">Reset Build</button>
             <button class="btn btn-primary btn-sm" onclick="addPart()">+ Add Part</button>
           </div>
         </div>
@@ -1956,6 +1967,24 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" id="pbe-load-preset-cancel">Cancel</button>
       <button class="btn btn-primary" id="pbe-load-preset-confirm" disabled>Load and Replace Build</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="pbe-reset-build-modal" role="dialog" aria-modal="true" aria-labelledby="pbe-reset-build-title">
+  <div class="modal pbe-reset-build-modal">
+    <div class="modal-title">
+      <span id="pbe-reset-build-title">Reset build to blank?</span>
+      <button class="modal-close" id="pbe-reset-build-close" type="button" aria-label="Close reset build dialog">✕</button>
+    </div>
+    <div class="pbe-reset-build-warning">
+      <strong>This cannot be undone.</strong>
+      <p id="pbe-reset-build-summary">Every part and placement adjustment will be removed from this build.</p>
+      <p>Vehicle details, project notes, and build notes will remain.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="pbe-reset-build-cancel" type="button">Cancel</button>
+      <button class="btn btn-danger" id="pbe-reset-build-confirm" type="button">Reset to Blank</button>
     </div>
   </div>
 </div>
@@ -2609,8 +2638,8 @@
     <p class="picker-custom-part-help">For a one-off billable item that is not worth adding to the managed catalog. Its SKU, description, quantity, and price are saved with this build as a clearly flagged custom line.</p>
     <div class="picker-custom-part-grid">
       <label class="picker-custom-part-field">
-        <span>SKU <b>*</b></span>
-        <input id="picker-custom-part-sku" type="text" maxlength="160" autocomplete="off" required placeholder="Vendor or manufacturer SKU">
+        <span>SKU <small>(required before finalization)</small></span>
+        <input id="picker-custom-part-sku" type="text" maxlength="160" autocomplete="off" placeholder="Can be completed later">
       </label>
       <label class="picker-custom-part-field">
         <span>Quantity <b>*</b></span>
@@ -2628,6 +2657,36 @@
         <span>Manifest category <small>(optional)</small></span>
         <select id="picker-custom-part-category"><option value="">Other / Custom Parts</option></select>
       </label>
+      <label class="picker-custom-part-field picker-custom-part-field--wide">
+        <span>Install location <small>(required before finalization)</small></span>
+        <input id="picker-custom-part-location" type="text" maxlength="240" autocomplete="off" placeholder="Can be completed later">
+      </label>
+      <label class="picker-custom-light-toggle picker-custom-part-field--wide">
+        <input id="picker-custom-part-render-light" type="checkbox">
+        <span><strong>Render as lighting</strong><small>Optional · off by default</small></span>
+      </label>
+      <section id="picker-custom-light-settings" class="picker-custom-light-settings picker-custom-part-field--wide" hidden>
+        <p>Choose how the item should draw. Colors and lens use the normal Part Picker controls; individual heads also use its normal placement controls.</p>
+        <div class="picker-custom-light-options">
+          <label class="picker-custom-part-field">
+            <span>Lighting type <b>*</b></span>
+            <select id="picker-custom-light-render-style">
+              <option value="light_head">Individual light head</option>
+              <option value="tracer_3lamp">Tracer · 3 lamps</option>
+              <option value="tracer_5lamp">Tracer · 5 lamps</option>
+              <option value="tracer_6lamp">Tracer · 6 lamps</option>
+              <option value="interior_light_bar_front">Interior light bar · front</option>
+              <option value="rear_interior_light_bar">Interior light bar · rear</option>
+              <option value="roof_light_bar">Full-size roof light bar</option>
+            </select>
+          </label>
+          <label id="picker-custom-light-size-field" class="picker-custom-part-field">
+            <span>Light size <b>*</b></span>
+            <select id="picker-custom-light-size"></select>
+          </label>
+        </div>
+        <p id="picker-custom-light-style-help" class="picker-custom-light-style-help"></p>
+      </section>
     </div>
     <div id="picker-custom-part-conflict" class="picker-custom-part-conflict" hidden></div>
     <div id="picker-custom-part-recent-wrap" class="picker-custom-part-recent" hidden>
@@ -2788,8 +2847,6 @@
       <span id="pem-part-count" style="font-weight:600">—</span>
       <button class="btn btn-secondary btn-sm" id="pem-export-btn" style="margin-left:auto">Export to Workbook ↓</button>
     </div>
-    <div id="pem-part-issues" class="pem-part-issues" role="alert" hidden></div>
-
     <div class="modal-actions">
       <button class="btn btn-secondary" id="pem-cancel">Cancel</button>
       <button class="btn btn-primary" id="pem-save">Save Preset</button>

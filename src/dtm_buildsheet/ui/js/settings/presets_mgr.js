@@ -4,8 +4,8 @@
   let _agencies  = [];
   let _vehicles  = [];  // [{key, make, model}, ...]
   let _editId    = null;  // preset_id being edited; null = new
-  let _importParts = null;              // parts array from workbook import, held while modal is open
-  let _importPlacementOverrides = {};   // placement_overrides from build editor draft
+  let _draftParts = null;               // parts from "Create Preset from this Setup"
+  let _draftPlacementOverrides = {};    // placement_overrides from build editor draft
   let _contextProject = null;           // project passed from build editor for post-save update prompt
   let _selectedVehicleKeys = new Set(); // canonical vehicle-layout IDs only
 
@@ -133,57 +133,6 @@
     }
   }
 
-  function _importPartIssues() {
-    return (_importParts || []).flatMap((part, index) => {
-      if (String(part?.supply_type || "").toLowerCase() !== "customer_supplied") return [];
-      const condition = String(part.customer_condition || "").toLowerCase();
-      if (!condition) return [{index, kind: "condition", part}];
-      if (condition === "used" && !String(part.customer_source || part.source || "").trim()) {
-        return [{index, kind: "source", part}];
-      }
-      return [];
-    });
-  }
-
-  function _renderImportPartIssues() {
-    const panel = $("pem-part-issues");
-    if (!panel) return;
-    const issues = _importPartIssues();
-    panel.hidden = !issues.length;
-    if (!issues.length) {
-      panel.replaceChildren();
-      return;
-    }
-    panel.innerHTML = `<h4>${issues.length} imported part${issues.length === 1 ? " needs" : "s need"} attention</h4>
-      <p>Complete these workbook details before saving the preset.</p>
-      ${issues.map(({index, kind, part}) => `<div class="pem-part-issue">
-        <label>Part ${index + 1}: ${esc(part.name || "Unnamed part")}
-          <span>${kind === "source" ? "Customer-supplied / Used" : "Customer-supplied condition missing"}</span>
-        </label>
-        ${kind === "source"
-          ? `<input data-import-part-source="${index}" value="${esc(part.customer_source || part.source || "")}" placeholder="Example: removed from Unit 214">`
-          : `<select data-import-part-condition="${index}"><option value="">Choose New or Used</option><option value="new">New</option><option value="used">Used</option></select>`}
-      </div>`).join("")}`;
-    panel.querySelectorAll("[data-import-part-source]").forEach(input => {
-      input.addEventListener("change", () => {
-        const part = _importParts?.[Number(input.dataset.importPartSource)];
-        if (!part) return;
-        part.customer_source = input.value.trim();
-        part.source = part.customer_source;
-        _renderImportPartIssues();
-      });
-    });
-    panel.querySelectorAll("[data-import-part-condition]").forEach(select => {
-      select.addEventListener("change", () => {
-        const part = _importParts?.[Number(select.dataset.importPartCondition)];
-        if (!part) return;
-        part.customer_condition = select.value;
-        part.new_or_used = "Used";
-        _renderImportPartIssues();
-      });
-    });
-  }
-
   function _findDuplicate(agencyIds, buildTypes, vehicleTypes, excludeId) {
     return _presets.find(p => {
       if (p.preset_id === excludeId) return false;
@@ -201,7 +150,7 @@
     const container = $("pm-list-container");
     if (!container) return;
     if (!list.length) {
-      container.innerHTML = `<p style="font-size:13px;color:var(--muted);margin:0">No presets yet. Import a workbook or clone a bundled preset to get started.</p>`;
+      container.innerHTML = `<p style="font-size:13px;color:var(--muted);margin:0">No presets yet. Create one from a build setup or clone a bundled preset to get started.</p>`;
       return;
     }
     container.innerHTML = `
@@ -350,9 +299,8 @@
         if (partCountEl) partCountEl.textContent = `${(r?.parts || []).length} parts`;
       }).catch(() => { if (partCountEl) partCountEl.textContent = "—"; });
     } else if (partCountEl) {
-      partCountEl.textContent = _importParts ? `${_importParts.length} parts (imported)` : "New preset — no parts yet";
+      partCountEl.textContent = _draftParts ? `${_draftParts.length} parts (from build)` : "New preset — no parts yet";
     }
-    _renderImportPartIssues();
 
     const exportBtn = $("pem-export-btn");
     if (exportBtn) exportBtn.style.display = _editId ? "" : "none";
@@ -364,8 +312,8 @@
   function _closeModal() {
     $("preset-edit-modal").classList.remove("open");
     _editId = null;
-    _importParts = null;
-    _importPlacementOverrides = {};
+    _draftParts = null;
+    _draftPlacementOverrides = {};
     _contextProject = null;
     _selectedVehicleKeys.clear();
   }
@@ -414,8 +362,8 @@
         try {
           const r = await api("/api/draft/save", {
             draft_id:            ind.draft_id,
-            parts:               _importParts || [],
-            placement_overrides: _importPlacementOverrides || {},
+            parts:               _draftParts || [],
+            placement_overrides: _draftPlacementOverrides || {},
           });
           if (r.ok) updated++;
         } catch (_) {}
@@ -438,14 +386,6 @@
       toast(vehicleError, "error");
       return;
     }
-    const partIssues = _importPartIssues();
-    if (partIssues.length) {
-      _renderImportPartIssues();
-      $("pem-part-issues")?.querySelector("input,select")?.focus();
-      toast("Complete the highlighted imported-part details before saving", "error");
-      return;
-    }
-
     // Client-side duplicate check (fast path — avoids round-trip in common case)
     const dup = _findDuplicate(agencyIds, buildTypes, vehicleKeys, _editId);
     if (dup) {
@@ -460,8 +400,8 @@
       agency_ids:          agencyIds,
       build_types:         buildTypes,
       tag,
-      parts:               _importParts || [],
-      placement_overrides: _importPlacementOverrides || {},
+      parts:               _draftParts || [],
+      placement_overrides: _draftPlacementOverrides || {},
     };
 
     // apiSave so the Phase 2-β proposal toast fires when cloud mode is on.
@@ -538,8 +478,8 @@
    */
   window.pmOpenFromDraft = async function (parts, placementOverrides, defaults, project) {
     await Promise.all([_load(), _loadVehicles()]);
-    _importParts              = parts || [];
-    _importPlacementOverrides = placementOverrides || {};
+    _draftParts              = parts || [];
+    _draftPlacementOverrides = placementOverrides || {};
     _contextProject           = project || null;
     _editId                 = null;
     const scaffold = {
@@ -567,32 +507,6 @@
       searchEl.oninput = _filterAndRender;
     }
 
-    // Import workbook
-    const importBtn = $("pm-import-btn");
-    const importInput = $("pm-import-input");
-    if (importBtn && importInput) {
-      importBtn.onclick = () => importInput.click();
-      importInput.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        importInput.value = "";
-        const b64 = await _fileToBase64(file);
-        const res = await api("/api/presets/import-workbook", { data: b64, filename: file.name });
-        if (!res?.ok) { toast(res?.error || "Import failed", "error"); return; }
-        _importParts = res.parts || [];
-        const scaffold = {
-          preset_id: null,
-          vehicle_types: res.vehicle_types || [],
-          build_types: res.build_types || [],
-          agency_ids: res.agency_ids || [],
-          tag: "",
-          description: "",
-        };
-        await _prepareModal();
-        _openModal(scaffold);
-      };
-    }
-
     // Export blank template
     const exportTplBtn = $("pm-export-template-btn");
     if (exportTplBtn) {
@@ -611,7 +525,7 @@
     if (addBtn) {
       addBtn.onclick = async () => {
         await _prepareModal();
-        _importParts = null;
+        _draftParts = null;
         _openModal(null);
       };
     }
@@ -681,17 +595,4 @@
     });
   });
 
-  // ── util ──────────────────────────────────────────────────────────────────
-
-  function _fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const b64 = btoa(String.fromCharCode(...new Uint8Array(e.target.result)));
-        resolve(b64);
-      };
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(file);
-    });
-  }
 })();

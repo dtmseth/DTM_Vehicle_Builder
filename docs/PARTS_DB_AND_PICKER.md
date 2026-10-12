@@ -295,6 +295,11 @@ picker.
   (driver + passenger), doubling heads. Renders as `tracer_Nlamp`; brackets auto-added (L-bracket =
   (lamps+1)×housings, vehicle kit = 1×housing). Manifest shows the parent line with heads nested + a
   Duo/Trio tag; estimate lists each head SKU as its own line. Missing heads added as pending-QB.
+  Tracer fixtures are normalized to a horizontal row with one-icon-width spacing on every vehicle;
+  this repairs older Tahoe and truck layouts whose blank/`single` pattern collapsed all heads onto
+  one point. Clicking a Tracer in Build Preview exposes **Head scale**. Scaling changes every head's
+  dimensions together and recomputes icon-width spacing, so adjacent edges remain touching while
+  the complete row grows or shrinks around its center.
   - Whelen color key: `TCRWX`=clear, `TCRXX`=smoked · `P`=primary, `S`=secondary · Duo D=R/W E=B/W
     K=R/A M=B/A; Trio JC=R/B/W JA=R/B/A. Standard Duo = D/E (white) or K/M (amber); standard Trio =
     JC (white) or JA (amber).
@@ -484,13 +489,33 @@ Tracer Trio / passenger-Amber heads.
 Use **Add custom part** at the bottom of the Part Picker sidebar for a billable, one-time item that
 must not become a `parts_db.json` product or a QuickBooks inventory item. SKU, description, unit
 price, and quantity are required and are saved in the draft row's
-`picker_config.custom_part` snapshot. The row stays in the manifest but intentionally has no
-vehicle placement or render asset.
+`picker_config.custom_part` snapshot. The row stays in the manifest and has no vehicle artwork by
+default. An optional **Render as lighting** checkbox (off by default) reveals a lighting-type choice.
+An individual head also chooses its normal size. Custom Tracer choices select the authored 3/5/6-lamp
+row geometry, while front/rear interior bars and the full-size roof bar reuse their normal fixture
+and bar artwork. These simplified custom styles do not ask for catalog housing/head SKUs or the full
+bar configuration. Continuing opens the existing Part Picker light controls and placement screen:
+the same quantity, Identical/Split/Custom, Solo/Duo/Trio, clear/smoked lens, saved vehicle-dot, and
+free-placement workflows used by catalog lights. Custom lights expose every color and lens supported
+by the generic light artwork instead of filtering those controls to available SKUs. A custom Tracer
+always uses its fixed running-board fixture and skips the placement question. Its palette repeats
+across separate physical heads; it never stretches one head to the old Tracer Strip dimensions.
+These draft-local choices are stored in `picker_config.custom_light` plus the
+normal picker color/location snapshot; they do not create a product, SKU rule, or parts-db entry.
 
-Custom rows reopen this same form from the manifest Edit button. SKU, description, quantity, price,
-and an optional manifest category can be changed without entering the managed Part Picker. The
-category uses an existing manifest section for organization only; it does not turn the row into a
-catalog product or change its draft-local pricing snapshot.
+The manifest row action menu offers **Edit** and **Duplicate**. Edit reopens the same appropriate
+editor. Duplicate opens that editor with the source row's configuration prefilled, including light
+colors, placement, custom-light size, and selected accessories, but saves a new row with a new
+identity and placement-allocation batch. QuickBooks import provenance is not copied to the new row.
+For custom rows, SKU, description, quantity, price, and an optional manifest category can be changed
+without entering the managed Part Picker. The category uses an existing manifest section for
+organization only; it does not turn the row into a catalog product or change its draft-local pricing
+snapshot.
+
+QuickBooks Estimate review exposes the same checkbox for custom, pending, and unknown Item lines.
+Leaving it clear preserves the fast custom-entry import. Selecting it collects the size and then
+opens the same Part Picker light/placement flow before the line is staged. The resulting draft row
+keeps the normal Estimate provenance used by later reviews.
 
 - An exact SKU match in `parts_db.json` is detected case-insensitively. The picker offers to open
   the catalog SKU's normal setup/placement flow; the operator can explicitly keep a distinct custom

@@ -48,6 +48,7 @@ from ...inputs.project_drafts import (
 from ...naming import safe_id
 from ...paths import AppPaths
 from .custom_part_service import list_custom_parts, remember_custom_part
+from .config_service import load_config_file
 from .parts_db_service import get_parts_db_service
 
 
@@ -170,8 +171,6 @@ def _custom_part_fields(body: dict) -> tuple[dict | None, str]:
         return None, "custom part must be an object"
     sku = str(body.get("sku", "")).strip()
     description = str(body.get("description", "")).strip()
-    if not sku:
-        return None, "SKU is required"
     if not description:
         return None, "part description is required"
     if len(sku) > 160:
@@ -217,6 +216,215 @@ def _validated_custom_part_type(paths: AppPaths, part_type: str) -> tuple[str, s
     return part_type, ""
 
 
+_CUSTOM_LIGHT_COLORS = {"red", "blue", "amber", "white", "green"}
+_CUSTOM_LIGHT_RENDER_STYLES = {
+    "light_head",
+    "tracer_3lamp", "tracer_5lamp", "tracer_6lamp",
+    "interior_light_bar_front", "rear_interior_light_bar", "roof_light_bar",
+}
+
+
+def _custom_light_fields(
+    body: dict, *, quantity: int, paths: AppPaths,
+) -> tuple[dict | None, str]:
+    """Validate the optional draft-local rendering recipe for a custom light.
+
+    A custom part remains a MISC PART quote line.  This metadata only gives
+    the planner the same icon size and palette a catalog light would normally
+    inherit from its SKU. Placement remains the normal picker location data.
+    """
+    raw = body.get("custom_light")
+    if raw in (None, False, ""):
+        return None, ""
+    if not isinstance(raw, dict):
+        return None, "custom light settings must be an object"
+    if not bool(raw.get("enabled")):
+        return None, ""
+    if quantity > 12:
+        return None, "rendered custom lights are limited to 12 heads per line"
+
+    size_rule_id = str(raw.get("size_rule_id") or "").strip()
+    render_style = str(raw.get("render_style") or "").strip()
+    if not render_style:
+        # Migrate the old misleading Tracer Strip size into the real five-head
+        # Tracer geometry instead of stretching one lamp across the vehicle.
+        render_style = "tracer_5lamp" if size_rule_id == "tracer" else "light_head"
+    if render_style not in _CUSTOM_LIGHT_RENDER_STYLES:
+        return None, "choose a valid lighting type"
+    if render_style == "light_head":
+        definitions = (load_config_file("asset_manifest.json", paths).get("size_rule_definitions") or {})
+        if size_rule_id not in definitions or size_rule_id == "tracer":
+            return None, "choose a valid light size"
+    else:
+        size_rule_id = "sm"
+
+    lens = str(raw.get("lens") or "").strip().lower()
+    if lens not in {"", "clear", "smoked"}:
+        return None, "light lens must be clear or smoked"
+
+    heads = raw.get("heads")
+    if not isinstance(heads, list) or len(heads) != quantity:
+        return None, "assign one color configuration to each custom light head"
+    cleaned_heads: list[dict] = []
+    for index, head in enumerate(heads, start=1):
+        if not isinstance(head, dict):
+            return None, f"custom light head {index} settings are invalid"
+        colors = head.get("colors")
+        if not isinstance(colors, list):
+            return None, f"choose colors for custom light head {index}"
+        cleaned_colors: list[str] = []
+        for value in colors:
+            color = str(value or "").strip().lower()
+            if color and color not in cleaned_colors:
+                cleaned_colors.append(color)
+        if not 1 <= len(cleaned_colors) <= 3 or any(
+            color not in _CUSTOM_LIGHT_COLORS for color in cleaned_colors
+        ):
+            return None, f"choose one to three valid colors for custom light head {index}"
+        cleaned_heads.append({"colors": cleaned_colors})
+
+    location = str(body.get("location") or "").strip()
+    if not location:
+        return None, "choose a light placement"
+
+    requested_config = raw.get("picker_config")
+    if not isinstance(requested_config, dict):
+        requested_config = {}
+    colors_per_head = str(requested_config.get("colorsPerHead") or "")
+    if colors_per_head not in {"single", "duo", "trio"}:
+        colors_per_head = {1: "single", 2: "duo", 3: "trio"}.get(
+            max(len(head["colors"]) for head in cleaned_heads), "single",
+        )
+    slots = {"single": 1, "duo": 2, "trio": 3}[colors_per_head]
+    if any(len(head["colors"]) != slots for head in cleaned_heads):
+        return None, "choose the selected number of colors for every custom light head"
+    mode = str(requested_config.get("mode") or "custom")
+    if mode not in {"uniform", "split", "custom"}:
+        mode = "custom"
+
+    def _palette(value) -> list[str]:
+        if not isinstance(value, list):
+            return []
+        return [
+            color for color in (str(item or "").strip().lower() for item in value)
+            if color in _CUSTOM_LIGHT_COLORS
+        ][:3]
+
+    uniform = _palette(requested_config.get("uniform"))
+    split_secondary = _palette(requested_config.get("splitSecondary"))
+    if mode == "uniform" and len(uniform) != slots:
+        mode = "custom"
+    if mode == "split" and (
+        quantity % 2 or slots > 2 or len(split_secondary) != max(0, slots - 1)
+    ):
+        mode = "custom"
+
+    custom_location = requested_config.get("custom_location")
+    cleaned_custom_location = None
+    if isinstance(custom_location, dict):
+        placements: dict[str, list[dict]] = {}
+        requested_placements = custom_location.get("placements")
+        if not isinstance(requested_placements, dict):
+            requested_placements = {}
+        for view, points in list(requested_placements.items())[:8]:
+            if not isinstance(view, str) or not isinstance(points, list):
+                continue
+            cleaned_points = []
+            for point in points[:12]:
+                if not isinstance(point, dict):
+                    continue
+                try:
+                    x, y = float(point.get("x")), float(point.get("y"))
+                    head_index = int(point.get("head_index", len(cleaned_points)))
+                except (TypeError, ValueError):
+                    continue
+                if 0 <= x <= 1 and 0 <= y <= 1 and 0 <= head_index < quantity:
+                    clean_point = {"x": x, "y": y, "head_index": head_index}
+                    group_id = str(point.get("group_id") or "").strip()
+                    if group_id:
+                        clean_point["group_id"] = group_id[:40]
+                    cleaned_points.append(clean_point)
+            if cleaned_points:
+                placements[view.lower()[:20]] = cleaned_points
+        anchors: dict[str, dict[str, float]] = {}
+        requested_anchors = custom_location.get("anchors")
+        if not isinstance(requested_anchors, dict):
+            requested_anchors = {}
+        for view, point in list(requested_anchors.items())[:8]:
+            if not isinstance(view, str) or not isinstance(point, dict):
+                continue
+            try:
+                x, y = float(point.get("x")), float(point.get("y"))
+            except (TypeError, ValueError):
+                continue
+            if 0 <= x <= 1 and 0 <= y <= 1:
+                anchors[view.lower()[:20]] = {"x": x, "y": y}
+        try:
+            spacing = min(0.2, max(0.01, float(custom_location.get("spacing", 0.06))))
+        except (TypeError, ValueError):
+            spacing = 0.06
+        cleaned_custom_location = {
+            "label": location[:240],
+            "render_location": str(custom_location.get("render_location") or "").strip()[:240],
+            "placements": placements,
+            "anchors": anchors,
+            "spacing": spacing,
+            "layout": "mirrored_pairs" if custom_location.get("layout") == "mirrored_pairs" else "even",
+        }
+
+    picker_config = {
+        "mode": mode,
+        "colorsPerHead": colors_per_head,
+        "uniform": uniform,
+        "splitSecondary": split_secondary,
+        "custom": [head["colors"] for head in cleaned_heads],
+        "_noColor": False,
+        "count": quantity,
+        "lens": lens,
+    }
+    if cleaned_custom_location:
+        picker_config["custom_location"] = cleaned_custom_location
+
+    return {
+        "enabled": True,
+        "render_style": render_style,
+        "size_rule_id": size_rule_id,
+        "lens": lens,
+        "heads": cleaned_heads,
+        "picker_config": picker_config,
+    }, ""
+
+
+def _custom_light_saved_fields(custom_light: dict) -> tuple[dict, dict, dict]:
+    """Split validated light metadata into recipe, picker state, and part colors."""
+    recipe = {
+        "enabled": True,
+        "render_style": custom_light["render_style"],
+        "size_rule_id": custom_light["size_rule_id"],
+        "lens": custom_light["lens"],
+        "heads": custom_light["heads"],
+    }
+    picker_config = dict(custom_light["picker_config"])
+    cap = lambda colors: "/".join(str(color).title() for color in colors)
+    mode = picker_config["mode"]
+    heads = [head["colors"] for head in custom_light["heads"]]
+    if mode == "uniform":
+        color_fields = {"raw_color": cap(picker_config["uniform"])}
+    elif mode == "split":
+        half = len(heads) // 2
+        driver = cap(heads[0])
+        passenger = cap(heads[half])
+        color_fields = {
+            "raw_color": f"{driver} / {passenger}",
+            "driver_color": driver,
+            "passenger_color": passenger,
+        }
+    else:
+        labels = list(dict.fromkeys(cap(colors) for colors in heads))
+        color_fields = {"raw_color": ", ".join(labels)}
+    return recipe, picker_config, color_fields
+
+
 def handle_add_custom_part_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict:
     """Append a billable non-inventory part to a draft.
 
@@ -233,10 +441,15 @@ def handle_add_custom_part_to_draft(draft_id: str, body: dict, paths: AppPaths) 
         if error:
             return {"ok": False, "error": error}
         assert fields is not None
+        custom_light, light_error = _custom_light_fields(
+            body, quantity=fields["quantity"], paths=paths,
+        )
+        if light_error:
+            return {"ok": False, "error": light_error}
         part_type, category_error = _validated_custom_part_type(paths, fields["part_type"])
         if category_error:
             return {"ok": False, "error": category_error}
-        catalog_match = get_parts_db_service(paths).find_sku(fields["sku"])
+        catalog_match = get_parts_db_service(paths).find_sku(fields["sku"]) if fields["sku"] else None
         if catalog_match and not bool(body.get("allow_existing_duplicate")):
             return {
                 "ok": False,
@@ -244,20 +457,33 @@ def handle_add_custom_part_to_draft(draft_id: str, body: dict, paths: AppPaths) 
                 "catalog_part": catalog_match,
             }
         draft = load_draft_for_request(draft_id, paths)
+        custom_picker_config = {
+            "custom_part": {
+                "sku": fields["sku"],
+                "description": fields["description"],
+                "unit_price": fields["unit_price"],
+            },
+        }
+        if custom_light:
+            light_recipe, light_picker_config, color_fields = _custom_light_saved_fields(custom_light)
+            custom_picker_config.update(light_picker_config)
+            custom_picker_config["custom_light"] = light_recipe
+        else:
+            color_fields = {"raw_color": ""}
+        if isinstance(body.get("qb_import"), dict):
+            custom_picker_config["qb_import"] = dict(body["qb_import"])
+        location = str(body.get("location") or "").strip()
         part = draft_part_from_payload({
             "name": fields["description"],
             "new_or_used": "New",
             "manufacturer": "Custom",
             "part_number": fields["sku"],
+            "location": location,
+            **color_fields,
+            "lens": custom_light["lens"] if custom_light else "",
             "quantity": fields["quantity"],
             "part_type": part_type,
-            "picker_config": {
-                "custom_part": {
-                    "sku": fields["sku"],
-                    "description": fields["description"],
-                    "unit_price": fields["unit_price"],
-                },
-            },
+            "picker_config": custom_picker_config,
         }, paths)
         draft.parts.append(part)
         draft.user_modified = True
@@ -269,18 +495,19 @@ def handle_add_custom_part_to_draft(draft_id: str, body: dict, paths: AppPaths) 
         })
         save_draft(draft, paths.workspace_drafts_dir)
         history_saved = True
-        try:
-            remember_custom_part(
-                paths,
-                sku=fields["sku"],
-                description=fields["description"],
-                unit_price=fields["unit_price"],
-            )
-        except Exception:
-            # The actual billable draft line is already durable.  A local
-            # convenience history must never make its creation look failed.
-            _log.exception("Could not remember custom part %s", fields["sku"])
-            history_saved = False
+        if fields["sku"]:
+            try:
+                remember_custom_part(
+                    paths,
+                    sku=fields["sku"],
+                    description=fields["description"],
+                    unit_price=fields["unit_price"],
+                )
+            except Exception:
+                # The actual billable draft line is already durable.  A local
+                # convenience history must never make its creation look failed.
+                _log.exception("Could not remember custom part %s", fields["sku"])
+                history_saved = False
         return {
             "ok": True,
             "draft_id": draft_id,
@@ -308,10 +535,15 @@ def handle_update_custom_part_in_draft(
         if error:
             return {"ok": False, "error": error}
         assert fields is not None
+        custom_light, light_error = _custom_light_fields(
+            body, quantity=fields["quantity"], paths=paths,
+        )
+        if light_error:
+            return {"ok": False, "error": light_error}
         part_type, category_error = _validated_custom_part_type(paths, fields["part_type"])
         if category_error:
             return {"ok": False, "error": category_error}
-        catalog_match = get_parts_db_service(paths).find_sku(fields["sku"])
+        catalog_match = get_parts_db_service(paths).find_sku(fields["sku"]) if fields["sku"] else None
         if catalog_match and not bool(body.get("allow_existing_duplicate")):
             return {"ok": False, "error": "catalog_sku_exists", "catalog_part": catalog_match}
         draft = load_draft_for_request(draft_id, paths)
@@ -323,6 +555,7 @@ def handle_update_custom_part_in_draft(
             return {"ok": False, "error": "part is not a custom part"}
         part.name = fields["description"]
         part.part_number = fields["sku"]
+        part.location = str(body.get("location") or "").strip()
         part.quantity = fields["quantity"]
         part.part_type = part_type
         part.picker_config["custom_part"] = {
@@ -330,17 +563,36 @@ def handle_update_custom_part_in_draft(
             "description": fields["description"],
             "unit_price": fields["unit_price"],
         }
+        for key in (
+            "custom_light", "mode", "colorsPerHead", "uniform", "splitSecondary",
+            "custom", "_noColor", "count", "lens", "custom_location",
+        ):
+            part.picker_config.pop(key, None)
+        if custom_light:
+            light_recipe, light_picker_config, color_fields = _custom_light_saved_fields(custom_light)
+            part.picker_config.update(light_picker_config)
+            part.picker_config["custom_light"] = light_recipe
+            part.raw_color = color_fields["raw_color"]
+            part.driver_color = color_fields.get("driver_color", "")
+            part.passenger_color = color_fields.get("passenger_color", "")
+            part.lens = custom_light["lens"]
+        else:
+            part.raw_color = ""
+            part.driver_color = ""
+            part.passenger_color = ""
+            part.lens = ""
         draft.user_modified = True
         draft.audit_trail.append({
             "action": "custom_part_updated", "line_id": line_id,
             "name": part.name, "at": draft.updated_at,
         })
         save_draft(draft, paths.workspace_drafts_dir)
-        try:
-            remember_custom_part(paths, sku=fields["sku"], description=fields["description"],
-                                 unit_price=fields["unit_price"])
-        except Exception:
-            _log.exception("Could not remember updated custom part")
+        if fields["sku"]:
+            try:
+                remember_custom_part(paths, sku=fields["sku"], description=fields["description"],
+                                     unit_price=fields["unit_price"])
+            except Exception:
+                _log.exception("Could not remember updated custom part")
         return {"ok": True, "draft_id": draft_id, "line_id": line_id,
                 "name": part.name, "draft_summary": draft_summary(draft)}
     except FileNotFoundError:
@@ -439,6 +691,48 @@ def handle_apply_preset_to_draft(draft_id: str, body: dict, paths: AppPaths) -> 
         }
     except FileNotFoundError:
         return {"ok": False, "error": f"Preset or draft not found: {draft_id}"}
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def handle_reset_draft_to_blank(draft_id: str, paths: AppPaths) -> dict:
+    """Remove build equipment and placements while preserving unit-owned notes.
+
+    This is deliberately narrower than deleting/recreating a draft: vehicle
+    identity, build notes, project notes, and the audit trail remain intact.
+    """
+    try:
+        clean_id = safe_id(draft_id)
+        if not clean_id or clean_id != draft_id:
+            return {"ok": False, "error": "invalid draft_id"}
+        if blocked := _finalized_edit_error(draft_id, paths):
+            return blocked
+        draft = load_draft_for_request(draft_id, paths)
+        removed_part_count = len(draft.parts)
+        removed_override_count = len(draft.placement_overrides)
+        draft.parts = []
+        draft.placement_overrides = {}
+        draft.validation_messages = []
+        draft.user_modified = True
+
+        from datetime import datetime, timezone
+        draft.audit_trail.append({
+            "action": "build_reset_to_blank",
+            "removed_part_count": removed_part_count,
+            "removed_placement_override_count": removed_override_count,
+            "at": datetime.now(timezone.utc).isoformat(),
+        })
+        save_draft(draft, paths.workspace_drafts_dir)
+        return {
+            "ok": True,
+            "draft_id": draft_id,
+            "removed_part_count": removed_part_count,
+            "removed_placement_override_count": removed_override_count,
+        }
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Draft not found: {draft_id}"}
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
     except Exception as exc:

@@ -69,7 +69,7 @@ def required_capabilities(method: str, raw_path: str) -> frozenset[Capability]:
             or path in {"/parse", "/generate", "/api/export/pdf"}
             or path == "/api/layouts/vehicles/create"
             or path.startswith("/api/presets/")
-            or path in {"/api/presets/save", "/api/presets/import-workbook"}
+            or path == "/api/presets/save"
             or path in {"/api/agency/save", "/api/agency/default-preferences"}
         ):
             return frozenset({Capability.PROJECTS_EDIT})

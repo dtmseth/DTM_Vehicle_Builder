@@ -375,8 +375,24 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   reruns every vehicle's validation, moves the linked vehicle to **Ready**, and leaves the next
   setup action available. The price-refresh notice is a toast, and any unexpected review-modal
   rendering failure is surfaced instead of silently stopping.
+  A vehicle with a connected existing Estimate also exposes **Review estimate parts**. The review
+  classifies linked catalog SKUs, accessories, guided systems, one-off `MISC PART` lines,
+  pending/unknown items, and ignored description/charge lines, then reconciles orderable SKUs and
+  quantities against the current manifest. On a blank build the user resolves locations,
+  accessory parents, complete guided workflows, and custom entries without changing the draft;
+  one final **Import** action applies the staged parts. On an existing build, exact matches require
+  no action, while new parts, quantity changes, possible same-type replacements, and build-only
+  parts are called out. Build-only parts default to Keep and are removed only by an explicit
+  decision. The reviewer can stage any number of decisions, leave and reopen the review without
+  losing the in-memory session, and apply the selected changes together. Exact catalog choices use
+  the normal Part Picker with quoted quantity, SKU colors/lens, New supply status, and quoted unit
+  price prefilled. Accessory lines can target compatible parents already on the manifest or staged
+  earlier in the same import. A fixture-backed product uses its catalog fixture location and stages
+  immediately when it has no unanswered configuration or accessory questions. Imported rows retain
+  the QBO Estimate and line IDs so later reviews recognize them.
   (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (52),
-  `tests/test_estimate_charges_service.py` (4), and `tests/test_customer_pricing_service.py`.
+  `tests/test_qb_estimate_import_service.py` (8), `tests/test_estimate_charges_service.py` (4),
+  and `tests/test_customer_pricing_service.py`.
 - The header **Connections** modal shows Microsoft 365 and QuickBooks Online together. QuickBooks
   status is checked when the modal opens; disconnected users can start OAuth there, while connected
   users can open the full QuickBooks settings panel. `BuilderEditor` and `PartsEditor` users receive
@@ -393,6 +409,7 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
 `POST customer-pricing/default` · `POST customers/import` · `POST push-vehicle-job` (legacy) · `POST estimates/validate` ·
 `POST projects/preview` · `POST projects/bind` ·
 `POST estimates/customer-preview` · `POST estimates/list` · `POST estimates/search` · `POST estimates/reconcile-quotes` · `POST estimates/bind` ·
+`POST estimates/import-preview` ·
 `POST estimates/create` · `POST estimates/create-batch`
 
 **Release verification (v3.4.0):** full suite 2,077 passed, 1 skipped, 1 sandbox-only deselected;

@@ -14,6 +14,7 @@ from ..services.draft_service import (
     handle_remove_part_from_draft,
     handle_replace_location_allocation,
     handle_replace_console_setup_parts,
+    handle_reset_draft_to_blank,
     handle_save_draft,
     handle_save_override,
     handle_save_overrides_batch,
@@ -52,6 +53,13 @@ def route_drafts(handler: BaseHTTPRequestHandler, method: str, path: str, body: 
         draft_id = path[len("/api/draft/"):-len("/apply-preset")]
         if draft_id and "/" not in draft_id:
             send_json(handler, handle_apply_preset_to_draft(draft_id, body, paths))
+            return True
+
+    # POST /api/draft/{id}/reset-blank
+    if method == "POST" and path.startswith("/api/draft/") and path.endswith("/reset-blank"):
+        draft_id = path[len("/api/draft/"):-len("/reset-blank")]
+        if draft_id and "/" not in draft_id:
+            send_json(handler, handle_reset_draft_to_blank(draft_id, paths))
             return True
 
     # POST /api/draft/{id}/part/{line_id}/update

@@ -23,6 +23,7 @@ POST:
 - /api/quickbooks/projects/preview — preview a vehicle's local QBO Project link
 - /api/quickbooks/projects/bind — link a vehicle to a real QBO Project locally
 - /api/quickbooks/estimates/bind — verify and store a read-only existing Estimate link
+- /api/quickbooks/estimates/import-preview — classify a linked Estimate for manifest import
 - /api/quickbooks/estimates/search — search Estimate numbers for unit quote references
 - /api/quickbooks/estimates/reconcile-quotes — verify and link saved current quote numbers
 - /api/quickbooks/estimates/customer-preview — read the estimate's top-level customer
@@ -50,6 +51,7 @@ from ..adapters.interfaces import OperationsRepositoryError
 from ..services import (
     customer_pricing_service,
     qb_acceptance_service,
+    qb_estimate_import_service,
     qb_estimate_service,
     qb_production_preview_service,
     qb_sync_service,
@@ -339,6 +341,18 @@ def route_quickbooks(
                     replace_existing=body.get("replace_existing", False),
                 ),
                 individual_id=str(body.get("individual_id") or ""),
+            ),
+        )
+        return True
+    if method == "POST" and path == "/api/quickbooks/estimates/import-preview":
+        _send_json(
+            handler,
+            _estimate_call(
+                "import preview",
+                qb_estimate_import_service.preview_estimate_import,
+                paths,
+                project_id=body.get("project_id", ""),
+                individual_id=body.get("individual_id", ""),
             ),
         )
         return True

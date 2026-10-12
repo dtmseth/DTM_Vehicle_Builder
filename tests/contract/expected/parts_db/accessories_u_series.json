@@ -8,6 +8,7 @@
           {
             "manufacturer_label": "Whelen",
             "model": "U-Series Under-Mirror Warning Bracket",
+            "part_type": "mirror_warning_bracket",
             "product_id": "whelen_u_mirror_mount",
             "skus": [
               {

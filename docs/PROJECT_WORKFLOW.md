@@ -69,6 +69,8 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
    and manifest editor. Part and placement changes persist immediately; installation notes and
    delivery requirements save as they are typed.
    Project Details owns one shared note that is carried into every build draft without replacing unit-specific notes.
+   **Reset Build** is a warned, finalized-build-guarded operation that removes all manifest parts,
+   placement overrides, and stale validation messages while preserving vehicle details and notes.
 
 5. **Assign references** — the project-photo gallery adds organized media as assigned or unassigned;
    the unit-group thumbnail gallery assigns multiple project/reusable photos to every vehicle in that

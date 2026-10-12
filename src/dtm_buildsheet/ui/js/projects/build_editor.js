@@ -221,6 +221,11 @@ function _pbeSetActionRowVisible(visible) {
   if (topGroup) topGroup.style.display = visible ? "" : "none";
 }
 
+function _pbeCloseBuildActionsMenu() {
+  const menu = $("pbe-build-actions-menu");
+  if (menu) menu.open = false;
+}
+
 function _pbePresetScopeLabel(preset) {
   const agencyIds = preset.agency_ids || [];
   const currentAgencyId = _PT.pbeProject?.customer?.agency_id || "";
@@ -272,6 +277,56 @@ function _pbeRenderLoadPresetOptions() {
 
 function _pbeCloseLoadPreset() {
   $("pbe-load-preset-modal")?.classList.remove("open");
+}
+
+function _pbeCloseResetBuild() {
+  $("pbe-reset-build-modal")?.classList.remove("open");
+}
+
+function _pbeOpenResetBuild() {
+  if (!_PT.pbeDraftId) {
+    toast("No active build available", "error");
+    return;
+  }
+  if (_PT.pbeReadOnly) {
+    _pbeLockedMessage();
+    return;
+  }
+  const partCount = (typeof _meDraft !== "undefined" && Array.isArray(_meDraft?.parts))
+    ? _meDraft.parts.length : 0;
+  const summary = $("pbe-reset-build-summary");
+  if (summary) {
+    summary.textContent = partCount
+      ? `All ${partCount} manifest part${partCount === 1 ? "" : "s"} and every placement adjustment will be removed from this build.`
+      : "Every placement adjustment will be removed and the build will remain blank.";
+  }
+  $("pbe-reset-build-modal")?.classList.add("open");
+}
+
+async function _pbeConfirmResetBuild() {
+  const draftId = _PT.pbeDraftId;
+  const button = $("pbe-reset-build-confirm");
+  if (!draftId || !button || _PT.pbeReadOnly) return;
+  button.disabled = true;
+  button.textContent = "Resetting…";
+  try {
+    const result = await api(`/api/draft/${encodeURIComponent(draftId)}/reset-blank`, {});
+    if (!result?.ok) {
+      throw new Error(result?.message || result?.error || "Could not reset build");
+    }
+    _pbeCloseResetBuild();
+    await Promise.all([
+      Promise.resolve(loadDraftManifest(draftId)),
+      Promise.resolve(pvLoad(draftId)),
+    ]);
+    await _pbeCheckPresetButton(draftId, _PT.pbeUnit);
+    toast(`Build reset to blank · ${result.removed_part_count || 0} part${result.removed_part_count === 1 ? "" : "s"} removed`, "success");
+  } catch (error) {
+    toast(error.message || "Could not reset build", "error");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Reset to Blank";
+  }
 }
 
 async function _ptOpenLoadPresetFromBuild() {
@@ -388,8 +443,34 @@ async function _ptShowBuildEditor(draftId, unit, project, returnTab, individual)
   const vmLabel = vm.make ? `${vm.make} ${vm.model}` : (unit.vehicle_model || "Vehicle");
   const agency  = project?.customer?.agency || "";
   const unitNum = individual?.unit_number?.trim();
-  const parts   = [agency, vmLabel, unit.build_type, unitNum ? `Unit ${unitNum}` : null].filter(Boolean).join(" · ");
+  const vin = String(individual?.vin || "").trim();
+  const vinTail = vin ? vin.slice(-6).toUpperCase() : "";
+  const linkedEstimateId = String(individual?.qb_estimate_id || "").trim();
+  const linkedQuote = (individual?.quote_references || []).find(reference =>
+    linkedEstimateId && String(reference?.qb_estimate_id || "").trim() === linkedEstimateId
+  );
+  const estimateNumber = String(
+    individual?.qb_estimate_snapshot?.doc_number || linkedQuote?.quote_number || "",
+  ).trim();
+  const parts   = [
+    agency,
+    vmLabel,
+    unit.build_type,
+    unitNum ? `Unit ${unitNum}` : null,
+    vinTail ? `VIN ${vinTail}` : null,
+    estimateNumber ? `Estimate #${estimateNumber}` : null,
+  ].filter(Boolean).join(" · ");
   $("pbe-unit-info").textContent = parts;
+
+  const reviewEstimate = $("pbe-review-estimate-top");
+  if (reviewEstimate) {
+    const canReview = !!linkedEstimateId
+      && !!String(draftId || "").trim()
+      && typeof window.PT_previewQbEstimateImport === "function"
+      && (typeof _ptCanManageEstimates !== "function" || _ptCanManageEstimates());
+    reviewEstimate.hidden = !canReview;
+  }
+  _pbeCloseBuildActionsMenu();
 
   const renderVehicle=(project.project_type||'build')==='build'||project.service_details?.render_vehicle;
   $('pbe-preview-section').hidden=!renderVehicle;
@@ -554,11 +635,25 @@ function _ptBindBuildEditor() {
 
   const createPresetTop = $("pbe-create-preset-top");
   if (createPresetTop) {
-    createPresetTop.addEventListener("click", _ptOpenCreatePresetFromBuild);
+    createPresetTop.addEventListener("click", () => {
+      _pbeCloseBuildActionsMenu();
+      _ptOpenCreatePresetFromBuild();
+    });
   }
 
-  [$("pbe-load-preset-btn"), $("pbe-load-preset-top")].forEach(button => {
-    if (button) button.addEventListener("click", _ptOpenLoadPresetFromBuild);
+  $("pbe-load-preset-btn")?.addEventListener("click", _ptOpenLoadPresetFromBuild);
+  $("pbe-load-preset-top")?.addEventListener("click", () => {
+    _pbeCloseBuildActionsMenu();
+    _ptOpenLoadPresetFromBuild();
+  });
+
+  $("pbe-review-estimate-top")?.addEventListener("click", () => {
+    _pbeCloseBuildActionsMenu();
+    const projectId = _PT.pbeProject?.project_id;
+    const individualId = _PT.pbeIndividual?.individual_id;
+    if (projectId && individualId && typeof window.PT_previewQbEstimateImport === "function") {
+      window.PT_previewQbEstimateImport(projectId, individualId);
+    }
   });
 
   $("pbe-load-preset-close")?.addEventListener("click", _pbeCloseLoadPreset);
@@ -573,6 +668,14 @@ function _ptBindBuildEditor() {
   });
   $("pbe-load-preset-confirm")?.addEventListener("click", _pbeApplySelectedPreset);
 
+  $("pbe-reset-build-btn")?.addEventListener("click", _pbeOpenResetBuild);
+  $("pbe-reset-build-close")?.addEventListener("click", _pbeCloseResetBuild);
+  $("pbe-reset-build-cancel")?.addEventListener("click", _pbeCloseResetBuild);
+  $("pbe-reset-build-confirm")?.addEventListener("click", _pbeConfirmResetBuild);
+  $("pbe-reset-build-modal")?.addEventListener("click", event => {
+    if (event.target.id === "pbe-reset-build-modal") _pbeCloseResetBuild();
+  });
+
   const applyGroupBtn = $("pbe-apply-group-btn");
   if (applyGroupBtn) {
     applyGroupBtn.addEventListener("click", _ptApplyToUnitGroup);
@@ -580,6 +683,9 @@ function _ptBindBuildEditor() {
 
   const applyGroupTop = $("pbe-apply-group-top");
   if (applyGroupTop) {
-    applyGroupTop.addEventListener("click", _ptApplyToUnitGroup);
+    applyGroupTop.addEventListener("click", () => {
+      _pbeCloseBuildActionsMenu();
+      _ptApplyToUnitGroup();
+    });
   }
 }

@@ -22,4 +22,14 @@ def resolve_fixture_entry(
         raw_entry = fixtures_map.get("tracer_5lamp", {}).get(view)
     if raw_entry is None:
         return None, location_key
-    return normalize_location(raw_entry, view_config), location_key
+    location = normalize_location(raw_entry, view_config)
+    if part_id.startswith("tracer_"):
+        # A few newer vehicle layouts (including Tahoe) were authored with an
+        # empty or `single` pattern. That collapses every lamp onto one point
+        # and looks like one stretched/oversized head. Tracers are always a
+        # contiguous physical row, regardless of vehicle: each head is spaced
+        # by exactly one rendered icon width so their edges remain touching.
+        location["pattern"] = "horizontal"
+        location["h_spacing"] = 1
+        location["h_spacing_units"] = "icon_width"
+    return location, location_key

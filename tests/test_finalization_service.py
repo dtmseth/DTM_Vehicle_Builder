@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from dtm_buildsheet.app.services.draft_service import handle_save_override
+from dtm_buildsheet.app.services.draft_service import (
+    handle_add_custom_part_to_draft,
+    handle_save_override,
+    handle_update_custom_part_in_draft,
+)
 from dtm_buildsheet.app.services.finalization_service import (
     handle_finalization_check,
     handle_finalize_build,
@@ -132,6 +136,52 @@ def test_sparse_project_without_draft_cannot_enter_finalization(tmp_path):
 
     assert result["ok"] is False
     assert result["error"] == "Configure this build before finalizing"
+
+
+def test_incomplete_custom_part_imports_but_blocks_finalization(tmp_path, monkeypatch):
+    paths = _paths(tmp_path)
+    import dtm_buildsheet.app.services.shared_work_service as shared
+    monkeypatch.setattr(shared, "mirror_project_to_cloud_in_background", lambda *args, **kwargs: None)
+    monkeypatch.setattr(shared, "mirror_draft_to_cloud_in_background", lambda *args, **kwargs: None)
+    draft = new_draft(parts=_complete_final_check_parts())
+    save_draft(draft, paths.workspace_drafts_dir)
+    added = handle_add_custom_part_to_draft(draft.draft_id, {
+        "sku": "", "description": "Quoted custom bracket", "location": "",
+        "unit_price": 125, "quantity": 1,
+    }, paths)
+    assert added["ok"] is True
+
+    project = new_project(build_units=[BuildUnit(
+        unit_id="unit-1",
+        draft_id=draft.draft_id,
+        pdf_path="output/final.pdf",
+        last_exported_at="2999-01-01T00:00:00+00:00",
+    )])
+    save_project(project, paths)
+
+    check = handle_finalization_check(project.project_id, "unit-1", "", paths)
+
+    custom_blocks = [
+        item for item in check["blocking"]
+        if item["id"].startswith("custom_part_incomplete:")
+    ]
+    assert len(custom_blocks) == 1
+    assert "SKU and location" in custom_blocks[0]["message"]
+    finalized = handle_finalize_build(project.project_id, "unit-1", "", {
+        "fingerprint": check["fingerprint"], "acknowledgements": [],
+    }, paths)
+    assert finalized["error"] == "finalization_blocked"
+
+    updated = handle_update_custom_part_in_draft(draft.draft_id, added["line_id"], {
+        "sku": "CUSTOM-125", "description": "Quoted custom bracket",
+        "location": "CENTER CONSOLE", "unit_price": 125, "quantity": 1,
+    }, paths)
+    assert updated["ok"] is True
+    completed = handle_finalization_check(project.project_id, "unit-1", "", paths)
+    assert not any(
+        item["id"].startswith("custom_part_incomplete:")
+        for item in completed["blocking"]
+    )
 
 
 def test_finalization_counts_guided_child_parts_and_compares_iso_timestamps(tmp_path, monkeypatch):

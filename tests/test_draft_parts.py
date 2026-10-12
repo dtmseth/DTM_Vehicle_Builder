@@ -26,6 +26,7 @@ from dtm_buildsheet.app.services.draft_service import (
     handle_remove_part_from_draft,
     handle_replace_console_setup_parts,
     handle_replace_location_allocation,
+    handle_reset_draft_to_blank,
     handle_update_part_in_draft,
     handle_update_custom_part_in_draft,
 )
@@ -123,6 +124,38 @@ def test_apply_preset_replaces_parts_and_placements_but_preserves_build_notes(tm
     assert loaded.user_modified is True
     assert loaded.audit_trail[-1]["action"] == "preset_loaded"
     assert loaded.audit_trail[-1]["preset_id"] == "patrol-piu"
+
+
+def test_reset_to_blank_removes_parts_and_placements_but_preserves_build_context(tmp_path):
+    paths = _paths(tmp_path)
+    draft = new_draft(
+        vehicle_info={"VehicleType": "PIU", "Agency": "Test PD"},
+        parts=[_part(name="Warning Light", part_number="ION")],
+        notes={"INSTALLATION NOTES": ["Keep this build note"]},
+        project_notes="Keep this project note",
+    )
+    draft.placement_overrides = {"part:front": {"x": 0.25, "y": 0.5}}
+    draft.validation_messages = ["old warning"]
+    save_draft(draft, paths.workspace_drafts_dir)
+
+    result = handle_reset_draft_to_blank(draft.draft_id, paths)
+
+    assert result == {
+        "ok": True,
+        "draft_id": draft.draft_id,
+        "removed_part_count": 1,
+        "removed_placement_override_count": 1,
+    }
+    loaded = load_draft(draft.draft_id, paths.workspace_drafts_dir)
+    assert loaded.parts == []
+    assert loaded.placement_overrides == {}
+    assert loaded.validation_messages == []
+    assert loaded.vehicle_info == {"VehicleType": "PIU", "Agency": "Test PD"}
+    assert loaded.notes == {"INSTALLATION NOTES": ["Keep this build note"]}
+    assert loaded.project_notes == "Keep this project note"
+    assert loaded.user_modified is True
+    assert loaded.audit_trail[-1]["action"] == "build_reset_to_blank"
+    assert loaded.audit_trail[-1]["removed_part_count"] == 1
 
 
 # ── DraftPart.line_id ──────────────────────────────────────────────────────────
@@ -669,6 +702,38 @@ class TestConsoleSetupReplacement:
             if part.name.startswith("Center Console ·")
         )
         assert any(entry["action"] == "console_setup_replaced" for entry in loaded.audit_trail)
+
+    def test_persists_customer_supplied_typed_component_without_sku(self, tmp_path):
+        paths = _paths(tmp_path)
+        console = _part(name="Center Console", part_type="console")
+        draft = _saved_draft(paths, [console])
+
+        result = handle_replace_console_setup_parts(draft.draft_id, console.line_id, {
+            "rows": [{
+                "name": "Center Console · Docking Station · Customer Toughbook dock",
+                "part_number": "",
+                "part_type": "docking_station",
+                "accessory_category": "console_component",
+                "supply_type": "customer_supplied",
+                "customer_condition": "new",
+                "picker_config": {
+                    "customer_supplied_unspecified": True,
+                    "customer_description": "Customer Toughbook dock",
+                    "console_setup_owner_line_id": console.line_id,
+                    "console_component_key": "dockingStation",
+                },
+            }],
+            "printer": None,
+            "printer_cables": [],
+        }, paths)
+
+        assert result["ok"] is True
+        loaded = load_draft(draft.draft_id, paths.workspace_drafts_dir)
+        dock = next(part for part in loaded.parts if part.part_type == "docking_station")
+        assert dock.part_number == ""
+        assert dock.supply_type == "customer_supplied"
+        assert dock.customer_condition == "new"
+        assert dock.picker_config["customer_description"] == "Customer Toughbook dock"
 
     def test_reuses_existing_radio_mic_clip_without_duplicate_magnetic_mic(self, tmp_path):
         """A later console setup can adopt the radio's mic mount atomically."""

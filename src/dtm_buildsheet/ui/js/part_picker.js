@@ -12,6 +12,7 @@ let _pickerState = {
   open: false,
   editLineId: null,
   editPart: null,
+  duplicateSourceLineId: null,
   tab: "part",
   types: [],
   browseTree: [],
@@ -53,10 +54,99 @@ let _pickerState = {
   vehicleOnly: true,       // hide parts/accessories not compatible with the draft's vehicle
   partStatus: "New",      // legacy compatibility value derived from `supply`
   supply: { supplyType: "new", customerCondition: "", customerSource: "" },
+  importSource: null,       // one explicitly reviewed QBO Estimate line
+  customLight: null,        // draft-local custom part using normal light setup + placement
   footerHandler: null,
   footerHandlerAnother: null,  // Step 7: "Add another part" action (null in edit mode)
   _footerWired: false,
 };
+
+function _pickerImportStageSession() {
+  const sessionId = _pickerState.importSource?.stageSessionId;
+  if (!sessionId || typeof window.PT_getQbEstimateImportSession !== "function") return null;
+  return window.PT_getQbEstimateImportSession(sessionId);
+}
+
+function _pickerStagedLineId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `qb-stage-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function _pickerImportProvenance() {
+  const source = _pickerState.importSource;
+  if (!source) return null;
+  return {
+    estimate_id: source.estimate_id,
+    estimate_number: source.estimate_number,
+    line_id: source.line_id,
+    item_id: source.item_id,
+    description: source.description,
+    amount: source.amount,
+    related_line_ids: (source.relatedLineIds || []).filter(Boolean),
+  };
+}
+
+// Estimate review uses the normal picker, but records draft mutations until
+// the reviewer presses the modal's final Import/Apply button.
+async function _pickerDraftApi(path, body) {
+  const session = _pickerImportStageSession();
+  if (!session) return api(path, body);
+  const payload = JSON.parse(JSON.stringify(body || {}));
+  const provenance = _pickerImportProvenance();
+  const isCustomAdd = /\/custom-part$/.test(path);
+  const isPartAdd = !isCustomAdd && /\/part$/.test(path);
+  const isAllocation = /\/location-allocation$/.test(path);
+
+  if (isPartAdd && !payload.parent_line_id) {
+    const reserved = session.stagedParents.get(String(_pickerState.importSource?.line_id || ""));
+    payload.line_id = payload.line_id || reserved?.line_id || _pickerStagedLineId();
+    payload.picker_config = { ...(payload.picker_config || {}), qb_import: provenance };
+    const hasPrice = _pickerState.importSource?.unit_price != null;
+    const price = Number(_pickerState.importSource?.unit_price);
+    if (hasPrice && Number.isFinite(price) && price >= 0) payload.picker_config.quote_unit_price_override = price;
+    session.stagedParents.set(String(_pickerState.importSource?.line_id || ""), {
+      line_id: payload.line_id,
+      name: payload.name || _pickerState.importSource?.accessoryModel || "Staged part",
+      location: payload.location || "",
+      part_number: payload.part_number || "",
+      product_ids: [_pickerState.importSource?.productId].filter(Boolean),
+    });
+  } else if (isAllocation) {
+    payload.rows = (payload.rows || []).map(row => ({
+      ...row,
+      line_id: row.line_id || _pickerStagedLineId(),
+      picker_config: { ...(row.picker_config || {}), qb_import: provenance },
+    }));
+    const firstRow = payload.rows[0];
+    if (firstRow) {
+      session.stagedParents.set(String(_pickerState.importSource?.line_id || ""), {
+        line_id: firstRow.line_id,
+        name: firstRow.name || _pickerState.importSource?.accessoryModel || "Staged part",
+        location: firstRow.location || "",
+        part_number: firstRow.part_number || "",
+        product_ids: [_pickerState.importSource?.productId].filter(Boolean),
+      });
+    }
+  } else if (isCustomAdd) {
+    payload.qb_import = provenance;
+  }
+
+  session.operations.push({
+    path,
+    body: payload,
+    sourceLineId: String(_pickerState.importSource?.line_id || ""),
+  });
+  const firstRow = isAllocation ? payload.rows?.[0] : null;
+  return {
+    ok: true,
+    line_id: payload.line_id || firstRow?.line_id || _pickerStagedLineId(),
+    line_ids: isAllocation ? (payload.rows || []).map(row => row.line_id) : undefined,
+    batch_id: payload.batch_id || "",
+    name: payload.name || firstRow?.name || "Staged part",
+    quantity: payload.quantity || firstRow?.quantity || 1,
+    staged: true,
+  };
+}
 
 const _PICKER_COLORS = {
   red:    { label: "Red",    hex: "#e53935" },
@@ -259,11 +349,15 @@ function _pickerApplyBrowseTarget(target) {
   _pickerRenderTracer(); _pickerRenderInnerEdge(); _pickerRenderOuterEdge(); _pickerRenderLightbar();
 }
 
-function pickerClose() {
+function pickerClose({ returnToEstimateReview = true } = {}) {
+  const importReturn = returnToEstimateReview
+    ? _pickerState.importSource?.returnToImport : null;
   pickerCustomPartClose();
   _pickerState.open = false;
   _pickerState.editLineId = null;
   _pickerState.editPart = null;
+  _pickerState.duplicateSourceLineId = null;
+  _pickerState.customLight = null;
   // Clear the tracer + accessory panels so they don't persist into the next open.
   _pickerState.tracer = { active: false, mode: _pickerState.tracer.mode,
                           secondary: _pickerState.tracer.secondary, lens: _pickerState.tracer.lens || "clear", preview: null, loading: false };
@@ -273,16 +367,41 @@ function pickerClose() {
   _pickerState.systemSetup = { active: false, kind: "", product: null };
   _pickerState.consoleSetup = _pickerNewConsoleSetup();
   _pickerState.westin = _pickerNewWestinState();
+  _pickerState.importSource = null;
   _pickerRenderTracer(); _pickerRenderInnerEdge(); _pickerRenderOuterEdge(); _pickerRenderLightbar(); _pickerRenderRadio();
   const acc = $("picker-accessories"); if (acc) { acc.hidden = true; acc.innerHTML = ""; }
   const panel = $("picker-panel");
   if (panel) panel.classList.remove("open");
+  // Opening an Estimate line temporarily disables its Review button. Closing
+  // without adding must re-render that review so the unresolved line becomes
+  // actionable again; successful adds already perform their own awaited
+  // refresh in _pickerFinalize.
+  if (importReturn && typeof window.PT_previewQbEstimateImport === "function") {
+    Promise.resolve(window.PT_previewQbEstimateImport(
+      importReturn.projectId, importReturn.individualId,
+    )).catch(error => {
+      console.error("Picker: could not restore Estimate review after cancel:", error);
+    });
+  }
 }
 
 // ── One-off billable custom parts ──────────────────────
 // These remain draft-local billable rows.  The small recent list is only a
 // convenience for this app installation; it never turns into QB inventory.
-const _pickerCustomPartState = { wired: false, conflict: null, recent: [], editLineId: "", categoriesLoaded: false, returnToPicker: false };
+const _pickerCustomPartState = {
+  wired: false, conflict: null, recent: [], editLineId: "", categoriesLoaded: false,
+  returnToPicker: false, sizes: [], initial: null, currentPart: null, duplicate: false,
+};
+
+const _PICKER_CUSTOM_LIGHT_STYLES = {
+  light_head: { label: "Individual light head", location: "" },
+  tracer_3lamp: { label: "3-lamp Tracer", location: "FIXTURE:TRACER_3LAMP" },
+  tracer_5lamp: { label: "5-lamp Tracer", location: "FIXTURE:TRACER_5LAMP" },
+  tracer_6lamp: { label: "6-lamp Tracer", location: "FIXTURE:TRACER_6LAMP" },
+  interior_light_bar_front: { label: "Front interior light bar", location: "INTERIOR LIGHT BAR (FRONT)" },
+  rear_interior_light_bar: { label: "Rear interior light bar", location: "INTERIOR LIGHT BAR (REAR)" },
+  roof_light_bar: { label: "Full-size roof light bar", location: "ROOF LIGHT BAR" },
+};
 
 function _pickerCustomPartInputs() {
   return {
@@ -291,7 +410,57 @@ function _pickerCustomPartInputs() {
     price: $("picker-custom-part-price"),
     quantity: $("picker-custom-part-qty"),
     category: $("picker-custom-part-category"),
+    location: $("picker-custom-part-location"),
+    renderLight: $("picker-custom-part-render-light"),
+    renderStyle: $("picker-custom-light-render-style"),
+    lightSize: $("picker-custom-light-size"),
   };
+}
+
+function _pickerCustomLightStyleChanged() {
+  const inputs = _pickerCustomPartInputs();
+  const style = inputs.renderStyle?.value || "light_head";
+  const sizeField = $("picker-custom-light-size-field");
+  if (sizeField) sizeField.hidden = style !== "light_head";
+  const help = $("picker-custom-light-style-help");
+  if (help) help.textContent = style === "light_head"
+    ? "Each selected quantity renders as an individual head at the chosen placement."
+    : style.startsWith("tracer_")
+      ? "One custom line renders on the running board as the selected row of separate lightheads. No placement choice or child-head SKUs are required."
+      : "Uses the same authored vehicle fixture and artwork as the normal bar type, without requiring a catalog SKU or detailed bar configuration.";
+}
+
+function _pickerCustomToggleLight() {
+  const inputs = _pickerCustomPartInputs();
+  const enabled = !!inputs.renderLight?.checked;
+  const section = $("picker-custom-light-settings");
+  if (section) section.hidden = !enabled;
+  if (inputs.location) inputs.location.disabled = enabled;
+  if (enabled) _pickerCustomLightStyleChanged();
+  const save = $("picker-custom-part-save");
+  if (save) save.textContent = enabled
+    ? "Continue to light setup"
+    : (_pickerCustomPartState.duplicate
+      ? "Add duplicated part"
+      : (_pickerCustomPartState.editLineId ? "Save custom part" : "Add billable custom part"));
+}
+
+async function _pickerCustomLoadLightOptions() {
+  try {
+    const manifest = await api("/api/manifest");
+    _pickerCustomPartState.sizes = Object.entries(manifest?.size_rule_definitions || {})
+      .filter(([id]) => id !== "tracer")
+      .map(([id, spec]) => ({
+      id, label: spec?.label || id,
+      }));
+  } catch (error) {
+    console.warn("Custom light options failed to load", error);
+    _pickerCustomPartState.sizes = [{ id: "sm", label: "Small" }];
+  }
+  const select = $("picker-custom-light-size");
+  if (select) select.innerHTML = _pickerCustomPartState.sizes.map(size =>
+    `<option value="${esc(size.id)}">${esc(size.label)}</option>`
+  ).join("");
 }
 
 function _pickerCustomClearConflict() {
@@ -373,14 +542,16 @@ async function _pickerCustomLoadCategories() {
 
 async function _pickerCustomCheckSku() {
   const sku = _pickerCustomPartInputs().sku?.value.trim() || "";
-  if (!sku) { _pickerCustomClearConflict(); return; }
+  if (!sku) { _pickerCustomClearConflict(); return false; }
   try {
     const result = await api(`/api/parts-db/sku-lookup?sku=${encodeURIComponent(sku)}`);
     // Ignore a slow response for a SKU the user has since changed.
-    if ((_pickerCustomPartInputs().sku?.value.trim() || "") !== sku) return;
+    if ((_pickerCustomPartInputs().sku?.value.trim() || "") !== sku) return false;
     _pickerCustomShowConflict(result?.found ? result.part : null);
+    return !!result?.found;
   } catch (error) {
     console.warn("SKU lookup failed", error);
+    return false;
   }
 }
 
@@ -396,43 +567,93 @@ function _pickerCustomWire() {
   const inputs = _pickerCustomPartInputs();
   inputs.sku?.addEventListener("input", _pickerCustomClearConflict);
   inputs.sku?.addEventListener("blur", _pickerCustomCheckSku);
+  inputs.renderLight?.addEventListener("change", _pickerCustomToggleLight);
+  inputs.renderStyle?.addEventListener("change", _pickerCustomLightStyleChanged);
   _pickerCustomPartState.wired = true;
 }
 
-async function pickerCustomPartOpen(part = null) {
+async function pickerCustomPartOpen(part = null, options = {}) {
   const draftId = (typeof _meDraftId !== "undefined") ? _meDraftId : null;
   if (!draftId) { toast("No active build", "error"); return; }
   _pickerCustomWire();
   _pickerCustomClearConflict();
-  _pickerCustomPartState.editLineId = part?.line_id || "";
+  _pickerState.importSource = options.importSource || null;
+  _pickerCustomPartState.duplicate = options.duplicate === true;
+  _pickerCustomPartState.editLineId = _pickerCustomPartState.duplicate ? "" : (part?.line_id || "");
+  _pickerCustomPartState.currentPart = part || null;
   const pickerPanel = $("picker-panel");
   _pickerCustomPartState.returnToPicker = !!pickerPanel?.classList.contains("open");
   if (_pickerCustomPartState.returnToPicker) pickerPanel.classList.remove("open");
   const form = $("picker-custom-part-form");
   form?.reset();
-  await _pickerCustomLoadCategories();
+  await Promise.all([_pickerCustomLoadCategories(), _pickerCustomLoadLightOptions()]);
   const inputs = _pickerCustomPartInputs();
   const custom = part?.picker_config?.custom_part || {};
-  inputs.sku.value = custom.sku || part?.part_number || "";
-  inputs.description.value = custom.description || part?.name || "";
-  inputs.price.value = custom.unit_price ?? "";
-  inputs.quantity.value = part?.quantity || 1;
-  inputs.category.value = part?.part_type && part.part_type !== "custom_part" ? part.part_type : "";
+  const initial = options.initial || {};
+  inputs.sku.value = initial.sku ?? custom.sku ?? part?.part_number ?? "";
+  inputs.description.value = initial.description ?? custom.description ?? part?.name ?? "";
+  inputs.price.value = initial.unitPrice ?? custom.unit_price ?? "";
+  inputs.quantity.value = initial.quantity ?? part?.quantity ?? 1;
+  inputs.category.value = initial.partType ?? (part?.part_type && part.part_type !== "custom_part" ? part.part_type : "");
+  inputs.location.value = initial.location ?? part?.location ?? "";
+  inputs.location.dataset.manualValue = inputs.location.value;
+  const customLight = part?.picker_config?.custom_light || initial.customLight || {};
+  inputs.renderLight.checked = customLight.enabled === true;
+  inputs.renderStyle.value = customLight.render_style
+    || (customLight.size_rule_id === "tracer" ? "tracer_5lamp" : "light_head");
+  inputs.lightSize.value = customLight.size_rule_id === "tracer" ? "sm" : (customLight.size_rule_id || "sm");
+  $("picker-custom-light-settings").hidden = !inputs.renderLight.checked;
+  inputs.location.disabled = inputs.renderLight.checked;
+  _pickerCustomLightStyleChanged();
   const editing = !!_pickerCustomPartState.editLineId;
   const title = $("picker-custom-part-title");
   const save = $("picker-custom-part-save");
-  if (title) title.textContent = editing ? "Edit Custom Part" : "Add Custom Part";
-  if (save) save.textContent = editing ? "Save custom part" : "Add billable custom part";
+  if (title) title.textContent = _pickerCustomPartState.duplicate
+    ? "Duplicate Custom Part" : (editing ? "Edit Custom Part" : "Add Custom Part");
+  if (save) save.textContent = inputs.renderLight.checked
+    ? "Continue to light setup"
+    : (_pickerCustomPartState.duplicate ? "Add duplicated part" : (editing ? "Save custom part" : "Add billable custom part"));
   $("picker-custom-part-modal")?.classList.add("open");
   $("picker-custom-part-sku")?.focus();
   await _pickerCustomLoadRecent();
 }
+
+window.pickerOpenCustomEstimateLine = async function (source) {
+  const values = source?.values || {};
+  await pickerCustomPartOpen(null, {
+    initial: {
+      sku: values.sku || "",
+      description: values.description || "Custom part",
+      unitPrice: values.unitPrice,
+      quantity: values.quantity || 1,
+      location: values.location || "",
+      customLight: { enabled: true, size_rule_id: "sm", lens: "", heads: [] },
+    },
+    importSource: {
+      estimate_id: String(source?.estimate_id || ""),
+      estimate_number: String(source?.estimate_number || ""),
+      line_id: String(source?.line_id || ""),
+      item_id: String(source?.item_id || ""),
+      description: String(source?.description || ""),
+      amount: source?.amount == null ? null : Number(source.amount),
+      relatedLineIds: [],
+      stageSessionId: String(source?.stage_session_id || ""),
+      returnToImport: source?.return_to_import?.project_id && source?.return_to_import?.individual_id ? {
+        projectId: String(source.return_to_import.project_id),
+        individualId: String(source.return_to_import.individual_id),
+      } : null,
+    },
+  });
+};
 
 function pickerCustomPartClose(options = {}) {
   const reopenPicker = options?.reopen !== false;
   $("picker-custom-part-modal")?.classList.remove("open");
   _pickerCustomClearConflict();
   _pickerCustomPartState.editLineId = "";
+  _pickerCustomPartState.initial = null;
+  _pickerCustomPartState.currentPart = null;
+  _pickerCustomPartState.duplicate = false;
   if (reopenPicker && _pickerCustomPartState.returnToPicker) $("picker-panel")?.classList.add("open");
   _pickerCustomPartState.returnToPicker = false;
 }
@@ -440,7 +661,10 @@ function pickerCustomPartClose(options = {}) {
 async function _pickerCustomUseExisting() {
   const match = _pickerCustomPartState.conflict;
   if (!match?.product_id || !match?.part_number) return;
+  const shouldOpenPicker = !$("picker-panel")?.classList.contains("open");
   pickerCustomPartClose();
+  if (shouldOpenPicker) _pickerOpenPanel(_pickerState.importSource ? `Import ${match.part_number}` : "Add Part");
+  if (!(_pickerState.types || []).length) await _pickerLoadTypes();
   _pickerState.search = match.part_number;
   _pickerState.searchGlobal = true;
   _pickerState.sel = null;
@@ -486,25 +710,289 @@ async function _pickerCustomUseExisting() {
   toast("Opened the existing SKU — finish its normal setup", "info");
 }
 
+// Open one exact, already-reviewed QBO Estimate line in the normal picker.
+// The SKU remains authoritative: its catalog colors/lens are prefilled and
+// only physical build information (location, allocation, accessories, etc.)
+// remains for the user to answer.
+function _pickerEstimateGuidedChoices(kind, systemProduct, components) {
+  const rows = (components || []).map(component => ({
+    ...component,
+    match: component?.catalog_match || {},
+    partTypes: component?.catalog_match?.part_type_ids || [],
+  }));
+  const hasType = partType => rows.some(row => row.partTypes.includes(partType));
+  const quotedText = rows.map(row => [
+    row.match.part_number, row.match.model, row.description,
+  ].filter(Boolean).join(" ")).join(" ");
+  const componentSupply = {};
+  const quotedComponents = {};
+  const markNew = key => { componentSupply[key] = _pickerSupplyPayload({ supplyType: "new" }); };
+  const quoteAs = (key, partType) => {
+    const row = rows.find(candidate => candidate.partTypes.includes(partType));
+    if (!row?.match?.part_number) return;
+    quotedComponents[key] = {
+      part_number: row.match.part_number,
+      manufacturer: row.match.manufacturer || "",
+      quantity: Math.max(1, Number(row.quantity) || 1),
+    };
+  };
+  const choices = {
+    systemProduct, supplyType: "new", condition: "new", provider: "dtm",
+    purchaseDetails: rows.map(row => row.match.part_number).filter(Boolean).join(", "),
+    componentSupply, quotedComponents,
+  };
+  if (kind === "radio") {
+    choices.format = hasType("radio_brick") ? "split" : _pickerRadioFormatForSelectedProduct(systemProduct);
+    markNew("radio_control_head");
+    quoteAs("radio_control_head", "radio_head");
+    if (hasType("radio_brick")) markNew("radio_brick");
+    quoteAs("radio_brick", "radio_brick");
+    if (hasType("radio_antenna_top")) markNew("radio_antenna");
+    quoteAs("radio_antenna", "radio_antenna_top");
+    if (hasType("radio_speaker")) markNew("radio_speaker");
+    quoteAs("radio_speaker", "radio_speaker");
+    if (hasType("radio_mic_clip") || /\b(?:mag\s*mic|mmsu|mmbp)\b/i.test(quotedText)) {
+      choices.micMount = /with\s+bracket|mmsu-?1b/i.test(quotedText)
+        ? "magnetic_with_bracket"
+        : /\b(?:mag\s*mic|mmsu|mmbp)\b/i.test(quotedText)
+          ? "magnetic_no_bracket" : "manufacturer_clip";
+      markNew("radio_microphone");
+    }
+    if (/\bwhip\b/i.test(quotedText)) choices.antennaStyle = "whip";
+    else if (/\bcylinder\b/i.test(quotedText)) choices.antennaStyle = "cylinder";
+    else if (/\bcovert\b|window/i.test(quotedText)) choices.antennaStyle = "covert";
+  } else if (kind === "radar") {
+    choices.split = hasType("radar_counting_unit") ? "yes" : "no";
+    markNew("radar_display");
+    quoteAs("radar_display", "radar_display_unit");
+    if (choices.split === "yes") markNew("radar_counting");
+    quoteAs("radar_counting", "radar_counting_unit");
+    if (hasType("front_radar_antenna_mount")) markNew("radar_front_antenna");
+    quoteAs("radar_front_antenna", "front_radar_antenna_mount");
+    if (hasType("rear_radar_antenna_mount")) markNew("radar_rear_antenna");
+    quoteAs("radar_rear_antenna", "rear_radar_antenna_mount");
+  } else if (kind === "camera") {
+    choices.cameraBrand = _systemCameraPlatform({ systemProduct });
+    choices.cameraParts = [
+      ...(hasType("front_camera") ? ["front"] : []),
+      ...(hasType("rear_seat_camera") ? ["rear_seat"] : []),
+      ...(hasType("rear_camera") ? ["rear"] : []),
+      ...(hasType("body_camera_dock") ? ["body_dock"] : []),
+      ...(hasType("wireless_mic_charger") ? ["wireless_mic"] : []),
+    ];
+    markNew("camera_dvr");
+    quoteAs("camera_dvr", "camera_dvr");
+    for (const key of choices.cameraParts) markNew(`camera_${key}`);
+    const cameraTypes = {
+      front: "front_camera", rear_seat: "rear_seat_camera", rear: "rear_camera",
+      body_dock: "body_camera_dock", wireless_mic: "wireless_mic_charger",
+    };
+    for (const key of choices.cameraParts) quoteAs(`camera_${key}`, cameraTypes[key]);
+  }
+  return choices;
+}
+
+window.pickerOpenEstimateLine = async function (source) {
+  const match = source?.catalog_match;
+  if (!match?.product_id || !match?.part_number) {
+    toast("This Estimate line is not mapped to an exact catalog SKU", "error");
+    return;
+  }
+  _pickerResetState();
+  _pickerState.importSource = {
+    estimate_id: String(source.estimate_id || ""),
+    estimate_number: String(source.estimate_number || ""),
+    line_id: String(source.line_id || ""),
+    item_id: String(source.item_id || ""),
+    quantity: Math.max(1, Number(source.quantity) || 1),
+    unit_price: source.unit_price == null ? null : Number(source.unit_price),
+    amount: source.amount == null ? null : Number(source.amount),
+    description: String(source.description || ""),
+    guidedComponents: Array.isArray(source.guided_estimate_components)
+      ? source.guided_estimate_components : [],
+    relatedLineIds: (source.guided_estimate_components || [])
+      .map(component => String(component?.line_id || ""))
+      .filter(lineId => lineId && lineId !== String(source.line_id || "")),
+    productId: String(match.product_id || ""),
+    stageSessionId: String(source.stage_session_id || ""),
+    accessoryModel: String(match.model || match.part_number || "Accessory"),
+    accessoryRelation: source.accessory_relation?.parent_line_id ? {
+      parentLineId: String(source.accessory_relation.parent_line_id),
+      parentName: String(source.accessory_relation.parent_name || "Parent part"),
+      parentProductId: String(source.accessory_relation.parent_product_id || ""),
+      category: String(source.accessory_relation.accessory_category || "other"),
+    } : null,
+    returnToImport: source.return_to_import?.project_id && source.return_to_import?.individual_id ? {
+      projectId: String(source.return_to_import.project_id),
+      individualId: String(source.return_to_import.individual_id),
+    } : null,
+  };
+  const relation = _pickerState.importSource.accessoryRelation;
+  _pickerOpenPanel(relation
+    ? `Import ${match.part_number} for ${relation.parentName}`
+    : `Import ${match.part_number}`);
+  await _pickerLoadTypes();
+  _pickerState.search = match.part_number;
+  _pickerState.searchGlobal = true;
+  await _pickerFetchProducts();
+  let product = (_pickerState.products || []).find(item => item.product_id === match.product_id);
+  // Global browsing deliberately omits accessory-only part types so wire
+  // covers, brackets, and similar children do not clutter normal searches.
+  // An Estimate import already has an exact catalog match, so fall back to
+  // that part type instead of treating the intentionally hidden accessory as
+  // a stale SKU.
+  if (!product && match.primary_part_type_id) {
+    try {
+      const response = await api(
+        `/api/parts-db/category-skus?type=equipment&part_type=${encodeURIComponent(match.primary_part_type_id)}&include_accessory_links=1`,
+      );
+      const exactProducts = response?.products || [];
+      product = exactProducts.find(item => item.product_id === match.product_id) || null;
+      if (product) {
+        _pickerState.products = exactProducts;
+        _pickerState.availAll = new Set(
+          exactProducts.flatMap(item => (item.skus || []).flatMap(itemSku => [
+            itemSku.color, itemSku.secondary_color, itemSku.tertiary_color,
+          ].filter(Boolean))),
+        );
+        _pickerNormalizeConfig();
+      }
+    } catch (error) {
+      console.error("Picker: exact imported accessory lookup failed:", error);
+    }
+  }
+  if (product && match.fixed_location && !product.fixed_location) {
+    product = { ...product, fixed_location: match.fixed_location };
+    _pickerState.products = (_pickerState.products || []).map(item =>
+      item.product_id === product.product_id ? product : item
+    );
+  }
+  const sku = product?.skus?.find(item => item.part_number === match.part_number);
+  if (!product || !sku) {
+    pickerClose();
+    toast("The matched catalog SKU is no longer available", "error");
+    return;
+  }
+
+  const contextChanged = _pickerApplyProductContext(product);
+  _pickerResetLocation();
+  _pickerState.expanded = new Set([product.product_id]);
+  const usesColor = _pickerUsesColor(product) && _pickerProductHasColor(product);
+  const quantity = _pickerState.importSource.quantity;
+  _pickerState.config.count = quantity;
+  if (usesColor) {
+    _pickerState.sel = {
+      product_id: product.product_id, model: product.model, mfr: product.manufacturer_label,
+    };
+    const colors = [sku.color, sku.secondary_color, sku.tertiary_color]
+      .filter(Boolean).map(color => String(color).toLowerCase());
+    if (colors.length) {
+      const config = _pickerState.config;
+      config.colorsPerHead = colors.length === 1 ? "single" : colors.length === 2 ? "duo" : "trio";
+      config.mode = "uniform";
+      config.uniform = colors;
+      config.splitSecondary = [];
+      config.custom = [];
+      config._noColor = false;
+      _pickerState.skuChoices = Object.fromEntries(
+        Array.from({ length: quantity }, (_, index) => [`head_${index}`, sku.part_number])
+      );
+    }
+  } else {
+    _pickerState.sel = {
+      product_id: product.product_id, model: product.model,
+      mfr: product.manufacturer_label, sku: sku.part_number,
+    };
+  }
+  if (sku.lens_type) _pickerState.filters.lens = sku.lens_type;
+  if (_pickerUsesLocationAllocation(product)) {
+    _pickerState.roundLightColor = String(sku.color || "").toLowerCase() === "blue"
+      ? "blue" : "red";
+  }
+  _pickerState.supply = { supplyType: "new", customerCondition: "", customerSource: "" };
+  _pickerActivateWestinBumper(product);
+  if (contextChanged) _pickerRenderFilters();
+  _pickerRenderProducts();
+  _pickerUpdateFooter();
+  const guidedKind = (source.guided_kinds || []).find(kind => ["radio", "radar", "camera", "console"].includes(kind));
+  if (["radio", "radar", "camera"].includes(guidedKind)) {
+    _pickerSetSystemFilters(guidedKind);
+    const systemProduct = _pickerSystemProductRecord(product, sku);
+    const choices = _pickerEstimateGuidedChoices(
+      guidedKind, systemProduct, _pickerState.importSource.guidedComponents,
+    );
+    await _pickerLoadSystemWorkflow(guidedKind, choices, 0);
+    const firstUnanswered = _systemSteps().findIndex(step => !_systemStepSatisfied(step));
+    _pickerState.radio.step = firstUnanswered < 0 ? Math.max(0, _systemSteps().length - 1) : firstUnanswered;
+    _pickerRefreshSystemView();
+    _pickerSwitchTab("location");
+    toast(`Complete the ${guidedKind} setup; it will stay staged until final import`, "info");
+    return;
+  }
+  if (guidedKind === "console") {
+    await _pickerBeginConsoleSetup();
+    toast("Complete the console setup; it will stay staged until final import", "info");
+    return;
+  }
+  await _pickerLoadAccessories(product.product_id);
+  await _pickerLoadTracer(product.product_id);
+  await _pickerLoadInnerEdge(product.product_id);
+  await _pickerLoadOuterEdge(product.product_id);
+  await _pickerLoadLightbar(product.product_id);
+  _pickerLoadFixture(product.product_id);
+  _pickerApplyFixedPartLocation();
+  _pickerUpdateFooter();
+  const addButton = $("picker-add-btn");
+  if (product.is_fixture && _pickerState.loc.selected
+      && addButton?.textContent === "Add and Finish" && !addButton.disabled) {
+    toast(`${match.part_number} uses a fixture location and is being placed automatically`, "info");
+    await _pickerDoAdd(false);
+    return;
+  }
+  toast(`Estimate ${source.estimate_number || source.estimate_id}: ${match.part_number} is ready for placement`, "info");
+};
+
 async function _pickerCustomSubmit(allowExistingDuplicate) {
   const form = $("picker-custom-part-form");
   if (form && !form.reportValidity()) return;
   const draftId = (typeof _meDraftId !== "undefined") ? _meDraftId : null;
   if (!draftId) { toast("No active build", "error"); return; }
   const inputs = _pickerCustomPartInputs();
+  if (inputs.renderLight?.checked) {
+    if (!allowExistingDuplicate && await _pickerCustomCheckSku()) return;
+    await _pickerBeginCustomLightSetup({
+      sku: inputs.sku.value.trim(),
+      description: inputs.description.value.trim(),
+      unitPrice: inputs.price.value,
+      quantity: inputs.quantity.value,
+      partType: inputs.category.value,
+      sizeRuleId: inputs.lightSize.value,
+      renderStyle: inputs.renderStyle.value || "light_head",
+      initialLocation: inputs.location.value.trim(),
+      allowExistingDuplicate: !!allowExistingDuplicate,
+      editLineId: _pickerCustomPartState.editLineId,
+      existingPart: _pickerCustomPartState.currentPart,
+      duplicate: _pickerCustomPartState.duplicate,
+      importSource: _pickerState.importSource,
+    });
+    return;
+  }
   const save = $("picker-custom-part-save");
   if (save) save.disabled = true;
   try {
     const editLineId = _pickerCustomPartState.editLineId;
+    const duplicating = !editLineId && _pickerCustomPartState.duplicate;
     const endpoint = editLineId
       ? `/api/draft/${draftId}/custom-part/${editLineId}/update`
       : `/api/draft/${draftId}/custom-part`;
-    const result = await api(endpoint, {
+    const result = await _pickerDraftApi(endpoint, {
       sku: inputs.sku.value.trim(),
       description: inputs.description.value.trim(),
       unit_price: inputs.price.value,
       quantity: inputs.quantity.value,
       part_type: inputs.category.value,
+      location: inputs.location.value.trim(),
+      custom_light: null,
       allow_existing_duplicate: !!allowExistingDuplicate,
     });
     if (result?.error === "catalog_sku_exists") {
@@ -516,7 +1004,16 @@ async function _pickerCustomSubmit(allowExistingDuplicate) {
       return;
     }
     pickerCustomPartClose({ reopen: false });
-    toast(editLineId ? "Custom part updated" : "Billable custom part added", "success");
+    const missing = [
+      !inputs.sku.value.trim() ? "SKU" : "",
+      !inputs.location.value.trim() ? "location" : "",
+    ].filter(Boolean);
+    toast(
+      missing.length
+        ? `Custom part saved, but ${missing.join(" and ")} must be completed before finalization`
+        : editLineId ? "Custom part updated" : (duplicating ? "Custom part duplicated" : "Billable custom part added"),
+      missing.length ? "warn" : "success",
+    );
     await _pickerFinalize(draftId, false);
   } catch (error) {
     console.error("Custom part save failed", error);
@@ -524,6 +1021,111 @@ async function _pickerCustomSubmit(allowExistingDuplicate) {
   } finally {
     if (save) save.disabled = false;
   }
+}
+
+function _pickerRestoreCustomLightConfig(part, quantity) {
+  const saved = part?.picker_config || {};
+  const light = saved.custom_light || {};
+  const savedHeads = Array.isArray(light.heads) ? light.heads : [];
+  const inferredSlots = Math.max(1, Math.min(3,
+    savedHeads.reduce((max, head) => Math.max(max, head?.colors?.length || 0), 1),
+  ));
+  const colorsPerHead = ["single", "duo", "trio"].includes(saved.colorsPerHead)
+    ? saved.colorsPerHead : ({ 1: "single", 2: "duo", 3: "trio" }[Number(saved.colorsPerHead)] || ({ 1: "single", 2: "duo", 3: "trio" }[inferredSlots]));
+  const mode = ["uniform", "split", "custom"].includes(saved.mode) ? saved.mode : "uniform";
+  const fallbackHeads = savedHeads.map(head => Array.isArray(head?.colors) ? [...head.colors] : []);
+  return {
+    count: Math.min(12, Math.max(1, Number(saved.count ?? quantity) || 1)),
+    colorsPerHead,
+    mode,
+    uniform: Array.isArray(saved.uniform) && saved.uniform.length
+      ? [...saved.uniform] : (fallbackHeads[0]?.length ? [...fallbackHeads[0]] : ["red"]),
+    splitSecondary: Array.isArray(saved.splitSecondary) ? [...saved.splitSecondary] : [],
+    custom: Array.isArray(saved.custom) && saved.custom.length
+      ? saved.custom.map(colors => Array.isArray(colors) ? [...colors] : []) : fallbackHeads,
+    _noColor: false,
+    __allowAll: true,
+  };
+}
+
+async function _pickerBeginCustomLightSetup(fields) {
+  const existingPart = fields.existingPart || null;
+  const existingConfig = existingPart?.picker_config || {};
+  _pickerResetState();
+  _pickerState.customLight = {
+    sku: fields.sku,
+    description: fields.description,
+    unitPrice: fields.unitPrice,
+    partType: fields.partType,
+    sizeRuleId: fields.sizeRuleId,
+    renderStyle: fields.renderStyle || "light_head",
+    allowExistingDuplicate: fields.allowExistingDuplicate,
+  };
+  _pickerState.importSource = fields.importSource || null;
+  _pickerState.editLineId = fields.editLineId || null;
+  _pickerState.editPart = existingPart;
+  _pickerState.filters = {
+    type_id: "lights", type_label: "Lights", category_id: "warning", category_label: "Warning",
+    family_id: "", family_label: "", part_type_id: "warning_light", part_type_ids: ["warning_light"],
+    part_type_label: "Warning Light", brand: "", lens: existingPart?.lens || existingConfig.lens || "",
+  };
+  _pickerState.config = _pickerRestoreCustomLightConfig(existingPart, fields.quantity);
+  _pickerState.availAll = new Set(["red", "blue", "amber", "white", "green"]);
+  const synthetic = {
+    product_id: "__custom_light__",
+    model: fields.description || "Custom light head",
+    manufacturer_label: "Custom",
+    primary_type_id: "lights",
+    primary_category_id: "warning",
+    primary_part_type_id: "warning_light",
+    picker_custom_light: true,
+    allow_custom_location: true,
+    skus: [{ part_number: fields.sku || "CUSTOM", color: "red", vehicle_tags: ["ANY"] }],
+  };
+  _pickerState.products = [synthetic];
+  _pickerState.sel = { product_id: synthetic.product_id, model: synthetic.model, mfr: synthetic.manufacturer_label };
+  _pickerState.expanded = new Set([synthetic.product_id]);
+  _pickerNormalizeConfig(synthetic);
+
+  if (existingPart) {
+    const customLocation = existingConfig.custom_location;
+    _pickerState.loc.selected = existingPart.location || null;
+    if (customLocation && typeof customLocation === "object") {
+      _pickerState.loc.textCustom = true;
+      _pickerState.loc.renderLocation = customLocation.render_location || "";
+      _pickerState.loc.customPlacementMode = "vehicle";
+      _pickerState.loc.customPlacementLayout = customLocation.layout === "mirrored_pairs" ? "mirrored_pairs" : "even";
+      _pickerState.loc.customPlacements = _pickerNormalizeCustomPlacements(customLocation.placements);
+      _pickerState.loc.customPlacementAnchors = _pickerNormalizeCustomAnchors(customLocation.anchors);
+      _pickerState.loc.customHeadSpacing = _pickerNormalizeCustomSpacing(customLocation.spacing);
+    }
+  } else {
+    const styleLocation = _PICKER_CUSTOM_LIGHT_STYLES[fields.renderStyle]?.location || "";
+    _pickerState.loc.selected = fields.initialLocation || styleLocation || null;
+    if (fields.initialLocation) {
+      _pickerState.loc.textCustom = true;
+      _pickerState.loc.customStage = "placement";
+    }
+  }
+  if ((fields.renderStyle || "").startsWith("tracer_")) {
+    // Custom Tracers always use the running-board fixture, never a user-chosen
+    // warning-light location. Force that fixture and skip Details/location.
+    _pickerState.loc.selected = _PICKER_CUSTOM_LIGHT_STYLES[fields.renderStyle].location;
+    _pickerState.loc.textCustom = false;
+    _pickerState.loc.renderLocation = "";
+    _pickerState.loc.customPlacements = {};
+    _pickerState.loc.customPlacementAnchors = {};
+    _pickerState.loc.autoLocation = "custom_tracer";
+  }
+
+  $("picker-custom-part-modal")?.classList.remove("open");
+  _pickerCustomPartState.editLineId = "";
+  _pickerCustomPartState.currentPart = null;
+  _pickerCustomPartState.returnToPicker = false;
+  _pickerOpenPanel(fields.duplicate
+    ? "Duplicate Custom Light" : (existingPart ? "Edit Custom Light" : "Configure Custom Light"));
+  _pickerCustomPartState.duplicate = false;
+  _pickerSwitchTab("part");
 }
 
 // Cancel the current product selection and close the bottom config panels
@@ -551,7 +1153,7 @@ function _pickerClearSelection() {
 // PICKER_REDESIGN.md Step 6: full pre-fill + type-lock replacing the F-005 stopgap.
 // Opens the picker with every filter, product box, and option already set to
 // exactly the state the user left when they added/last-saved this part.
-async function _pickerOpenEdit(part) {
+async function _pickerOpenEdit(part, { duplicate = false } = {}) {
   if (!part) return;
   // Every console-owned row routes back to the one setup that owns the
   // combined choices, whether it is nested below the console or (for the
@@ -562,11 +1164,12 @@ async function _pickerOpenEdit(part) {
     if (owner) part = owner;
   }
   _pickerResetState();
-  _pickerState.editLineId = part.line_id;
+  _pickerState.editLineId = duplicate ? null : part.line_id;
   _pickerState.editPart = part;
+  _pickerState.duplicateSourceLineId = duplicate ? part.line_id : null;
   _pickerSetSupplyFromRecord(part);
   _pickerState.comment = part.comment || "";
-  _pickerOpenPanel("Edit Part");
+  _pickerOpenPanel(duplicate ? "Duplicate Part" : "Edit Part");
   await _pickerLoadTypes();
 
   // Guided systems always restart at their first question for review, while
@@ -693,6 +1296,7 @@ async function _pickerOpenEdit(part) {
     c.count = Math.max(1, Object.values(_pickerState.locationAllocation.quantities).reduce((sum, value) => sum + (Number(value) || 0), 0));
     _pickerNormalizeConfig();
   }
+  if (duplicate) _pickerState.locationAllocation.batchId = "";
   _pickerState.sirenDualTones = pc.siren_dual_tones === true;
   if (pc.westin) {
     _pickerState.westin = {
@@ -759,6 +1363,7 @@ function _pickerResetState() {
   _pickerState.open = true;
   _pickerState.editLineId = null;
   _pickerState.editPart = null;
+  _pickerState.duplicateSourceLineId = null;
   _pickerState.tab = "part";
   _pickerState.step = 0;          // current left-pane wizard step
   _pickerState.filters = { type_id: "lights", type_label: "Lights", category_id: "", category_label: "", family_id: "", family_label: "", part_type_id: "", part_type_ids: [], part_type_label: "", brand: "", lens: "" };
@@ -797,6 +1402,8 @@ function _pickerResetState() {
   _pickerState.westin = _pickerNewWestinState();
   _pickerState.partStatus = "New";
   _pickerState.supply = { supplyType: "new", customerCondition: "", customerSource: "" };
+  _pickerState.importSource = null;
+  _pickerState.customLight = null;
   try {                            // persisted toggle; default ON
     const v = localStorage.getItem("pp_vehicle_only");
     _pickerState.vehicleOnly = v === null ? true : v === "1";
@@ -1114,6 +1721,21 @@ function _pickerSteps() {
 function _pickerRenderFilters() {
   const el = $("picker-filters");
   if (!el) return;
+  if (_pickerState.customLight) {
+    const size = _pickerCustomPartState.sizes.find(item => item.id === _pickerState.customLight.sizeRuleId);
+    const style = _PICKER_CUSTOM_LIGHT_STYLES[_pickerState.customLight.renderStyle]
+      || _PICKER_CUSTOM_LIGHT_STYLES.light_head;
+    const sizeLabel = _pickerState.customLight.renderStyle === "light_head"
+      ? ` · ${esc(size?.label || _pickerState.customLight.sizeRuleId)}` : "";
+    const workflowHelp = _pickerState.customLight.renderStyle.startsWith("tracer_")
+      ? "Use the normal light color and lens controls here. This Tracer is automatically placed on the running board. Every renderable option stays available because it is not matched to catalog SKUs."
+      : "Use the normal light controls here, then continue to the normal placement screen. Every renderable color and lens option stays available because this part is not matched to catalog SKUs.";
+    el.innerHTML = `<div class="pf-group"><span class="pf-label">Custom lighting</span>
+      <strong>${esc(_pickerState.customLight.description || "Custom light")}</strong>
+      <span style="font-size:12px;color:var(--muted)">${esc(_pickerState.customLight.sku || "No SKU")} · ${esc(style.label)}${sizeLabel}</span>
+      <p style="font-size:12px;color:var(--muted);line-height:1.45">${workflowHelp}</p></div>`;
+    return;
+  }
   const f = _pickerState.filters;
   const steps = _pickerSteps();
   _pickerState.step = Math.max(0, Math.min(_pickerState.step, steps.length - 1));
@@ -1249,12 +1871,14 @@ function _pickerBrowseTreeHtml() {
 // Prepend the "Remove options" toggle. When filter is off, hide filter controls
 // entirely (qty stays); clicking the button is the only re-engage path (Step 3).
 function _pickerOptionsHtml(countHtml, filterHtml) {
+  if (_pickerState.customLight) return countHtml + filterHtml;
   const off = _pickerState.optionsRemoved || false;
   const btn = `<div class="pf-group pp-opts-ctrl"><button class="pp-opts-toggle-btn${off ? " active" : ""}" data-opts-remove="1">${off ? "⊘ Filter off" : "Remove options"}</button></div>`;
   return btn + countHtml + (off ? "" : filterHtml);
 }
 
 function _pickerAllowedColors(product = null) {
+  if (_pickerState.customLight) return ["red", "blue", "amber", "white", "green"];
   return _pickerProductCategory(product) === "interior"
     ? ["red", "blue", "white"]
     : _PICKER_COLOR_ORDER;
@@ -1339,9 +1963,10 @@ function _pickerSwatchRow(kind, slot, selected) {
 }
 
 function _pickerSwatchMulti(head, arr, max) {
+  const c = _pickerState.config;
   return `<div class="picker-swatches" data-kind="custom" data-head="${head}">` +
     _pickerAllowedColors().map(col => {
-      const avail = _pickerState.availAll.has(col);
+      const avail = c.__allowAll || _pickerState.availAll.has(col);
       const d = _PICKER_COLORS[col];
       return `<button class="picker-swatch${arr.includes(col) ? " sel" : ""}${avail ? "" : " dim"}" data-color="${col}" ${avail ? "" : "disabled"} title="${esc(d.label)}" style="background:${d.hex};border-color:${d.border || d.hex}"></button>`;
     }).join("") + `<span style="font-size:11px;color:var(--muted)">${arr.length}/${max}</span></div>`;
@@ -1538,6 +2163,7 @@ function _pickerComboLabel(hs) { return hs.length ? hs.map(x => x[0].toUpperCase
 // A product is color-configured only if at least one SKU carries a color.
 // Programmable (WeCanX) bars have none → picked directly by SKU.
 function _pickerProductHasColor(p) {
+  if (p?.picker_custom_light === true) return true;
   if (p?.picker_direct_sku === true) return false;
   return (p.skus || []).some(s => s.color || s.secondary_color || s.tertiary_color);
 }
@@ -1947,20 +2573,46 @@ function _pickerLocationAllocationTotal() {
     .reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
 }
 
+function _pickerLocationAllocationLimit() {
+  const importedQuantity = Number(_pickerState.importSource?.quantity || 0);
+  return importedQuantity > 0 ? Math.min(12, importedQuantity) : 12;
+}
+
+function _pickerLocationAllocationOptions(product = null) {
+  const options = [...((product || _pickerSelectedProduct())?.location_options || [])];
+  const seen = new Set(options.map(value => String(value).trim().toLowerCase()));
+  for (const [location, quantity] of Object.entries(
+    _pickerState.locationAllocation?.quantities || {},
+  )) {
+    const normalized = String(location || "").trim();
+    const key = normalized.toLowerCase();
+    if (!normalized || seen.has(key) || Number(quantity) <= 0) continue;
+    options.push(normalized);
+    seen.add(key);
+  }
+  return options;
+}
+
 function _pickerLocationAllocationReady() {
-  return !_pickerUsesLocationAllocation() || _pickerLocationAllocationTotal() > 0;
+  if (!_pickerUsesLocationAllocation()) return true;
+  const total = _pickerLocationAllocationTotal();
+  const importedQuantity = Number(_pickerState.importSource?.quantity || 0);
+  return importedQuantity > 0 ? total === importedQuantity : total > 0;
 }
 
 function _pickerLocationAllocationHtml(product) {
   const quantities = _pickerState.locationAllocation.quantities || {};
   const comments = _pickerState.locationAllocation.comments || {};
-  const options = product.location_options || [];
+  const options = _pickerLocationAllocationOptions(product);
   const total = _pickerLocationAllocationTotal();
+  const limit = _pickerLocationAllocationLimit();
   return `<section class="pp-prod-options pp-location-allocation"><div class="pp-tint-heading"><div><span class="pf-label">Install locations</span><strong>Split the round lights across the vehicle</strong></div><span class="pp-tint-price">${total} light${total === 1 ? "" : "s"}</span></div>`
     + `<div class="pp-allocation-grid">${options.map(location => {
       const quantity = Math.max(0, Number(quantities[location]) || 0);
-      return `<div class="pp-allocation-row"><div><strong>${esc(location)}</strong><small>${quantity ? `${quantity} selected` : "None"}</small><input type="text" data-allocation-comment="${esc(location)}" aria-label="${esc(location)} line notes" placeholder="Notes for this line (optional)" value="${esc(comments[location] || "")}"${quantity ? "" : " disabled"}></div><div class="pp-allocation-stepper"><button type="button" data-allocation-location="${esc(location)}" data-allocation-delta="-1"${quantity ? "" : " disabled"}>−</button><span>${quantity}</span><button type="button" data-allocation-location="${esc(location)}" data-allocation-delta="1"${total >= 12 ? " disabled" : ""}>+</button></div></div>`;
-    }).join("")}</div><small>Each selected location becomes its own editable manifest row with its own optional notes; all rows stay linked as one allocation.</small></section>`;
+      return `<div class="pp-allocation-row"><div><strong>${esc(location)}</strong><small>${quantity ? `${quantity} selected` : "None"}</small><input type="text" data-allocation-comment="${esc(location)}" aria-label="${esc(location)} line notes" placeholder="Notes for this line (optional)" value="${esc(comments[location] || "")}"${quantity ? "" : " disabled"}></div><div class="pp-allocation-stepper"><button type="button" data-allocation-location="${esc(location)}" data-allocation-delta="-1"${quantity ? "" : " disabled"}>−</button><span>${quantity}</span><button type="button" data-allocation-location="${esc(location)}" data-allocation-delta="1"${total >= limit ? " disabled" : ""}>+</button></div></div>`;
+    }).join("")}</div>`
+    + `<div class="pp-allocation-custom"><label><span>Custom location</span><input type="text" data-allocation-custom-name maxlength="80" placeholder="For example: K-9 kennel"></label><button type="button" class="btn btn-secondary btn-sm" data-allocation-custom-add${total >= limit ? " disabled" : ""}>+ Add location</button></div>`
+    + `<small>Each selected location becomes its own editable manifest row with its own optional notes; all rows stay linked as one allocation. Add as many custom destinations as the quoted quantity requires.</small></section>`;
 }
 
 function _pickerRoundLightSku(product, color = _pickerState.roundLightColor) {
@@ -2046,7 +2698,7 @@ function _pickerRenderProducts() {
         brands.map(b => `<button class="pf-pill${f.brand === b ? " active" : ""}" data-brand="${esc(b)}">${esc(b)}</button>`).join("") + `</div>`;
     }
   }
-  if (!globalSearch && veh) {
+  if (!_pickerState.customLight && !globalSearch && veh) {
     header += `<label class="pp-vehtoggle"><input type="checkbox" id="pp-veh-only"${_pickerState.vehicleOnly ? " checked" : ""}>`
       + `<span>Only show ${esc(veh)}-compatible parts</span></label>`;
   }
@@ -2126,6 +2778,11 @@ function _pickerRenderProducts() {
           // Plain uncolored heads — scene heads carry no color, just quantity.
           const plainHead = `<span class="picker-foot-head" title="Scene head"><span style="background:#888;border:1px solid rgba(0,0,0,.18)"></span></span>`;
           bodyHtml += `<div class="pp-viz"><span class="pp-viz-label">Preview</span><span class="picker-foot-heads">${Array(sceneCount).fill(plainHead).join("")}</span></div>`;
+        } else if (p.picker_custom_light) {
+          // A one-off custom light uses this exact Part Picker color/lens UI,
+          // but has no catalog SKU matrix to filter or choose from.
+          bodyHtml = `<div class="pp-prod-options">${_pickerColorConfigHtml(p)}</div>`;
+          bodyHtml += `<div class="pp-viz"><span class="pp-viz-label">Preview</span>${_pickerHeadsPreviewHtml()}</div>`;
         } else {
           // Non-scene: full option set (Steps 2/3/4 — mode/lens/color/cph + filtered
           // per-head dropdowns + colored viz, unchanged).
@@ -2195,7 +2852,7 @@ function _pickerRenderProducts() {
         <span class="pp-caret">${open ? "▾" : "▸"}</span>
         <span class="pp-brandchip">${esc(p.manufacturer_label)}</span>
         <span class="pp-name">${esc(p.model)}</span>
-        <span class="pp-meta">${skus.length} SKU${skus.length !== 1 ? "s" : ""}${priceStr ? " · " + priceStr : ""}</span>
+        <span class="pp-meta">${p.picker_custom_light ? "All colors and lenses" : `${skus.length} SKU${skus.length !== 1 ? "s" : ""}${priceStr ? " · " + priceStr : ""}`}</span>
         ${qb}
       </div>${bodyHtml}
     </div>`;
@@ -2247,13 +2904,50 @@ function _pickerRenderProducts() {
     const location = button.dataset.allocationLocation;
     const delta = Number(button.dataset.allocationDelta) || 0;
     const quantities = _pickerState.locationAllocation.quantities;
-    quantities[location] = Math.min(12, Math.max(0, (Number(quantities[location]) || 0) + delta));
+    quantities[location] = Math.min(
+      _pickerLocationAllocationLimit(),
+      Math.max(0, (Number(quantities[location]) || 0) + delta),
+    );
     if (!quantities[location]) delete quantities[location];
     _pickerState.config.count = Math.max(1, _pickerLocationAllocationTotal());
     _pickerNormalizeConfig(_pickerSelectedProduct());
     _pickerState.skuChoices = {};
     _pickerRenderProducts(); _pickerUpdateFooter();
   }));
+  const addCustomAllocation = () => {
+    const input = el.querySelector("[data-allocation-custom-name]");
+    const requested = String(input?.value || "").trim().replace(/\s+/g, " ");
+    if (!requested) {
+      toast("Enter a custom round-light location", "error");
+      input?.focus();
+      return;
+    }
+    if (["__proto__", "prototype", "constructor"].includes(requested.toLowerCase())) {
+      toast("Use a more descriptive custom location", "error");
+      input?.focus();
+      return;
+    }
+    if (_pickerLocationAllocationTotal() >= _pickerLocationAllocationLimit()) {
+      toast("All quoted round lights have already been assigned", "info");
+      return;
+    }
+    const existing = _pickerLocationAllocationOptions().find(location =>
+      String(location).trim().toLowerCase() === requested.toLowerCase()
+    );
+    const location = existing || requested;
+    const quantities = _pickerState.locationAllocation.quantities;
+    quantities[location] = (Number(quantities[location]) || 0) + 1;
+    _pickerState.config.count = Math.max(1, _pickerLocationAllocationTotal());
+    _pickerNormalizeConfig(_pickerSelectedProduct());
+    _pickerState.skuChoices = {};
+    _pickerRenderProducts(); _pickerUpdateFooter();
+  };
+  el.querySelector("[data-allocation-custom-add]")?.addEventListener("click", addCustomAllocation);
+  el.querySelector("[data-allocation-custom-name]")?.addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    addCustomAllocation();
+  });
   el.querySelectorAll("[data-allocation-comment]").forEach(input => input.addEventListener("input", () => {
     const location = input.dataset.allocationComment;
     _pickerState.locationAllocation.comments[location] = input.value;
@@ -2525,6 +3219,9 @@ function _pickerNormalizeCustomSpacing(value) {
 
 function _pickerCustomPlacementHeadCount() {
   if (_pickerGuidedCustomPlacementActive()) return 1;
+  if (_pickerIsSirenSpeakerContext()) {
+    return Math.min(2, Math.max(1, Number(_pickerState.config.count) || 1));
+  }
   const product = _pickerSelectedProduct();
   const category = _pickerProductCategory(product);
   const quantityDriven = _pickerUsesColor(product)
@@ -2550,14 +3247,23 @@ function _pickerCustomGroupPoints(anchor, count = _pickerCustomPlacementHeadCoun
   }));
 }
 
-function _pickerCustomMirroredPairPoints(anchor, spacing = _pickerState.loc.customHeadSpacing) {
+function _pickerCustomMirroredPoints(anchor, spacing = _pickerState.loc.customHeadSpacing) {
+  const headCount = _pickerCustomPlacementHeadCount();
   const pairSpacing = Math.min(0.2, _pickerNormalizeCustomSpacing(spacing));
   const halfPair = pairSpacing / 2;
-  const requestedOffset = Math.abs((Number(anchor?.x) || 0.72) - 0.5);
-  const pairOffset = Math.min(0.45 - halfPair, Math.max(halfPair + 0.025, requestedOffset));
+  const rawOffset = Math.abs((Number(anchor?.x) || 0.72) - 0.5);
+  const requestedOffset = rawOffset < 0.05 ? 0.22 : rawOffset;
+  const minimumOffset = headCount === 2 ? 0.025 : halfPair + 0.025;
+  const pairOffset = Math.min(0.45 - (headCount === 2 ? 0 : halfPair), Math.max(minimumOffset, requestedOffset));
   const y = Math.min(1, Math.max(0, Number(anchor?.y) || 0));
   const leftCenter = 0.5 - pairOffset;
   const rightCenter = 0.5 + pairOffset;
+  if (headCount === 2) {
+    return [
+      { x: leftCenter, y, head_index: 0, group_id: "left" },
+      { x: rightCenter, y, head_index: 1, group_id: "right" },
+    ];
+  }
   return [
     { x: leftCenter - halfPair, y, head_index: 0, group_id: "left_pair" },
     { x: leftCenter + halfPair, y, head_index: 1, group_id: "left_pair" },
@@ -2571,8 +3277,9 @@ function _pickerSetCustomPlacementGroup(view, anchor) {
   const key = String(view || "").toLowerCase();
   if (!key) return;
   loc.customHeadSpacing = Math.min(_pickerCustomSpacingMax(), _pickerNormalizeCustomSpacing(loc.customHeadSpacing));
-  const pairMode = loc.customPlacementLayout === "mirrored_pairs" && _pickerCustomPlacementHeadCount() === 4;
-  const points = pairMode ? _pickerCustomMirroredPairPoints(anchor) : _pickerCustomGroupPoints(anchor);
+  const headCount = _pickerCustomPlacementHeadCount();
+  const pairMode = loc.customPlacementLayout === "mirrored_pairs" && [2, 4].includes(headCount);
+  const points = pairMode ? _pickerCustomMirroredPoints(anchor) : _pickerCustomGroupPoints(anchor);
   const center = points.reduce((memo, point) => ({ x: memo.x + point.x, y: memo.y + point.y }), { x: 0, y: 0 });
   // In pair mode the click identifies one pair's distance from center. The
   // rendered four-head group is necessarily centered at 0.5, so saving its
@@ -2592,8 +3299,9 @@ function _pickerEnsureCustomPlacementAnchor(view) {
   if (loc.customPlacementAnchors?.[key]) return loc.customPlacementAnchors[key];
   const points = loc.customPlacements?.[key] || [];
   if (!points.length) return null;
-  if (loc.customPlacementLayout === "mirrored_pairs" && points.length === 4) {
-    const oneSide = points.filter(point => point.group_id === "right_pair" || Number(point.x) > 0.5);
+  if (loc.customPlacementLayout === "mirrored_pairs" && [2, 4].includes(points.length)) {
+    const oneSide = points.filter(point => point.group_id === "right"
+      || point.group_id === "right_pair" || Number(point.x) > 0.5);
     if (oneSide.length) {
       const sideSum = oneSide.reduce((memo, point) => ({ x: memo.x + point.x, y: memo.y + point.y }), { x: 0, y: 0 });
       const anchor = { x: sideSum.x / oneSide.length, y: sideSum.y / oneSide.length };
@@ -2807,12 +3515,12 @@ async function _pickerReplaceMagneticMicChild(draftId, parentLineId, parentName,
     part.parent_line_id === parentLineId && part.accessory_category === "magnetic_mic"
   );
   for (const child of existing) {
-    const result = await api(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
+    const result = await _pickerDraftApi(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
     if (!result?.ok) throw new Error(result?.error || "could not replace the magnetic mic line");
   }
   const row = _pickerMagneticMicRow(parentLineId, parentName, location, selection, supplyRecord);
   if (!row) return;
-  const result = await api(`/api/draft/${draftId}/part`, row);
+  const result = await _pickerDraftApi(`/api/draft/${draftId}/part`, row);
   if (!result?.ok) throw new Error(result?.error || "could not add the magnetic mic line");
 }
 
@@ -3049,18 +3757,19 @@ function _pickerDrawLocation() {
       const viewPointCount = (loc.customPlacements?.[loc.view] || []).length;
       const totalPointCount = _pickerCustomPlacementCount();
       const headCount = _pickerCustomPlacementHeadCount();
-      if (headCount !== 4 && loc.customPlacementLayout === "mirrored_pairs") loc.customPlacementLayout = "even";
+      const supportsMirroredPlacement = [2, 4].includes(headCount);
+      if (!supportsMirroredPlacement && loc.customPlacementLayout === "mirrored_pairs") loc.customPlacementLayout = "even";
       const pairLayout = loc.customPlacementLayout === "mirrored_pairs";
       const spacingMax = _pickerCustomSpacingMax(headCount);
       const spacing = Math.min(spacingMax, _pickerNormalizeCustomSpacing(loc.customHeadSpacing));
       loc.customHeadSpacing = spacing;
       btns.innerHTML = `<section class="picker-location-chooser picker-location-chooser--custom picker-location-placement-controls">`
-        + `<div class="picker-location-kicker">Vehicle placement</div><h3>Where should this appear?</h3>`
-        + `<p>${free ? (pairLayout ? "Click one side to place a two-head pair. The matching pair mirrors automatically on the other side." : `Click anywhere on the vehicle to place all ${headCount} light head${headCount === 1 ? "" : "s"} as one group. Click again to move the group.`) : "Choose any saved vehicle or fixture dot, or set your own exact point."}</p>`
+        + `<div class="picker-location-kicker">Vehicle placement</div><h3>Where should ${esc(loc.selected || "this custom location")} appear?</h3>`
+        + `<p>${free ? (pairLayout ? (headCount === 2 ? "Click either side once. The second speaker mirrors automatically on the other side." : "Click one side to place a two-head pair. The matching pair mirrors automatically on the other side.") : `Click anywhere on the vehicle to place all ${headCount} item${headCount === 1 ? "" : "s"} as one group. Click again to move the group.`) : "Choose any saved vehicle or fixture dot as the drawing position. Your custom location name will not change."}</p>`
         + `<div class="pf-pills"><button type="button" class="pf-pill${free ? "" : " active"}" data-custom-placement-mode="vehicle">Vehicle dots</button>`
         + `<button type="button" class="pf-pill${free ? " active" : ""}" data-custom-placement-mode="free">Set your own</button></div>`
-        + (free && headCount === 4 ? `<div class="pf-pills picker-custom-layout"><button type="button" class="pf-pill${pairLayout ? "" : " active"}" data-custom-placement-layout="even">Equal row</button><button type="button" class="pf-pill${pairLayout ? " active" : ""}" data-custom-placement-layout="mirrored_pairs">Two per side (mirrored)</button></div>` : "")
-        + (free && headCount > 1 ? `<label class="picker-custom-spacing"><span>Head spacing <strong data-custom-spacing-value>${Math.round(spacing * 100)}%</strong></span><input type="range" data-custom-spacing min="0.01" max="${spacingMax.toFixed(4)}" step="0.005" value="${spacing.toFixed(4)}"></label>` : "")
+        + (free && supportsMirroredPlacement ? `<div class="pf-pills picker-custom-layout"><button type="button" class="pf-pill${pairLayout ? "" : " active"}" data-custom-placement-layout="even">Equal row</button><button type="button" class="pf-pill${pairLayout ? " active" : ""}" data-custom-placement-layout="mirrored_pairs">${headCount === 2 ? "Mirror left / right" : "Two per side (mirrored)"}</button></div>` : "")
+        + (free && headCount > 1 && !(pairLayout && headCount === 2) ? `<label class="picker-custom-spacing"><span>Head spacing <strong data-custom-spacing-value>${Math.round(spacing * 100)}%</strong></span><input type="range" data-custom-spacing min="0.01" max="${spacingMax.toFixed(4)}" step="0.005" value="${spacing.toFixed(4)}"></label>` : "")
         + (free ? `<div class="picker-custom-placement-actions"><span>${viewPointCount ? `${viewPointCount} of ${headCount} heads placed on this view` : `Place ${headCount} head${headCount === 1 ? "" : "s"} on this view`} · ${totalPointCount} points total</span><button type="button" class="pf-pill" data-custom-placement-clear-view${viewPointCount ? "" : " disabled"}>Clear this view</button><button type="button" class="pf-pill" data-custom-placement-clear-all${totalPointCount ? "" : " disabled"}>Clear all</button></div>` : "")
         + (guidedCustomPlacement ? `<div class="picker-custom-placement-actions picker-custom-placement-finish"><span>Placement is optional; the custom shop name is kept either way.</span><button type="button" class="btn btn-primary btn-sm" data-system-placement-done>Done — return to radio setup</button></div>` : "")
         + `</section>`;
@@ -3294,9 +4003,9 @@ function _pickerPlaceDots() {
           loc.customPlacementAnchors = {};
           loc.renderLocation = d.dataset.name;
           loc.customStage = "placement";
-          loc.name_pattern = entry.name_pattern || "";
-          loc.base_label = entry.base_label || "";
-          loc.catalog_names = entry.catalog_names || [];
+          // The saved dot only anchors the drawing. The custom name and the
+          // part's naming metadata were established on the prior screen and
+          // must remain authoritative.
         }
       } else {
         _pickerSetStandardLocation(d.dataset.name, entry);
@@ -3387,9 +4096,10 @@ function _pickerHeadsPreviewHtml() {
 
 // ── Accessories (Phase 5) ──────────────────────────────
 
-// Fetch + render the accessories for the selected product.  During a parent
-// edit, rebuild the choices from the saved child rows so the selector is a
-// true round-trip rather than silently dropping accessories on Save.
+// Fetch + render the accessories for the selected product. During a parent
+// edit, rebuild billable choices from child rows and restore the parent's
+// decision snapshot for choices that have no child representation (notably
+// "None needed" and mixed per-position selections).
 function _pickerRecommendationForGroup(group) {
   // A recommendation is an add-time prompt.  During an edit, only retain a
   // saved choice; do not infer a new accessory from the rest of the draft.
@@ -3460,6 +4170,40 @@ function _pickerAccessoryStateList(store, category, count, fallback) {
 
 function _pickerStoreAccessoryState(store, category, values, forceArray = false) {
   store[category] = forceArray || values.length > 1 ? [...values] : values[0];
+}
+
+function _pickerCopyAccessoryState(value, fallback) {
+  if (Array.isArray(value)) return [...value];
+  return value == null ? fallback : value;
+}
+
+// Child manifest rows remain the billable representation of selected
+// accessories, but they cannot represent an explicit "None needed" choice or
+// preserve per-position choices after identical rows are consolidated.  Save
+// the complete picker decision on the parent so Edit is a true round trip.
+function _pickerAccessoryDecisionSnapshot() {
+  const groups = _pickerVisibleAccessoryGroups();
+  if (!groups.length || !_pickerState.sel?.product_id) return null;
+  const choices = {}, quantities = {}, manual = {};
+  for (const group of groups) {
+    const category = group.category;
+    choices[category] = _pickerCopyAccessoryState(
+      _pickerState.accessoryChoices[category], "",
+    );
+    quantities[category] = _pickerCopyAccessoryState(
+      _pickerState.accessoryQuantities[category], 1,
+    );
+    manual[category] = _pickerCopyAccessoryState(
+      _pickerState.accessoryQuantityManual[category], false,
+    );
+  }
+  return {
+    version: 1,
+    product_id: _pickerState.sel.product_id,
+    choices,
+    quantities,
+    manual,
+  };
 }
 
 function _pickerSyncAccessoryQuantityDefaults() {
@@ -3572,7 +4316,7 @@ const _PICKER_NONSTANDARD_ACCESSORY_CHILDREN = new Set([
 // instead of making a user re-enter it manually. It is intentionally draft-only:
 // saving the parent writes the current accessory metadata back to the child.
 function _pickerMergeManifestAccessories(groups) {
-  const parentLineId = _pickerState.editLineId;
+  const parentLineId = _pickerState.editLineId || _pickerState.duplicateSourceLineId;
   const productId = _pickerState.sel?.product_id || "";
   const parts = (typeof _meDraft !== "undefined" && _meDraft?.parts) || [];
   const parent = parts.find(part => part.line_id === parentLineId);
@@ -3633,7 +4377,7 @@ function _pickerRestoreAccessoryState(productId, groups) {
   const choices = Object.fromEntries((groups || []).map(group => [group.category, ""]));
   const quantities = Object.fromEntries((groups || []).map(group => [group.category, 1]));
   const manual = Object.fromEntries((groups || []).map(group => [group.category, false]));
-  const parentLineId = _pickerState.editLineId;
+  const parentLineId = _pickerState.editLineId || _pickerState.duplicateSourceLineId;
   const saved = {};
   for (const child of ((typeof _meDraft !== "undefined" && _meDraft?.parts) || [])) {
     if (child.parent_line_id !== parentLineId) continue;
@@ -3654,11 +4398,42 @@ function _pickerRestoreAccessoryState(productId, groups) {
     quantities[group.category] = qtys.length > 1 ? qtys : (qtys[0] || 1);
     manual[group.category] = flags.length > 1 ? flags : (flags[0] || false);
   }
+
+  const snapshot = _pickerState.editPart?.picker_config?.accessory_decisions;
+  if (snapshot?.product_id === productId && snapshot.choices) {
+    for (const group of (groups || [])) {
+      const category = group.category;
+      if (!Object.prototype.hasOwnProperty.call(snapshot.choices, category)) continue;
+      const savedValue = snapshot.choices[category];
+      const savedPicks = Array.isArray(savedValue) ? savedValue : [savedValue];
+      const valid = savedPicks.every(pick =>
+        pick === "none" || (!!pick && !!_pickerAccessorySkuForPick(group, pick))
+      );
+      if (!valid) continue;
+
+      // A concrete saved choice is restored only while its derived child row
+      // still exists. This keeps direct child deletion authoritative while
+      // allowing an all-"none" decision, which intentionally has no child.
+      const livePicks = new Set((saved[category] || []).map(row => row.pick));
+      const concretePicks = new Set(savedPicks.filter(pick => pick && pick !== "none"));
+      if ([...concretePicks].some(pick => !livePicks.has(pick))) continue;
+      if ([...livePicks].some(pick => !concretePicks.has(pick))) continue;
+
+      choices[category] = _pickerCopyAccessoryState(savedValue, "");
+      quantities[category] = _pickerCopyAccessoryState(
+        snapshot.quantities?.[category], 1,
+      );
+      manual[category] = _pickerCopyAccessoryState(
+        snapshot.manual?.[category], false,
+      );
+    }
+  }
   return { choices, quantities, manual };
 }
 
 function _pickerScrollSelectedProductIntoView() {
-  const productId = _pickerState.editLineId && _pickerState.sel?.product_id;
+  const productId = (_pickerState.editLineId || _pickerState.duplicateSourceLineId)
+    && _pickerState.sel?.product_id;
   if (!productId) return;
   const row = Array.from(document.querySelectorAll("#picker-products .pp-row"))
     .find(candidate => candidate.dataset.pid === productId);
@@ -4301,6 +5076,10 @@ function _pickerIsLightbar(product) {
 function _pickerResetLocation() {
   const loc = _pickerState.loc;
   loc.selected = null; loc.textCustom = false; loc.renderLocation = ""; loc.customStage = ""; loc.autoLocation = "";
+  // Product switches must also leave the prior location screen. Keeping the
+  // literal `custom` view after clearing textCustom made later parts reopen in
+  // a stale custom-only state even when they had normal curated locations.
+  loc.view = "front";
   loc.customPlacementMode = "vehicle"; loc.customPlacementLayout = "even"; loc.customPlacements = {}; loc.customPlacementAnchors = {}; loc.customHeadSpacing = 0.06;
   loc.name_pattern = ""; loc.base_label = ""; loc.catalog_names = [];
   _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "", handheldMagMic: null };
@@ -4700,6 +5479,24 @@ async function _pickerBeginConsoleSetup(saved = null) {
       api("/api/parts-db/category-skus?type=structural&part_type=console"),
     ]);
     setup.catalog = { ...Object.fromEntries(loaded), consoles: consoles?.products || [] };
+    for (const component of (_pickerState.importSource?.guidedComponents || [])) {
+      const match = component?.catalog_match || {};
+      const partTypes = match.part_type_ids || [];
+      for (const [key, partType] of Object.entries(_CONSOLE_CATALOG_PART_TYPES)) {
+        if (!partTypes.includes(partType)) continue;
+        const product = (setup.catalog[key] || []).find(item => item.product_id === match.product_id);
+        const choice = _pickerConsoleChoiceFromProduct(product);
+        if (!choice) continue;
+        if (match.part_number) choice.part_number = match.part_number;
+        if (key === "faceplates") {
+          if (!(setup.choices.faceplates || []).some(item => item.product_id === choice.product_id)) {
+            setup.choices.faceplates.push(choice);
+          }
+        } else if (!setup.choices[key]) {
+          setup.choices[key] = choice;
+        }
+      }
+    }
     const selectedProduct = _pickerState.sel
       ? _pickerConsoleProductById(setup, _pickerState.sel.product_id) : null;
     if (!setup.choices.consoleChoice && selectedProduct) {
@@ -4722,7 +5519,26 @@ async function _pickerBeginConsoleSetup(saved = null) {
 
 function _pickerConsoleChoiceLabel(choice) {
   if (!choice) return "Not included";
+  if (choice.customer_supplied_unspecified) {
+    const description = String(choice.model || "").trim();
+    return description ? `Customer supplied · ${description}` : "Customer supplied · description needed";
+  }
   return [choice.manufacturer_label, choice.model].filter(Boolean).join(" · ") || choice.part_number || "Selected";
+}
+
+function _pickerConsoleUnspecifiedChoice() {
+  return {
+    product_id: "",
+    model: "",
+    manufacturer_label: "",
+    part_number: "",
+    customer_supplied_unspecified: true,
+    ..._pickerSupplyPayload({
+      supplyType: "customer_supplied",
+      customerCondition: "new",
+      customerSource: "",
+    }),
+  };
 }
 
 function _pickerConsoleFaceplateCards(setup) {
@@ -4764,7 +5580,9 @@ function _pickerConsoleConditionHtml(choice, { key = "", faceplateIndex = null, 
   const attrs = faceplateIndex !== null
     ? `data-console-condition-faceplate="${faceplateIndex}"`
     : magMic ? "data-console-condition-mag-mic" : `data-console-condition-key="${esc(key)}"`;
-  const options = [["new", "New"], ["customer_new", "Customer supplied / New"], ["customer_used", "Customer supplied / Used"]];
+  const options = choice?.customer_supplied_unspecified
+    ? [["customer_new", "Customer supplied / New"], ["customer_used", "Customer supplied / Used"]]
+    : [["new", "New"], ["customer_new", "Customer supplied / New"], ["customer_used", "Customer supplied / Used"]];
   return `<div class="console-part-condition"><span>Supply</span>${options.map(([value, label]) =>
     `<button type="button" class="console-location-choice${current === value ? " is-selected" : ""}" ${attrs} data-console-condition-value="${value}">${label}</button>`
   ).join("")}${current === "customer_used" ? `<label class="console-used-source"><span>Used-part source <b>*</b></span><input type="text" ${attrs} data-console-condition-source value="${esc(supply.customerSource || "")}" placeholder="Agency, old vehicle, customer stock…"></label>` : ""}</div>`;
@@ -4779,19 +5597,23 @@ function _pickerConsoleComponentSection(
   const products = [...(catalogProducts || _pickerConsoleProductsForKey(setup, key))]
     .sort((a, b) => String(a.model || "").localeCompare(String(b.model || "")));
   const noneCard = required ? "" : `<button type="button" class="console-catalog-card console-catalog-card--none${!choice ? " is-added" : ""}" data-console-component-choice="" data-console-component-key="${esc(key)}"><strong>None</strong><small>Do not include this console component</small></button>`;
-  const picker = !isOpen ? "" : `<div class="console-component-picker">${noneCard}${products.map(product => {
+  const unspecifiedCard = `<button type="button" class="console-catalog-card console-catalog-card--customer${choice?.customer_supplied_unspecified ? " is-added" : ""}" data-console-component-unspecified="${esc(key)}"><span class="console-catalog-card-brand">Customer supplied</span><strong>Exact part unknown</strong><small>Add the known part type now and describe it in your own words</small></button>`;
+  const picker = !isOpen ? "" : `<div class="console-component-picker">${noneCard}${unspecifiedCard}${products.map(product => {
     const item = _pickerConsoleChoiceFromProduct(product);
     if (!item) return "";
     const selected = choice?.product_id === product.product_id && choice?.part_number === item.part_number;
     return `<button type="button" class="console-catalog-card${selected ? " is-added" : ""}" data-console-component-choice="${esc(product.product_id)}" data-console-component-key="${esc(key)}"><span class="console-catalog-card-brand">${esc(item.manufacturer_label || label)}</span><strong>${esc(product.model || product.product_id)}</strong><small>${esc(item.part_number)}${item.price != null ? ` · ${_pickerRetailPrice(item.price)}` : ""}</small></button>`;
   }).join("")}</div>`;
+  const unspecifiedDescription = choice?.customer_supplied_unspecified
+    ? `<label class="console-unspecified-part"><span>Describe the customer-supplied ${esc(String(label || "part").toLowerCase())} <b>*</b></span><input type="text" data-console-component-description="${esc(key)}" value="${esc(choice.model || "")}" placeholder="Example: Customer's existing Toughbook dock"><small>An exact manufacturer or SKU is not required. This description will appear on the manifest.</small></label>`
+    : "";
   const motionLocation = key === "motionAttachment" && choice ? `<div class="console-motion-location"><span>Mounting location</span><div><button type="button" class="console-location-choice${setup.choices.motionLocation === "mounted_to_console" ? " is-selected" : ""}" data-console-motion-location="mounted_to_console">Mounted to console</button><button type="button" class="console-location-choice${setup.choices.motionLocation === "mounted_to_pedestal" ? " is-selected" : ""}" data-console-motion-location="mounted_to_pedestal">Mounted to pedestal</button></div></div>` : "";
   const selectedLabel = choice ? _pickerConsoleChoiceLabel(choice)
     : required ? (requiredPlaceholder || `Choose ${String(label || "component").toLowerCase()}`) : "Not included";
   const sectionKicker = required
     ? (requiredKicker || "Required console component")
     : "Optional console component";
-  return `<section class="console-component-section"><div class="console-component-summary"><div><div class="console-section-kicker">${esc(sectionKicker)}</div><h3>${esc(label)}</h3><p>${esc(help)}</p></div><button type="button" class="console-component-current" data-console-component-open="${esc(key)}"><strong>${esc(selectedLabel)}</strong><span>${isOpen ? "Close choices" : choice ? "Change" : "Choose"}</span></button></div>${picker}${choice ? _pickerConsoleConditionHtml(choice, { key }) : ""}${motionLocation}</section>`;
+  return `<section class="console-component-section"><div class="console-component-summary"><div><div class="console-section-kicker">${esc(sectionKicker)}</div><h3>${esc(label)}</h3><p>${esc(help)}</p></div><button type="button" class="console-component-current" data-console-component-open="${esc(key)}"><strong>${esc(selectedLabel)}</strong><span>${isOpen ? "Close choices" : choice ? "Change" : "Choose"}</span></button></div>${picker}${unspecifiedDescription}${choice ? _pickerConsoleConditionHtml(choice, { key }) : ""}${motionLocation}</section>`;
 }
 
 function _pickerConsolePedestalRequired(setup = _pickerState.consoleSetup) {
@@ -4808,7 +5630,21 @@ function _pickerConsoleSupplySatisfied(setup = _pickerState.consoleSetup) {
     choices.wings,
     ...(choices.addMagMic === true ? [choices.magMicSupply || { new_or_used: choices.magMicCondition }] : []),
   ].filter(Boolean);
-  return records.every(record => _pickerSupplySatisfied(_pickerSupplyFromRecord(record)));
+  return records.every(record => (
+    (!record.customer_supplied_unspecified || Boolean(String(record.model || "").trim()))
+    && _pickerSupplySatisfied(_pickerSupplyFromRecord(record))
+  ));
+}
+
+function _pickerConsoleUnspecifiedDescriptionsSatisfied(setup = _pickerState.consoleSetup) {
+  const choices = setup?.choices || {};
+  return [
+    choices.armRest, choices.motionAttachment, choices.pedestalMount,
+    choices.dockingStation, choices.radioMicClip, choices.printer,
+    choices.printerPower, choices.printerUsb, choices.wings,
+  ].filter(Boolean).every(record => (
+    !record.customer_supplied_unspecified || Boolean(String(record.model || "").trim())
+  ));
 }
 
 function _pickerConsolePedestalLocation(choice) {
@@ -5050,6 +5886,33 @@ function _pickerRenderConsoleSetup() {
     _pickerRenderConsoleSetup();
     _pickerUpdateFooter();
   }));
+  details.querySelectorAll("[data-console-component-unspecified]").forEach(button => button.addEventListener("click", () => {
+    const key = button.dataset.consoleComponentUnspecified;
+    setup.choices[key] = _pickerConsoleUnspecifiedChoice();
+    if (key === "radioMicClip") {
+      setup.choices.radioMicClipRelation = "";
+      setup.choices.addMagMic = _pickerConsoleBrand().toLowerCase() !== "gamber johnson";
+    }
+    if (key === "armRest") {
+      setup.choices.addPrinter = true;
+      _pickerConsoleClearPrinterChoices(setup);
+      _pickerConsoleSyncFaceplates(setup);
+    }
+    if (key === "motionAttachment") _pickerConsoleSyncFaceplates(setup);
+    setup.openComponent = "";
+    _pickerRenderConsoleSetup();
+    _pickerUpdateFooter();
+    requestAnimationFrame(() => {
+      const input = [...details.querySelectorAll("[data-console-component-description]")]
+        .find(item => item.dataset.consoleComponentDescription === key);
+      input?.focus();
+    });
+  }));
+  details.querySelectorAll("[data-console-component-description]").forEach(input => input.addEventListener("input", () => {
+    const choice = setup.choices[input.dataset.consoleComponentDescription];
+    if (choice?.customer_supplied_unspecified) choice.model = input.value;
+    _pickerUpdateFooter();
+  }));
   details.querySelectorAll("[data-console-condition-value]").forEach(button => button.addEventListener("click", event => {
     event.preventDefault();
     event.stopPropagation();
@@ -5159,8 +6022,11 @@ function _pickerConsoleChildRows(parentLineId, parentName) {
   const choices = _pickerState.consoleSetup?.choices || {};
   const rows = [];
   const add = (name, choice, partType, location, category) => {
-    if (!choice?.part_number) return;
-    rows.push({ name, location, manufacturer: choice.manufacturer_label || "", part_number: choice.part_number,
+    if (!choice || (!choice.part_number && !choice.customer_supplied_unspecified)) return;
+    const description = String(choice.model || "").trim();
+    const rowName = choice.customer_supplied_unspecified && description
+      ? `${name} · ${description}` : name;
+    rows.push({ name: rowName, location, manufacturer: choice.manufacturer_label || "", part_number: choice.part_number || "",
       quantity: 1, ..._pickerSupplyPayload(_pickerSupplyFromRecord(choice)), parent_line_id: parentLineId,
       // These are selected build parts, not catalog accessories. Keep the
       // relationship for manifest nesting, but let their normal edit path
@@ -5171,6 +6037,7 @@ function _pickerConsoleChildRows(parentLineId, parentName) {
       picker_config: {
         ...(choice.kit_included ? { console_kit_included: true } : {}),
         ...(choice.no_charge_faceplate ? { quote_unit_price_override: 0, quote_note: "Included specialty faceplate — no charge" } : {}),
+        ...(choice.customer_supplied_unspecified ? { customer_supplied_unspecified: true, customer_description: description } : {}),
         console_setup_owner_line_id: parentLineId,
         console_component_key: category,
       } });
@@ -5185,10 +6052,13 @@ function _pickerConsoleComponentRows(ownerLineId, ownerName) {
   const included = _pickerConsoleIncludedFeatures(_pickerState.consoleSetup || { choices, catalog: {} });
   const rows = [];
   const add = (name, choice, partType, location, componentKey, coveredByKit = false) => {
-    if (!choice?.part_number) return;
+    if (!choice || (!choice.part_number && !choice.customer_supplied_unspecified)) return;
+    const description = String(choice.model || "").trim();
+    const componentName = choice.customer_supplied_unspecified && description
+      ? `${name} · ${description}` : name;
     const includedWithKit = coveredByKit
       && _pickerSupplyFromRecord(choice).supplyType !== "customer_supplied";
-    rows.push({ name: `${ownerName} · ${name}`, location, manufacturer: choice.manufacturer_label || "", part_number: choice.part_number,
+    rows.push({ name: `${ownerName} · ${componentName}`, location, manufacturer: choice.manufacturer_label || "", part_number: choice.part_number || "",
       quantity: 1, ..._pickerSupplyPayload(_pickerSupplyFromRecord(choice)), parent_line_id: ownerLineId,
       // Physical presence and billing are independent. Every selected item is
       // a real manifest/build-sheet row; the estimate layer alone suppresses
@@ -5197,6 +6067,7 @@ function _pickerConsoleComponentRows(ownerLineId, ownerName) {
       notes: includedWithKit ? "Included with selected console kit — do not bill separately." : "",
       picker_config: {
         ...(includedWithKit ? { console_kit_included: true } : {}),
+        ...(choice.customer_supplied_unspecified ? { customer_supplied_unspecified: true, customer_description: description } : {}),
         console_setup_owner_line_id: ownerLineId,
         console_component_key: componentKey,
       } });
@@ -5227,14 +6098,18 @@ function _pickerConsolePrinterRow(ownerLineId) {
   const choices = _pickerState.consoleSetup?.choices || {};
   if (_pickerConsolePrinterRequired()) {
     const choice = choices.printer;
-    if (choice?.part_number) {
+    if (choice?.part_number || choice?.customer_supplied_unspecified) {
+      const description = String(choice.model || "").trim();
       // A printer has meaningful accessories of its own, so it remains a
       // separate manifest parent instead of becoming a second-level console
       // child (the manifest deliberately has a clear one-level expansion).
       return {
-        name: "Printer", location: "PRINTER ARMREST MOUNT", manufacturer: choice.manufacturer_label || "",
-        part_number: choice.part_number, quantity: 1, ..._pickerSupplyPayload(_pickerSupplyFromRecord(choice)), part_type: "printer",
-        picker_config: { console_setup_owner_line_id: ownerLineId, console_component_key: "printer" },
+        name: description ? `Printer · ${description}` : "Printer", location: "PRINTER ARMREST MOUNT", manufacturer: choice.manufacturer_label || "",
+        part_number: choice.part_number || "", quantity: 1, ..._pickerSupplyPayload(_pickerSupplyFromRecord(choice)), part_type: "printer",
+        picker_config: {
+          ...(choice.customer_supplied_unspecified ? { customer_supplied_unspecified: true, customer_description: description } : {}),
+          console_setup_owner_line_id: ownerLineId, console_component_key: "printer",
+        },
       };
     }
   }
@@ -5246,13 +6121,19 @@ function _pickerConsolePrinterCableRows(printerLineId, printerName) {
   if (!_pickerConsolePrinterRequired()) return [];
   const rows = [];
   const add = (name, choice, partType, category, componentKey) => {
-    if (!choice?.part_number) return;
+    if (!choice || (!choice.part_number && !choice.customer_supplied_unspecified)) return;
+    const description = String(choice.model || "").trim();
+    const rowName = choice.customer_supplied_unspecified && description
+      ? `${name} · ${description}` : name;
     rows.push({
-      name: `${printerName} · ${name}`, location: "PRINTER ARMREST MOUNT",
-      manufacturer: choice.manufacturer_label || "", part_number: choice.part_number,
+      name: `${printerName} · ${rowName}`, location: "PRINTER ARMREST MOUNT",
+      manufacturer: choice.manufacturer_label || "", part_number: choice.part_number || "",
       quantity: 1, ..._pickerSupplyPayload(_pickerSupplyFromRecord(choice)), parent_line_id: printerLineId,
       accessory_category: category, accessory_parent_product: choices.printer?.product_id || "",
-      part_type: partType, picker_config: { console_component_key: componentKey },
+      part_type: partType, picker_config: {
+        ...(choice.customer_supplied_unspecified ? { customer_supplied_unspecified: true, customer_description: description } : {}),
+        console_component_key: componentKey,
+      },
     });
   };
   add("Power Cable", choices.printerPower, "printer_power", "printer_power_cable", "printerPower");
@@ -5264,7 +6145,7 @@ async function _pickerReplaceConsoleSetupParts(draftId, parentLineId, parentName
   const printer = _pickerConsolePrinterRow(parentLineId);
   const existingRadio = _pickerExistingRadioSystem();
   const reusesExistingRadioMicClip = _pickerState.consoleSetup?.choices?.radioMicClipRelation === "use_for_existing_radio";
-  const result = await api(`/api/draft/${draftId}/console-setup`, {
+  const result = await _pickerDraftApi(`/api/draft/${draftId}/console-setup`, {
     parent_line_id: parentLineId,
     rows: [
       ..._pickerConsoleChildRows(parentLineId, parentName),
@@ -5286,7 +6167,7 @@ function _pickerLoadFixture(productId) {
   _pickerFixtureAutoLocation(product);
 }
 
-function _pickerLoadLightbar(productId) {
+async function _pickerLoadLightbar(productId) {
   const lb = _pickerState.lightbar;
   const product = _pickerState.products.find(p => p.product_id === productId);
   const showPanel = !_pickerState.editLineId && _pickerIsLightbar(product);   // full-size bars
@@ -5294,7 +6175,7 @@ function _pickerLoadLightbar(productId) {
   _pickerRenderLightbar(); _pickerUpdateFooter();
   // Every roof bar (mini or full) is a fixture → auto-resolve its roof location.
   if (productId && !_pickerState.editLineId && product
-      && (product.fits_part_types || []).includes("roof_light_bar")) _pickerLightbarAutoLocation();
+      && (product.fits_part_types || []).includes("roof_light_bar")) await _pickerLightbarAutoLocation();
 }
 
 // Roof bars are fixtures — they always go in the one roof spot, so auto-resolve
@@ -6196,6 +7077,7 @@ function _systemComponentRows(kind, c) {
   });
   const rows = [], add = (key, label, partType, location, detail, pickerConfig = null) => rows.push({
     key, label, part_type: partType, location: location || "", detail: detail || "", quantity: 1,
+    ...((c.quotedComponents || {})[key] || {}),
     ...(pickerConfig && Object.keys(pickerConfig).length ? { picker_config: pickerConfig } : {}),
     ...(() => {
       const explicitLegacy = c.componentConditions[key]
@@ -6238,7 +7120,11 @@ function _systemComponentRows(kind, c) {
     // though only one SKU was billed, so a shared mic is referenced only in
     // the saved radio answers and is not repeated as another manifest line.
     if (!usesConsoleClip) {
-      add("radio_microphone", "Radio microphone", "radio_mic_clip", answer("micLoc"), answer("micMount"));
+      const micLabel = c.micMount === "magnetic_with_bracket"
+        ? "Mag Mic with bracket"
+        : c.micMount === "magnetic_no_bracket"
+          ? "Mag Mic" : "Manufacturer microphone clip";
+      add("radio_microphone", micLabel, "radio_mic_clip", answer("micLoc"), answer("micMount"));
     }
   } else if (kind === "radar") {
     if (c.split === "yes") {
@@ -6325,11 +7211,11 @@ async function _pickerReplaceSystemCableRefreshChildren(draftId, parentLineId, p
     part.parent_line_id === parentLineId && part.accessory_category === "system_cable_refresh"
   );
   for (const child of existing) {
-    const result = await api(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
+    const result = await _pickerDraftApi(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
     if (!result?.ok) throw new Error(result?.error || "could not replace a system cable refresh line");
   }
   for (const row of _pickerSystemCableRefreshRows(parentLineId, parentName, kind, choices)) {
-    const result = await api(`/api/draft/${draftId}/part`, row);
+    const result = await _pickerDraftApi(`/api/draft/${draftId}/part`, row);
     if (!result?.ok) throw new Error(result?.error || "could not add a system cable refresh line");
   }
 }
@@ -6539,7 +7425,7 @@ async function _pickerAddSystem(addAndContinue) {
   const btn = $("picker-add-btn"); if (btn) btn.disabled = true;
   try {
     const endpoint = editing ? `/api/draft/${draftId}/part/${_pickerState.editLineId}/update` : `/api/draft/${draftId}/part`;
-    const result = await api(endpoint, row);
+    const result = await _pickerDraftApi(endpoint, row);
     if (!result?.ok) throw new Error(result?.error || "system add failed");
     const parentLineId = result.line_id || _pickerState.editLineId;
     await _pickerReplaceSystemCableRefreshChildren(draftId, parentLineId, row.name, state.kind, c);
@@ -6619,11 +7505,11 @@ async function _pickerReplaceAccessoryChildren(draftId, parentLineId, parentName
       || !!_pickerAccessoryChoiceForChild(groups, part);
   });
   for (const child of existing) {
-    const result = await api(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
+    const result = await _pickerDraftApi(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
     if (!result?.ok) throw new Error(result?.error || "could not replace an accessory");
   }
   for (const row of _pickerChosenAccessoryRows(parentName, locName, parentLineId)) {
-    const result = await api(`/api/draft/${draftId}/part`, row);
+    const result = await _pickerDraftApi(`/api/draft/${draftId}/part`, row);
     if (!result?.ok) throw new Error(result?.error || "could not add an accessory");
   }
 }
@@ -6700,7 +7586,7 @@ async function _pickerAddWestinChannelLights(draftId, bumperLineId) {
   });
   const row = resolved?.rows?.[0];
   if (!row) throw new Error("could not resolve the channel lights");
-  const result = await api(`/api/draft/${draftId}/part`, {
+  const result = await _pickerDraftApi(`/api/draft/${draftId}/part`, {
     ...row,
     ..._pickerSupplyPayload(),
     linked_parent_line_id: bumperLineId,
@@ -6728,7 +7614,7 @@ function _pickerUpdateFooter() {
   _pickerSyncCommentStep();
   const detailsTab = $("picker-tab-btn-location");
   const hasAutomaticLocation = _pickerHasFixedPartLocation()
-    || ["license_plate", "outer_edge_pillars"].includes(loc.autoLocation);
+    || ["license_plate", "outer_edge_pillars", "custom_tracer"].includes(loc.autoLocation);
   if (detailsTab) detailsTab.hidden = hasAutomaticLocation
     && !_pickerState.radio?.active && !_pickerState.systemSetup?.active && !_pickerState.consoleSetup?.active;
   const accOk = _accessoriesSatisfied();
@@ -6776,7 +7662,7 @@ function _pickerUpdateFooter() {
   // — edit mode stays single-shot.
   const _showTwoButtons = (enabled, doAddFn) => {
     if (!btnAnother) return;
-    const show = enabled && !_pickerState.editLineId;
+    const show = enabled && !_pickerState.editLineId && !_pickerState.importSource;
     btnAnother.hidden = !show;
     _pickerState.footerHandlerAnother = show ? () => doAddFn(true) : null;
   };
@@ -6816,13 +7702,15 @@ function _pickerUpdateFooter() {
     const printerReady = !printerRequired || !!_pickerState.consoleSetup.choices?.printer;
     const radioMicRelationRequired = _pickerConsoleRadioMicRelationRequired();
     const radioMicRelationReady = !radioMicRelationRequired || ["use_for_existing_radio", "additional_console_clip"].includes(_pickerState.consoleSetup.choices?.radioMicClipRelation);
+    const consoleDescriptionsReady = _pickerConsoleUnspecifiedDescriptionsSatisfied();
     const consoleSupplyReady = _pickerConsoleSupplySatisfied();
     const consoleReady = !!sel && !_pickerState.consoleSetup.loading && pedestalReady && printerReady && radioMicRelationReady && consoleSupplyReady;
     const missing = [
       !pedestalReady ? "Choose a pedestal / mount base to continue." : "",
       !printerReady ? "Choose a printer to continue." : "",
       !radioMicRelationReady ? "Confirm whether the console mic clip is for the existing radio." : "",
-      !consoleSupplyReady ? "Enter a source for every customer-supplied used console component." : "",
+      !consoleDescriptionsReady ? "Describe each customer-supplied part whose exact SKU is unknown." : "",
+      consoleDescriptionsReady && !consoleSupplyReady ? "Enter a source for every customer-supplied used console component." : "",
     ].filter(Boolean);
     text.innerHTML = `<span class="picker-foot-label">${esc(consoleLabel)}</span>${missing.length ? `<span class="picker-foot-note">${esc(missing.join(" "))}</span>` : ""}`;
     if (_pickerState.tab === "part") {
@@ -6839,7 +7727,7 @@ function _pickerUpdateFooter() {
     return;
   } else if (_pickerState.tab === "part") {
     text.innerHTML = sel ? `<span class="picker-foot-label">${esc(selName)}</span>${hint}` : `<span class="picker-foot-label">Pick a product</span>`;
-    if (_pickerState.editLineId) {
+    if (_pickerState.editLineId && !_pickerState.customLight) {
       // Edit mode: single "Save edits" button, no "Add another".
       btn.textContent = "Save edits";
       btn.disabled = !(sel && ready);
@@ -6872,7 +7760,7 @@ function _pickerUpdateFooter() {
     const canAdd = !!(sel && loc.selected && ready && _pickerCustomLocationReady());
     // Location tab is the normal final screen — always show two buttons here
     // (spec §3 Step 7 "on the location step normally").
-    btn.textContent = "Add and Finish";
+    btn.textContent = _pickerState.editLineId ? "Save edits" : "Add and Finish";
     btn.disabled = !canAdd;
     _pickerState.footerHandler = canAdd ? () => _pickerDoAdd(false) : null;
     _showTwoButtons(canAdd, _pickerDoAdd);
@@ -6886,7 +7774,28 @@ function _pickerUpdateFooter() {
 // addAndContinue=true  → load manifest so green dots refresh, then reset picker
 //   state and re-render the browse tree at the preserved expansion position.
 async function _pickerFinalize(draftId, addAndContinue) {
-  if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
+  const importReturn = _pickerState.importSource?.returnToImport;
+  const stagedImport = _pickerState.importSource?.stageSessionId;
+  if (!stagedImport && typeof _pbeMarkDirty === "function") _pbeMarkDirty();
+  if (importReturn) {
+    if (stagedImport && typeof window.PT_stageQbEstimateLineResolved === "function") {
+      window.PT_stageQbEstimateLineResolved(
+        stagedImport,
+        String(_pickerState.importSource?.line_id || ""),
+      );
+    }
+    pickerClose({ returnToEstimateReview: false });
+    if (!stagedImport) {
+      if (typeof loadDraftManifest === "function") await loadDraftManifest(draftId);
+      if ($("card-preview") && !$("card-preview").hidden && typeof pvLoad === "function") {
+        await pvLoad(draftId);
+      }
+    }
+    if (typeof window.PT_previewQbEstimateImport === "function") {
+      await window.PT_previewQbEstimateImport(importReturn.projectId, importReturn.individualId);
+    }
+    return;
+  }
   if (addAndContinue) {
     // Load manifest before resetting so _meDraft is updated when the browse tree
     // re-renders (ensures the just-added part type shows green immediately).
@@ -6965,14 +7874,95 @@ function _pickerPrepareMergedSpeakerAccessories(parentLineId, quantity) {
   if (!_pickerIsSirenSpeakerContext() || quantity !== 2 || !parentLineId) return;
   const group = _pickerVisibleAccessoryGroups().find(item => item.category === "bracket_mount");
   if (!group) return;
-  const previousChild = ((typeof _meDraft !== "undefined" && _meDraft?.parts) || []).find(part =>
+  const draftParts = ((typeof _meDraft !== "undefined" && _meDraft?.parts) || []);
+  const previousChild = draftParts.find(part =>
     part.parent_line_id === parentLineId && part.accessory_category === "bracket_mount"
   );
-  const previousPick = previousChild ? _pickerAccessoryChoiceForChild([group], previousChild)?.pick : "";
+  const existingParent = draftParts.find(part => part.line_id === parentLineId);
+  const savedPrevious = existingParent?.picker_config?.accessory_decisions
+    ?.choices?.[group.category];
+  const savedPreviousPick = Array.isArray(savedPrevious)
+    ? savedPrevious[0] : (savedPrevious || "");
+  const previousPick = previousChild
+    ? _pickerAccessoryChoiceForChild([group], previousChild)?.pick
+    : savedPreviousPick;
   const current = _pickerState.accessoryChoices[group.category];
   const currentPick = (Array.isArray(current) ? current : [current]).find(value => value) || "";
   _pickerState.config.count = 2;
   _pickerState.accessoryChoices[group.category] = [previousPick || "none", currentPick || "none"];
+}
+
+async function _pickerAddCustomLight(draftId, addAndContinue) {
+  const custom = _pickerState.customLight;
+  const loc = _pickerState.loc;
+  const config = _pickerState.config;
+  const heads = _pickerResolveHeads();
+  const slots = _COLORS_PER_HEAD[config.colorsPerHead] || 1;
+  if (!heads.length || heads.some(colors => colors.length !== slots || new Set(colors).size !== slots)) {
+    toast(`Choose ${slots} distinct color${slots === 1 ? "" : "s"} for every light head`, "error");
+    return;
+  }
+  const pickerConfig = {
+    mode: config.mode,
+    colorsPerHead: config.colorsPerHead,
+    uniform: [...config.uniform],
+    splitSecondary: [...config.splitSecondary],
+    custom: config.custom.map(colors => [...colors]),
+    _noColor: false,
+    count: config.count,
+    lens: _pickerState.filters.lens || "",
+  };
+  if (loc.textCustom) {
+    _pickerRefreshCustomPlacementGroups();
+    pickerConfig.custom_location = {
+      label: String(loc.selected || "").trim(),
+      render_location: loc.renderLocation || "",
+      placements: _pickerCustomPlacementSnapshot(),
+      anchors: _pickerNormalizeCustomAnchors(loc.customPlacementAnchors),
+      spacing: _pickerNormalizeCustomSpacing(loc.customHeadSpacing),
+      layout: loc.customPlacementLayout === "mirrored_pairs" ? "mirrored_pairs" : "even",
+    };
+  }
+  const save = $("picker-add-btn");
+  if (save) save.disabled = true;
+  try {
+    const endpoint = _pickerState.editLineId
+      ? `/api/draft/${draftId}/custom-part/${_pickerState.editLineId}/update`
+      : `/api/draft/${draftId}/custom-part`;
+    const result = await _pickerDraftApi(endpoint, {
+      sku: custom.sku,
+      description: custom.description,
+      unit_price: custom.unitPrice,
+      quantity: config.count,
+      part_type: custom.partType,
+      location: loc.selected,
+      custom_light: {
+        enabled: true,
+        render_style: custom.renderStyle || "light_head",
+        size_rule_id: custom.sizeRuleId,
+        lens: _pickerState.filters.lens || "",
+        heads: heads.map(colors => ({ colors })),
+        picker_config: pickerConfig,
+      },
+      ..._pickerColorFields(),
+      allow_existing_duplicate: !!custom.allowExistingDuplicate,
+    });
+    if (result?.error === "catalog_sku_exists") {
+      toast("That SKU now exists in the catalog; reopen the custom part to use it or confirm the duplicate", "error");
+      return;
+    }
+    if (!result?.ok) {
+      toast(result?.error || "Could not save the custom light", "error");
+      return;
+    }
+    toast(_pickerState.editLineId ? "Custom light updated" : "Custom light added", "success");
+    await _pickerFinalize(draftId, addAndContinue);
+  } catch (error) {
+    console.error("Custom light save failed", error);
+    toast("Could not save the custom light", "error");
+  } finally {
+    if (save) save.disabled = false;
+  }
 }
 
 async function _pickerDoAdd(addAndContinue) {
@@ -6989,6 +7979,11 @@ async function _pickerDoAdd(addAndContinue) {
   if (!sel || !loc.selected) return;
   const draftId = (typeof _meDraftId !== "undefined") ? _meDraftId : null;
   if (!draftId) { toast("No active build", "error"); return; }
+
+  if (_pickerState.customLight) {
+    await _pickerAddCustomLight(draftId, addAndContinue);
+    return;
+  }
 
   // Tracer path: the resolver gives housings + per-side heads; add each housing
   // as a parent line, its heads nested beneath, with a Duo/Trio tag.
@@ -7025,6 +8020,26 @@ async function _pickerDoAdd(addAndContinue) {
     details: (_pickerControlHeadRequiresPaMic() || _pickerControlHeadOffersHandheldMagMic())
       ? { ..._pickerState.partDetails } : {},
   };
+  const accessoryDecisions = _pickerAccessoryDecisionSnapshot();
+  if (accessoryDecisions) pickerConfig.accessory_decisions = accessoryDecisions;
+  if (_pickerState.importSource) {
+    const hasImportedUnitPrice = _pickerState.importSource.unit_price != null;
+    const importedUnitPrice = Number(_pickerState.importSource.unit_price);
+    pickerConfig.qb_import = {
+      estimate_id: _pickerState.importSource.estimate_id,
+      estimate_number: _pickerState.importSource.estimate_number,
+      line_id: _pickerState.importSource.line_id,
+      item_id: _pickerState.importSource.item_id,
+      description: _pickerState.importSource.description,
+      amount: _pickerState.importSource.amount,
+      related_line_ids: (_pickerState.importSource.relatedLineIds || []).filter(Boolean),
+    };
+    // The linked Estimate is the source of truth for this imported line. Keep
+    // its reviewed price even when the current Parts DB retail price differs.
+    if (hasImportedUnitPrice && Number.isFinite(importedUnitPrice) && importedUnitPrice >= 0) {
+      pickerConfig.quote_unit_price_override = importedUnitPrice;
+    }
+  }
   if (isWindowTint) {
     pickerConfig.window_tint = {
       windows: [..._pickerState.tint.windows],
@@ -7143,7 +8158,10 @@ async function _pickerDoAdd(addAndContinue) {
     if (!sku) { toast("Pick a SKU", "error"); return; }
     const skuObj = product.skus.find(s => s.part_number === sku) || {};
     const skuColors = [skuObj.color, skuObj.secondary_color, skuObj.tertiary_color].filter(Boolean);
-    const qty = isWindowTint
+    const importedQty = Math.max(1, Number(_pickerState.importSource?.quantity) || 1);
+    const qty = _pickerState.importSource
+      ? importedQty
+      : isWindowTint
       ? _pickerState.tint.windows.length
       : _pickerIsSirenSpeakerContext()
       ? Math.min(2, Math.max(1, _pickerState.config.count || 1))
@@ -7186,7 +8204,7 @@ async function _pickerDoAdd(addAndContinue) {
       for (let index = 0; index < quantity; index++) expandedComponents.push({ ...component, quantity: 1 });
     }
     let componentIndex = 0;
-    const allocations = (product.location_options || [])
+    const allocations = _pickerLocationAllocationOptions(product)
       .map(location => [location, Math.max(0, Number(_pickerState.locationAllocation.quantities[location]) || 0)])
       .filter(([, quantity]) => quantity > 0);
     const supplyPayload = _pickerSupplyPayload();
@@ -7212,7 +8230,7 @@ async function _pickerDoAdd(addAndContinue) {
       };
     });
     try {
-      const result = await api(`/api/draft/${draftId}/location-allocation`, {
+      const result = await _pickerDraftApi(`/api/draft/${draftId}/location-allocation`, {
         batch_id: _pickerState.locationAllocation.batchId || "",
         edit_line_id: _pickerState.editLineId || "",
         rows: allocationRows,
@@ -7250,6 +8268,22 @@ async function _pickerDoAdd(addAndContinue) {
         picker_config: pickerConfig,
         ...(partTypeId ? { part_type: partTypeId } : {}),
       };
+      // Editing an older or imported accessory can legitimately use the full
+      // picker (for example when its parent product id is unavailable).  Its
+      // parent choice remains authoritative unless the user explicitly
+      // changes that relationship elsewhere in the build.
+      if (editing && ep?.parent_line_id) {
+        payload.parent_line_id = ep.parent_line_id;
+        payload.accessory_category = ep.accessory_category || "other";
+        payload.accessory_parent_product = ep.accessory_parent_product || "";
+      }
+      const importedAccessory = _pickerState.importSource?.accessoryRelation;
+      if (importedAccessory) {
+        payload.name = `${importedAccessory.parentName} · ${_pickerState.importSource.accessoryModel}`;
+        payload.parent_line_id = importedAccessory.parentLineId;
+        payload.accessory_category = importedAccessory.category;
+        payload.accessory_parent_product = importedAccessory.parentProductId;
+      }
       if (_pickerState.consoleSetup?.active) {
         const baseConsole = _pickerState.consoleSetup.choices?.consoleChoice;
         // A console is one exact orderable base, not a color/configuration
@@ -7267,7 +8301,7 @@ async function _pickerDoAdd(addAndContinue) {
         payload.notes = `${Number(_pickerState.tint.percentage)}% tint`;
         payload.components = [];
       }
-      const r = await api(endpoint, payload);
+      const r = await _pickerDraftApi(endpoint, payload);
       if (r?.ok) {
         ok++;
         if (!parentLineId && r.line_id) parentLineId = r.line_id;
@@ -7277,6 +8311,22 @@ async function _pickerDoAdd(addAndContinue) {
         if (r.name) baseName = r.name;
         if (r.merged) {
           _pickerPrepareMergedSpeakerAccessories(parentLineId, r.quantity);
+          // The add endpoint merged this speaker into an existing parent, so
+          // the first request could not yet contain the combined two-speaker
+          // accessory decision (especially a no-child "None needed" choice).
+          // Refresh the merged parent with the now-complete decision snapshot.
+          payload.name = r.name || payload.name;
+          payload.quantity = r.quantity;
+          payload.picker_config = {
+            ...(payload.picker_config || {}),
+            accessory_decisions: _pickerAccessoryDecisionSnapshot(),
+          };
+          const mergedUpdate = await _pickerDraftApi(
+            `/api/draft/${draftId}/part/${parentLineId}/update`, payload,
+          );
+          if (!mergedUpdate?.ok) throw new Error(
+            mergedUpdate?.error || "could not save the merged speaker accessory choices",
+          );
         }
       }
     } catch (e) { console.error("add row failed:", e); }
@@ -7327,7 +8377,7 @@ async function _pickerDoAdd(addAndContinue) {
   if (!_pickerState.editLineId) {
     try {
       for (const wrow of _pickerChosenWestinRows(baseName, locName, parentLineId)) {
-        const result = await api(`/api/draft/${draftId}/part`, wrow);
+        const result = await _pickerDraftApi(`/api/draft/${draftId}/part`, wrow);
         if (!result?.ok) throw new Error(result?.error || "could not add Westin bumper option");
         if (wrow.accessory_category === "westin_light_channel") {
           await _pickerAddWestinChannelLights(draftId, parentLineId);
@@ -7398,12 +8448,14 @@ async function _pickerAddTracer(draftId, addAndContinue) {
   // 1") so the planner matches it to a part_type and renders it. Config + colors
   // live in raw_color/lens/notes (which also color the rendered icon).
   let parentLineId = "", added = 0;
+  const accessoryDecisions = _pickerAccessoryDecisionSnapshot();
   try {
-    const r = await api(`/api/draft/${draftId}/part`, {
+    const r = await _pickerDraftApi(`/api/draft/${draftId}/part`, {
       name: baseName, location: locName,
       manufacturer: sel.mfr || "", part_number: housingSku, quantity: housingQty,
       ..._pickerSupplyPayload(), lens, notes, comment: _pickerState.comment || "",
       part_type: _pickerResolvedPartTypeId(_pickerState.filters),
+      ...(accessoryDecisions ? { picker_config: { accessory_decisions: accessoryDecisions } } : {}),
       ...colorFields,
     });
     if (r?.ok) { added++; parentLineId = r.line_id || ""; }
@@ -7414,7 +8466,7 @@ async function _pickerAddTracer(draftId, addAndContinue) {
     const colors = (hd.colors || []).map(cap).join("/");
     const label = [cap(hd.role), colors].filter(Boolean).join(" ");
     try {
-      await api(`/api/draft/${draftId}/part`, {
+      await _pickerDraftApi(`/api/draft/${draftId}/part`, {
         name: `${baseName} · ${label}`, location: locName,
         manufacturer: sel.mfr || "", part_number: hd.sku, quantity: hd.qty || 1,
         new_or_used: "New", source: "", parent_line_id: parentLineId,
@@ -7433,7 +8485,7 @@ async function _pickerAddTracer(draftId, addAndContinue) {
         ? (lamps + 1) * numHousings
         : numHousings;
     }
-    try { await api(`/api/draft/${draftId}/part`, arow); }
+    try { await _pickerDraftApi(`/api/draft/${draftId}/part`, arow); }
     catch (e) { console.error("tracer accessory add failed:", e); }
   }
   if (!added) { toast("Add failed", "error"); if (btn) btn.disabled = false; return; }
@@ -7463,7 +8515,7 @@ async function _pickerReplaceInnerEdgeHeadChildren(draftId, parentLineId) {
     && (!part.accessory_parent_product || part.accessory_parent_product === productId)
   );
   for (const child of existing) {
-    const result = await api(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
+    const result = await _pickerDraftApi(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
     if (!result?.ok) throw new Error(result?.error || "could not replace an Inner Edge head line");
   }
 }
@@ -7503,6 +8555,8 @@ async function _pickerAddInnerEdge(draftId, addAndContinue) {
       mode: ie.mode, secondary: ie.secondary, coverage: ie.coverage,
     },
   };
+  const accessoryDecisions = _pickerAccessoryDecisionSnapshot();
+  if (accessoryDecisions) pickerConfig.accessory_decisions = accessoryDecisions;
   const parentRow = {
     name: baseName, location: loc.selected, manufacturer: sel.mfr || "",
     part_number: housing.sku, quantity: 1, ..._pickerSupplyPayload(),
@@ -7514,7 +8568,7 @@ async function _pickerAddInnerEdge(draftId, addAndContinue) {
     const endpoint = _pickerState.editLineId
       ? `/api/draft/${draftId}/part/${_pickerState.editLineId}/update`
       : `/api/draft/${draftId}/part`;
-    const result = await api(endpoint, parentRow);
+    const result = await _pickerDraftApi(endpoint, parentRow);
     if (!result?.ok) throw new Error(result?.error || "could not save Inner Edge housing");
     parentLineId = result.line_id || _pickerState.editLineId || "";
     await _pickerReplaceInnerEdgeHeadChildren(draftId, parentLineId);
@@ -7527,7 +8581,7 @@ async function _pickerAddInnerEdge(draftId, addAndContinue) {
   for (const head of (resolved.lines || []).filter(line => line.kind === "head" && line.sku)) {
     const label = [cap(head.side), (head.colors || []).map(cap).join("/")].filter(Boolean).join(" ");
     try {
-      const result = await api(`/api/draft/${draftId}/part`, {
+      const result = await _pickerDraftApi(`/api/draft/${draftId}/part`, {
         name: `${baseName} · Inner Edge ${label}`, location: loc.selected,
         manufacturer: sel.mfr || "", part_number: head.sku, quantity: head.qty || 1,
         new_or_used: "New", source: "", parent_line_id: parentLineId,
@@ -7575,7 +8629,7 @@ async function _pickerReplaceOuterEdgeHeadChildren(draftId, parentLineId) {
     && (!part.accessory_parent_product || part.accessory_parent_product === productId)
   );
   for (const child of existing) {
-    const result = await api(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
+    const result = await _pickerDraftApi(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
     if (!result?.ok) throw new Error(result?.error || "could not replace an Outer Edge ION line");
   }
 }
@@ -7604,6 +8658,7 @@ async function _pickerAddOuterEdge(draftId, addAndContinue) {
   const colorLabel = oe.mode === "trio"
     ? "six Red/Blue/Amber IONs"
     : `three Red/${oe.secondary === "amber" ? "Amber" : "White"} + three Blue/${oe.secondary === "amber" ? "Amber" : "White"} IONs`;
+  const accessoryDecisions = _pickerAccessoryDecisionSnapshot();
   const parentRow = {
     name: baseName, location: loc.selected, manufacturer: sel.mfr || "",
     part_number: housing.sku, quantity: 1, ..._pickerSupplyPayload(),
@@ -7616,6 +8671,7 @@ async function _pickerAddOuterEdge(draftId, addAndContinue) {
         product_id: sel.product_id, housing_part_number: housing.sku,
         mode: oe.mode, secondary: oe.secondary, head_count: 6,
       },
+      ...(accessoryDecisions ? { accessory_decisions: accessoryDecisions } : {}),
     },
     ..._pickerOuterEdgeColorFields(oe),
   };
@@ -7624,7 +8680,7 @@ async function _pickerAddOuterEdge(draftId, addAndContinue) {
     const endpoint = _pickerState.editLineId
       ? `/api/draft/${draftId}/part/${_pickerState.editLineId}/update`
       : `/api/draft/${draftId}/part`;
-    const result = await api(endpoint, parentRow);
+    const result = await _pickerDraftApi(endpoint, parentRow);
     if (!result?.ok) throw new Error(result?.error || "could not save Outer Edge pillar housing");
     parentLineId = result.line_id || _pickerState.editLineId || "";
     await _pickerReplaceOuterEdgeHeadChildren(draftId, parentLineId);
@@ -7637,7 +8693,7 @@ async function _pickerAddOuterEdge(draftId, addAndContinue) {
   for (const head of (resolved.lines || []).filter(line => line.kind === "head" && line.sku)) {
     const label = (head.colors || []).map(cap).join("/");
     try {
-      const result = await api(`/api/draft/${draftId}/part`, {
+      const result = await _pickerDraftApi(`/api/draft/${draftId}/part`, {
         name: `${baseName} · Outer Edge ION ${label}`, location: loc.selected,
         manufacturer: sel.mfr || "", part_number: head.sku, quantity: head.qty || 1,
         new_or_used: "New", source: "", parent_line_id: parentLineId,
@@ -7672,20 +8728,22 @@ async function _pickerAddLightbar(draftId, addAndContinue) {
   if (lb.edition === "midnight") noteParts.push("black straps required");
   if (lb.setup === "custom" && (lb.notes || "").trim()) noteParts.push("Order notes: " + lb.notes.trim());
   const notes = noteParts.filter(Boolean).join(" · ");
+  const accessoryDecisions = _pickerAccessoryDecisionSnapshot();
 
   let parentLineId = "", added = 0;
   try {
-    const r = await api(`/api/draft/${draftId}/part`, {
+    const r = await _pickerDraftApi(`/api/draft/${draftId}/part`, {
       name: baseName, location: locName, manufacturer: sel.mfr || "",
       part_number: sel.sku, quantity: 1, ..._pickerSupplyPayload(), lens, notes, comment: _pickerState.comment || "",
       part_type: _pickerResolvedPartTypeId(_pickerState.filters),
+      ...(accessoryDecisions ? { picker_config: { accessory_decisions: accessoryDecisions } } : {}),
     });
     if (r?.ok) { added++; parentLineId = r.line_id || ""; }
   } catch (e) { console.error("lightbar add failed:", e); }
   if (!added) { toast("Add failed", "error"); if (btn) btn.disabled = false; return; }
   // Chosen accessories (mount kit / straps) → nested under the bar.
   for (const arow of _pickerChosenAccessoryRows(baseName, locName, parentLineId)) {
-    try { await api(`/api/draft/${draftId}/part`, arow); }
+    try { await _pickerDraftApi(`/api/draft/${draftId}/part`, arow); }
     catch (e) { console.error("lightbar accessory add failed:", e); }
   }
   toast("Lightbar added", "success");

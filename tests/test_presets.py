@@ -1,18 +1,13 @@
 """Tests for the preset service (Phase 2)."""
 from __future__ import annotations
 
-import base64
-import io
 import json
 from dataclasses import asdict
 from pathlib import Path
 
 import pytest
-from openpyxl import Workbook
-
 from dtm_buildsheet.app.services.preset_service import (
     find_duplicate,
-    import_from_workbook,
     list_presets,
     load_preset,
     load_preset_dict,
@@ -611,37 +606,17 @@ class TestSavePresetDuplicates:
         assert saved["vehicle_types"] == ["PIU"]
 
 
-def test_preset_modal_uses_layout_backed_vehicle_picker_and_import_issue_editor():
+def test_preset_modal_uses_layout_backed_vehicle_picker_without_workbook_import():
     source = Path("src/dtm_buildsheet/ui/js/settings/presets_mgr.js").read_text(encoding="utf-8")
     markup = Path("src/dtm_buildsheet/ui/index.html").read_text(encoding="utf-8")
 
     assert "_selectedVehicleKeys = new Set()" in source
     assert "Unknown layout:" in source
-    assert "data-import-part-source" in source
-    assert "Complete the highlighted imported-part details" in source
     assert 'id="pem-vehicle-search"' in markup
     assert 'id="pem-vehicle-selected"' in markup
-    assert 'id="pem-part-issues"' in markup
-
-
-def test_workbook_import_reports_customer_used_part_missing_source(tmp_path):
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "Build Sheet"
-    sheet.append(["✓", "Part", "New/Used", "Source", "Manufacturer", "Model / Part #", "Location", "Color", "Qty"])
-    sheet.append(["✓", "Customer Radio", "Used", "", "Motorola", "APX", "Console", "", 1])
-    stream = io.BytesIO()
-    workbook.save(stream)
-
-    result = import_from_workbook(base64.b64encode(stream.getvalue()).decode("ascii"), _paths_empty(tmp_path))
-
-    assert result["ok"] is True
-    assert result["part_issues"] == [{
-        "index": 0,
-        "part_number": 1,
-        "name": "Customer Radio",
-        "error": "Enter where the customer-supplied used part will come from",
-    }]
+    assert 'id="pm-import-btn"' not in markup
+    assert 'id="pm-import-input"' not in markup
+    assert "/api/presets/import-workbook" not in source
 
 
 # ── load_preset_dict ──────────────────────────────────────────────────────────

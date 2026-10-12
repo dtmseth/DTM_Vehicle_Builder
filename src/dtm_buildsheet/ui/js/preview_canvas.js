@@ -18,6 +18,8 @@ let _pvInspKey          = null;   // override_key currently open in inspector
 let _pvInspPl           = null;   // placement object open in inspector
 let _pvInspPp           = null;   // part object open in inspector
 let _pvInspAr           = 0;      // W/H aspect ratio captured when the inspector opened
+let _pvInspScaleBaseW   = 0;      // current Tracer head size at inspector open
+let _pvInspScaleBaseH   = 0;
 let _pvDrag             = null;   // active drag state (see pvDragStart)
 let _pvCalloutDrag      = null;   // active concealed-speaker tag drag
 let _pvPendingOverrides = {};     // {override_key: overrideDict} — short-lived autosave queue
@@ -359,11 +361,14 @@ function pvMergeOverride(pl, ov) {
   const anchorLeft = rawAnchorX <= 0.5;
   const anchorTop = rawAnchorY <= 0.5;
 
-  // hDeltaFrac: change in effective h_spacing in fraction units, for the horizontal path.
-  // slot_coeff is baked by the server as (x - anchor) / eff_h_spacing — no client derivation needed.
+  // Horizontal icon-width rows (notably Tracers) must contract/expand their
+  // centers along with each head. A width change therefore scales both the
+  // icons and their one-icon-width spacing, keeping adjacent edges touching.
+  // slot_coeff is baked by the server as (x - anchor) / effective spacing.
   const iconWPct = pl.icon_w_pct || 0.04;
-  const hDeltaFrac = (pl.h_spacing_units === "icon_width")
-    ? hDeltaDelta * iconWPct
+  const baseHSpacing = pl.h_spacing || 0;
+  const spacingDeltaFrac = (pl.h_spacing_units === "icon_width")
+    ? iconWPct * (wFactor * (baseHSpacing + hDeltaDelta) - baseHSpacing)
     : hDeltaDelta;
 
   return {
@@ -386,8 +391,8 @@ function pvMergeOverride(pl, ov) {
         ? (instTop === anchorTop ? dyDelta : -dyDelta)
         : dyDelta;
       // Symmetric-horizontal: each slot moves by its server-baked coefficient × Δeff.
-      const hSpacingXDelta = (hDeltaDelta !== 0 && pl.pattern === "horizontal")
-        ? (inst.slot_coeff ?? 0) * hDeltaFrac
+      const hSpacingXDelta = ((hDeltaDelta !== 0 || wFactor !== 1) && pl.pattern === "horizontal")
+        ? (inst.slot_coeff ?? 0) * spacingDeltaFrac
         : 0;
       return {
         ...inst,
@@ -502,6 +507,25 @@ function pvGroupDragOverride(item, rawDxFrac, rawDyFrac) {
   };
 }
 
+function pvCustomMirrorDragOverride(drag, item, rawDxFrac, rawDyFrac) {
+  const grabbedGroup = drag.basePl.custom_group_id || "";
+  const itemGroup = item.basePl.custom_group_id || "";
+  const groupedSide = grabbedGroup && itemGroup
+    ? grabbedGroup === itemGroup
+    : ((drag.basePl.anchor?.x ?? 0.5) < 0.5) === ((item.basePl.anchor?.x ?? 0.5) < 0.5);
+  return {
+    ...pvEffectiveOverride(item.basePl),
+    translate_dx: +(item.state.savedTx + (groupedSide ? rawDxFrac : -rawDxFrac)).toFixed(6),
+    translate_dy: +(item.state.savedTy + rawDyFrac).toFixed(6),
+  };
+}
+
+function pvRelatedDragOverride(drag, item, rawDxFrac, rawDyFrac) {
+  return drag.isCustomMirrorDrag
+    ? pvCustomMirrorDragOverride(drag, item, rawDxFrac, rawDyFrac)
+    : pvGroupDragOverride(item, rawDxFrac, rawDyFrac);
+}
+
 function pvDragOverride(drag, rawDxFrac, rawDyFrac) {
   const existing = pvEffectiveOverride(drag.basePl);
   const newDy = +(drag.savedDy + rawDyFrac).toFixed(6);
@@ -603,7 +627,10 @@ function pvDragStart(e, basePl, pp, grabbedInstIndex) {
     ?? ((instances[grabbedInstIndex]?.x_pct ?? 0) * 100 >= rawAnchorXPct ? 0.5 : -0.5);
 
   const groupItems = pvGroupItemsFor(basePl);
-  const isGroupDrag = groupItems.length > 1;
+  const isCustomMirrorDrag = (
+    basePl.custom_layout === "mirrored_pairs" && groupItems.length > 1
+  );
+  const isGroupDrag = !isCustomMirrorDrag && groupItems.length > 1;
 
   _pvDrag = {
     basePl, displayPl, pp, frame, state,
@@ -612,15 +639,16 @@ function pvDragStart(e, basePl, pp, grabbedInstIndex) {
     startY:    e.clientY,
     savedDx, savedDy, savedHDelta,
     grabbedInstIndex,
-    isSymmetric: isGroupDrag ? false : isSymmetric,
+    isSymmetric: (isGroupDrag || isCustomMirrorDrag) ? false : isSymmetric,
     isGroupDrag,
+    isCustomMirrorDrag,
     groupItems,
     baseHSpacing, grabbedCoeff,
     dxPct: 0,
     dyPct: 0,
   };
 
-  const dragSelector = isGroupDrag
+  const dragSelector = (isGroupDrag || isCustomMirrorDrag)
     ? pvDataSelector("group-key", basePl.group_key || "")
     : pvDataSelector("override-key", basePl.override_key);
   frame.querySelectorAll(dragSelector).forEach(el => el.classList.add("pv-icon-dragging"));
@@ -642,14 +670,14 @@ function pvDragMove(e) {
   const rawDxFrac = rawDxPct / 100;
   const rawDyFrac = rawDyPct / 100;
 
-  if (_pvDrag.isGroupDrag) {
+  if (_pvDrag.isGroupDrag || _pvDrag.isCustomMirrorDrag) {
     const groupKey = basePl.group_key || "";
     frame.querySelectorAll(pvDataSelector("group-key", groupKey)).forEach(el => el.remove());
     for (const item of _pvDrag.groupItems) {
       pvRenderPlacement(
         frame,
         item.pp,
-        pvMergeOverride(item.basePl, pvGroupDragOverride(item, rawDxFrac, rawDyFrac)),
+        pvMergeOverride(item.basePl, pvRelatedDragOverride(_pvDrag, item, rawDxFrac, rawDyFrac)),
         item.basePl,
       );
     }
@@ -677,7 +705,7 @@ function pvDragEnd(e) {
   const drag = _pvDrag;
   _pvDrag = null;
 
-  const dragSelector = drag.isGroupDrag
+  const dragSelector = (drag.isGroupDrag || drag.isCustomMirrorDrag)
     ? pvDataSelector("group-key", drag.basePl.group_key || "")
     : pvDataSelector("override-key", drag.basePl.override_key);
   drag.frame.querySelectorAll(dragSelector).forEach(el => el.classList.remove("pv-icon-dragging"));
@@ -694,10 +722,10 @@ function pvDragEnd(e) {
   const rawDxFrac = dxPct / 100;
   const rawDyFrac = dyPct / 100;
 
-  if (drag.isGroupDrag) {
+  if (drag.isGroupDrag || drag.isCustomMirrorDrag) {
     for (const item of drag.groupItems) {
-      _pvPendingOverrides[item.basePl.override_key] = pvGroupDragOverride(
-        item, rawDxFrac, rawDyFrac,
+      _pvPendingOverrides[item.basePl.override_key] = pvRelatedDragOverride(
+        drag, item, rawDxFrac, rawDyFrac,
       );
     }
     pvUpdateBadge();
@@ -822,6 +850,15 @@ function pvOpenInspector(overrideKey, pl, pp) {
     lockBtn.textContent = "🔒";
   }
   _pvInspAr = (effW > 0 && effH > 0) ? effW / effH : (baseW > 0 && baseH > 0 ? baseW / baseH : 0);
+  _pvInspScaleBaseW = effW;
+  _pvInspScaleBaseH = effH;
+  const scaleRow = $("pv-insp-head-scale-row");
+  const isTracerRow = String(pp.part_id || "").startsWith("tracer_")
+    && pl.pattern === "horizontal" && pl.h_spacing_units === "icon_width"
+    && Number(pl.slot_count || pl.instances?.length || 0) > 1;
+  if (scaleRow) scaleRow.hidden = !isTracerRow;
+  if ($("pv-insp-head-scale")) $("pv-insp-head-scale").value = "100";
+  if ($("pv-insp-head-scale-num")) $("pv-insp-head-scale-num").value = "100";
   $("pv-insp-layer").value      = ov.layer ?? pl.layer ?? 0;
 
   show("pv-inspector");
@@ -1096,6 +1133,7 @@ function pvSyncSlider(sliderId, numId) {
   pvSyncSlider("pv-insp-rotation", "pv-insp-rot-num");
   pvSyncSlider("pv-insp-dx",       "pv-insp-dx-num");
   pvSyncSlider("pv-insp-dy",       "pv-insp-dy-num");
+  pvSyncSlider("pv-insp-head-scale", "pv-insp-head-scale-num");
 
   // AR lock — when engaged, editing one of W/H drives the other to preserve ratio.
   const arBtn = $("pv-insp-ar-lock");
@@ -1129,6 +1167,19 @@ function pvSyncSlider(sliderId, numId) {
     }
     pvLivePreview();
   });
+  const applyHeadScale = event => {
+    const scale = Math.min(200, Math.max(25, parseFloat(event.target.value) || 100));
+    const paired = event.target.id === "pv-insp-head-scale"
+      ? $("pv-insp-head-scale-num") : $("pv-insp-head-scale");
+    if (paired) paired.value = String(scale);
+    if (_pvInspScaleBaseW > 0 && _pvInspScaleBaseH > 0) {
+      sizeW.value = (_pvInspScaleBaseW * scale / 100).toFixed(2);
+      sizeH.value = (_pvInspScaleBaseH * scale / 100).toFixed(2);
+      pvLivePreview();
+    }
+  };
+  $("pv-insp-head-scale")?.addEventListener("input", applyHeadScale);
+  $("pv-insp-head-scale-num")?.addEventListener("input", applyHeadScale);
 
   // Wire every other inspector control to trigger a real-time canvas re-render.
   [

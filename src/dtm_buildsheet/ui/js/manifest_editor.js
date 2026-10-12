@@ -7,6 +7,17 @@ let _meDraft      = null;
 let _meEditLineId = null;   // null = add mode
 let _meCatalog     = null;
 let _meSupply      = { supplyType: "new", customerCondition: "", customerSource: "" };
+let _mePartActionOutsideWired = false;
+
+function _mePartActionMenu(lineId) {
+  return `<details class="me-part-action-menu">
+    <summary class="btn btn-secondary btn-sm" title="Part actions" aria-label="Part actions">≡</summary>
+    <div class="me-part-action-popover" role="menu">
+      <button type="button" class="me-part-action-edit" data-lid="${esc(lineId)}" role="menuitem">Edit</button>
+      <button type="button" class="me-part-action-duplicate" data-lid="${esc(lineId)}" role="menuitem">Duplicate</button>
+    </div>
+  </details>`;
+}
 
 function _meRetailPrice(value) {
   const amount = Number(value);
@@ -330,7 +341,7 @@ function _meMakeRows(parts, columns) {
       <td class="me-supply-cell">${statusLabel}</td>
       <td class="me-row-actions">
         <button class="btn btn-secondary btn-sm me-comment-btn" data-lid="${esc(p.line_id)}" title="${p.comment ? "Edit comment" : "Add comment"}">💬</button>
-        <button class="btn btn-secondary btn-sm me-edit-btn" data-lid="${esc(p.line_id)}" title="Edit">≡</button>
+        ${_mePartActionMenu(p.line_id)}
         <button class="btn btn-danger btn-sm me-del-btn"  data-lid="${esc(p.line_id)}" title="Remove">✕</button>
       </td>
     </tr>`;
@@ -365,7 +376,7 @@ function _meMakeRows(parts, columns) {
         <td class="me-supply-cell">${_meSupplyMarkup(c)}</td>
         <td class="me-row-actions">
           <button class="btn btn-secondary btn-sm me-comment-btn" data-lid="${esc(c.line_id)}" title="${c.comment ? "Edit comment" : "Add comment"}">💬</button>
-          <button class="btn btn-secondary btn-sm me-edit-btn" data-lid="${esc(c.line_id)}" title="Edit">≡</button>
+          ${_mePartActionMenu(c.line_id)}
           <button class="btn btn-danger btn-sm me-del-btn"  data-lid="${esc(c.line_id)}" title="Remove">✕</button>
         </td>
       </tr>`;
@@ -441,12 +452,43 @@ function _meRender() {
 
   container.innerHTML = html;
 
-  // Wire comment/edit/delete buttons
+  if (!_mePartActionOutsideWired) {
+    document.addEventListener("click", event => {
+      if (event.target.closest?.(".me-part-action-menu")) return;
+      document.querySelectorAll(".me-part-action-menu[open]")
+        .forEach(menu => menu.removeAttribute("open"));
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key !== "Escape") return;
+      document.querySelectorAll(".me-part-action-menu[open]")
+        .forEach(menu => menu.removeAttribute("open"));
+    });
+    _mePartActionOutsideWired = true;
+  }
+
+  // Wire comment/actions/delete buttons.
   container.querySelectorAll(".me-comment-btn").forEach(b =>
     b.addEventListener("click", () => meEditPartComment(b.dataset.lid))
   );
-  container.querySelectorAll(".me-edit-btn").forEach(b =>
-    b.addEventListener("click", () => openPartEditModal(b.dataset.lid))
+  container.querySelectorAll(".me-part-action-menu").forEach(menu =>
+    menu.addEventListener("toggle", () => {
+      if (!menu.open) return;
+      container.querySelectorAll(".me-part-action-menu[open]").forEach(other => {
+        if (other !== menu) other.removeAttribute("open");
+      });
+    })
+  );
+  container.querySelectorAll(".me-part-action-edit").forEach(b =>
+    b.addEventListener("click", () => {
+      b.closest("details")?.removeAttribute("open");
+      openPartEditModal(b.dataset.lid);
+    })
+  );
+  container.querySelectorAll(".me-part-action-duplicate").forEach(b =>
+    b.addEventListener("click", () => {
+      b.closest("details")?.removeAttribute("open");
+      openPartEditModal(b.dataset.lid, { duplicate: true });
+    })
   );
   container.querySelectorAll(".me-del-btn").forEach(b =>
     b.addEventListener("click", () => deletePart(b.dataset.lid))
@@ -566,7 +608,7 @@ function _meTracerBracketQty(part, parent, sku) {
 }
 
 // Swap an accessory line within its category — a single dropdown, no full picker.
-async function _meEditAccessory(part) {
+async function _meEditAccessory(part, { duplicate = false } = {}) {
   let groups = [];
   try {
     const res = await api(`/api/parts-db/accessories?product_id=${encodeURIComponent(part.accessory_parent_product)}`);
@@ -594,14 +636,14 @@ async function _meEditAccessory(part) {
   const ov = document.createElement("div");
   ov.className = "me-acc-edit-ov";
   ov.innerHTML = `<div class="me-acc-edit">
-    <div class="me-acc-edit-h">Swap ${esc(g.label)} for ${esc(parentName)}</div>
+    <div class="me-acc-edit-h">${duplicate ? "Duplicate" : "Swap"} ${esc(g.label)} for ${esc(parentName)}</div>
     <select id="me-acc-edit-sel">
       ${opts.map(o => `<option value="${esc(o.value)}"${cur && cur.value === o.value ? " selected" : ""}>${esc(o.label)}</option>`).join("")}
-      ${g.required ? "" : `<option value="__remove__">— Remove this accessory —</option>`}
+      ${duplicate || g.required ? "" : `<option value="__remove__">— Remove this accessory —</option>`}
     </select>
     <div class="me-acc-edit-btns">
       <button class="btn btn-secondary btn-sm" id="me-acc-cancel">Cancel</button>
-      <button class="btn btn-primary btn-sm" id="me-acc-save">Save</button>
+      <button class="btn btn-primary btn-sm" id="me-acc-save">${duplicate ? "Add duplicate" : "Save"}</button>
     </div>
   </div>`;
   document.body.appendChild(ov);
@@ -613,13 +655,24 @@ async function _meEditAccessory(part) {
     close();
     if (val === "__remove__") { await deletePart(part.line_id); return; }
     const o = opts.find(x => x.value === val);
-    if (!o || o.sku === part.part_number) return;   // unchanged
-    const body = { ...part, part_number: o.sku, manufacturer: o.mfr, name: `${parentName} · ${o.model}` };
+    if (!o || (!duplicate && o.sku === part.part_number)) return;   // unchanged edit
+    const source = { ...part };
+    delete source.line_id;
+    const pickerConfig = { ...(source.picker_config || {}) };
+    delete pickerConfig.qb_import;
+    delete pickerConfig.quote_unit_price_override;
+    const body = {
+      ...source, picker_config: pickerConfig,
+      part_number: o.sku, manufacturer: o.mfr, name: `${parentName} · ${o.model}`,
+    };
     const q = _meTracerBracketQty(part, parent, o.sku);   // recompute tracer bracket qty
     if (q != null) body.quantity = q;
-    const r = await api(`/api/draft/${_meDraftId}/part/${part.line_id}/update`, body);
+    const endpoint = duplicate
+      ? `/api/draft/${_meDraftId}/part`
+      : `/api/draft/${_meDraftId}/part/${part.line_id}/update`;
+    const r = await api(endpoint, body);
     if (!r?.ok) { toast(r?.error || "Update failed", "error"); return; }
-    toast("Accessory updated", "success");
+    toast(duplicate ? "Accessory duplicated" : "Accessory updated", "success");
     if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
     await loadDraftManifest(_meDraftId);
     if ($("card-preview") && !$("card-preview").hidden) pvLoad(_meDraftId);
@@ -635,23 +688,23 @@ async function addPartManual() {
   window.openPicker = saved;
 }
 
-async function openPartEditModal(lineId) {
+async function openPartEditModal(lineId, { duplicate = false } = {}) {
   const part = (_meDraft?.parts || []).find(p => p.line_id === lineId);
   if (!part) return;
   if (part.picker_config?.custom_part && typeof pickerCustomPartOpen === "function") {
-    return pickerCustomPartOpen(part);
+    return pickerCustomPartOpen(part, { duplicate });
   }
   // Accessory line → focused category-scoped swap, not the full part picker.
   if (part.parent_line_id && part.accessory_parent_product && part.accessory_category) {
-    return _meEditAccessory(part);
+    return _meEditAccessory(part, { duplicate });
   }
   // Preferred: edit in the new picker panel.
   if (typeof _pickerOpenEdit === "function") {
-    return _pickerOpenEdit(part);
+    return _pickerOpenEdit(part, { duplicate });
   }
   // Fallback: old flat modal.
-  _meEditLineId = lineId;
-  $("me-modal-title").textContent  = "Edit Part";
+  _meEditLineId = duplicate ? null : lineId;
+  $("me-modal-title").textContent  = duplicate ? "Duplicate Part" : "Edit Part";
   $("me-name").value      = part.name          || "";
   $("me-include").checked = !!part.include;
   _meSetStatus(part);

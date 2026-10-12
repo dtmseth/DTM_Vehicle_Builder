@@ -5,6 +5,7 @@ import traceback
 
 from ...config.loader import load_configs, resolve_vehicle_type
 from ...domain.geometry import compound_slot_relative_positions, slot_relative_positions
+from ...domain.plan_models import planned_placement_override_key
 from ...inputs.project_drafts import draft_to_project_input
 from ...paths import AppPaths
 from ...planning.override_applier import apply_overrides
@@ -177,7 +178,7 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     icon_h_pct = 0.02
 
                 slot_count = len(pl.instances) or 1
-                override_key = f"{pl.line_id or pl.part_id}:{pl.view}"
+                override_key = planned_placement_override_key(pl)
                 if override_key in seen_keys:
                     pl.warnings.append(f"Duplicate placement key: {override_key}")
                 seen_keys.add(override_key)
@@ -252,6 +253,9 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     "view":               pl.view,
                     "override_key":       override_key,
                     "group_key":          _placement_group_key(pl.line_id, pl.part_id),
+                    "custom_layout":       pl.custom_layout,
+                    "custom_group_id":     pl.custom_group_id,
+                    "custom_point_index":  pl.custom_point_index,
                     "location_key":       pl.location_key,
                     "anchor":             pl.anchor,
                     "pattern":            pl.pattern,
@@ -279,7 +283,10 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     "callout_dy":         pl.callout_dy,
                     "size":               pl.size_override,
                     "instances":          instances_out,
-                    "override":           draft.placement_overrides.get(override_key, {}),
+                    "override":           draft.placement_overrides.get(
+                        override_key,
+                        draft.placement_overrides.get(f"{pl.line_id or pl.part_id}:{pl.view}", {}),
+                    ),
                 })
 
             if placements_out:

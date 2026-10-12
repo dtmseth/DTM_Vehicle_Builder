@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 
-from ..domain.plan_models import BuildPlan
+from ..domain.plan_models import BuildPlan, planned_placement_override_key
 from .layer_policy import enforced_render_layer
 
 
@@ -36,8 +36,12 @@ def apply_overrides(plan: BuildPlan, overrides: dict) -> BuildPlan:
     for pp in plan_copy.planned_parts:
         kept = []
         for pl in pp.placements:
-            key = f"{pl.line_id or pl.part_id}:{pl.view}"
-            ov = overrides.get(key)
+            key = planned_placement_override_key(pl)
+            # Builds saved before custom points received distinct keys used one
+            # shared line/view override.  Keep that adjustment as a fallback
+            # until the user next moves an individual point.
+            legacy_key = f"{pl.line_id or pl.part_id}:{pl.view}"
+            ov = overrides.get(key) or overrides.get(legacy_key)
             if not ov:
                 kept.append(pl)
                 continue

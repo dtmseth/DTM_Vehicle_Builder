@@ -70,6 +70,8 @@ function _ptQuickBooksOptionsMarkup(projectId, unitId, individualId, holder, dis
         onclick="PT_setupQbProject('${projectId}','${individualId}')">${String(holder.qb_project_id || "").trim() ? "Manage QB project" : "Set up QB project"}</button>
       <button type="button"
         onclick="PT_linkQbEstimate('${projectId}','${individualId}')">${String(holder.qb_estimate_id || "").trim() ? "Manage estimate connection" : "Connect existing estimate"}</button>
+      ${String(holder.qb_estimate_id || "").trim() && String(holder.draft_id || "").trim() ? `<button type="button"${disabledAttrs}
+        onclick="PT_previewQbEstimateImport('${projectId}','${individualId}')">Review estimate parts</button>` : ""}
       <button type="button"${disabledAttrs}
         onclick="PT_buildCreateEstimate('${projectId}','${unitId}','${individualId}')">${String(holder.qb_estimate_id || "").trim() ? "Update connected estimate" : "Create new estimate"}</button>
     </div>
@@ -1575,9 +1577,22 @@ function _ptEstModalEls() {
 }
 
 function _ptOpenEstModal(title, bodyHtml, createLabel) {
+  _PT.qbEstCloseHandler = null;
+  _PT.qbEstCancelHandler = null;
   if (!_PT._qbEstWired) {
     _PT._qbEstWired = true;
-    const close = () => $("qb-est-modal")?.classList.remove("open");
+    const close = (event) => {
+      if (event?.currentTarget?.id === "qb-est-cancel"
+          && typeof _PT.qbEstCancelHandler === "function") {
+        _PT.qbEstCancelHandler();
+        return;
+      }
+      if (typeof _PT.qbEstCloseHandler === "function") {
+        _PT.qbEstCloseHandler();
+        return;
+      }
+      $("qb-est-modal")?.classList.remove("open");
+    };
     $("qb-est-close")?.addEventListener("click", close);
     $("qb-est-cancel")?.addEventListener("click", close);
     $("qb-est-modal")?.addEventListener("click", (ev) => {
@@ -2043,6 +2058,1254 @@ window.PT_linkQbEstimate = function (projectId, individualId) {
       refresh();
     }
   };
+};
+
+const _QB_IMPORT_LABELS = {
+  catalog_part: ["Ready for placement", "ready"],
+  accessory: ["Accessory relationship", "accessory"],
+  guided_system: ["Guided setup required", "guided"],
+  custom: ["One-off custom part", "custom"],
+  unknown_item: ["Needs a decision", "unknown"],
+  pending_part: ["Pending QuickBooks item", "unknown"],
+  section_header: ["Section header — ignored", "ignored"],
+  additional_charge: ["Additional charge — ignored", "ignored"],
+  calculated_or_unsupported: ["Calculated line — ignored", "ignored"],
+};
+
+const _ptQbImportSessions = new Map();
+
+function _ptQbCloseLeavePrompt() {
+  $("qb-import-leave-modal")?.classList.remove("open");
+}
+
+function _ptQbOpenLeavePrompt({ readyCount, onDiscard, onSave, onImport }) {
+  let modal = $("qb-import-leave-modal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "qb-import-leave-modal";
+    modal.className = "modal-overlay qb-import-leave-overlay";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.innerHTML = `<div class="modal qb-import-leave-dialog">
+      <div class="modal-title"><span>Leave Estimate review?</span></div>
+      <p>Your current import decisions have not been applied to the build.</p>
+      <div class="modal-actions qb-import-leave-actions">
+        <button type="button" class="btn btn-secondary" data-qb-leave-discard>Leave without saving</button>
+        <button type="button" class="btn btn-secondary" data-qb-leave-save>Save for later</button>
+        <button type="button" class="btn btn-primary" data-qb-leave-import>Import ready parts</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+  }
+  const importButton = modal.querySelector("[data-qb-leave-import]");
+  if (importButton) {
+    importButton.disabled = readyCount < 1;
+    importButton.textContent = readyCount > 0
+      ? `Import ${readyCount} ready part${readyCount === 1 ? "" : "s"}` : "No ready parts";
+  }
+  modal.querySelector("[data-qb-leave-discard]").onclick = onDiscard;
+  modal.querySelector("[data-qb-leave-save]").onclick = onSave;
+  if (importButton) importButton.onclick = onImport;
+  modal.onclick = event => {
+    if (event.target === modal) _ptQbCloseLeavePrompt();
+  };
+  modal.classList.add("open");
+}
+
+function _ptQbReservedLineId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `qb-stage-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function _ptQbImportSessionId(projectId, individualId, estimateId) {
+  return `${projectId}:${individualId}:${estimateId}`;
+}
+
+async function _ptQbStageAutomaticLocations(lines, session, estimate) {
+  const automaticParts = lines.filter(line => {
+    const match = (line.catalog_matches || [])[0];
+    return Boolean(match?.is_fixture || match?.fixed_location)
+      && !match.picker_location_allocation
+      && !match.has_configured_accessories
+      && !line.ambiguous_match && !line.covered_by_guided_line_id
+      && !line.already_imported && line.comparison?.status !== "matched"
+      && !session.resolved.has(line.line_id) && !session.skipped.has(line.line_id)
+      && line.classification === "catalog_part";
+  });
+  for (const line of automaticParts) {
+    const match = line.catalog_matches[0];
+    const quantity = Math.max(1, Number(line.quantity) || 1);
+    const fixedLocation = match.fixed_location
+      || match.default_location || match.fixture_label || match.fixture_base_label || "";
+    const baseName = match.is_fixture
+      ? (match.fixture_base_label || match.fixture_label || match.model || match.part_number)
+      : (match.primary_part_type_label || match.model || match.part_number);
+    const colors = [match.color, match.secondary_color, match.tertiary_color]
+      .filter(Boolean).map(value => String(value).toLowerCase());
+    const colorLabel = colors.map(value => value.charAt(0).toUpperCase() + value.slice(1)).join("/");
+    const resolved = await api("/api/parts-db/resolve-selection", {
+      product_model: match.model || match.part_number,
+      manufacturer_label: match.manufacturer || "",
+      location: fixedLocation,
+      base_name: baseName,
+      lens: match.lens_type || "",
+      combos: [{
+        colors, part_number: match.part_number, quantity,
+        price: line.unit_price == null ? null : Number(line.unit_price),
+      }],
+      color_fields: colorLabel ? { raw_color: colorLabel } : {},
+      total_heads: quantity,
+    });
+    const rows = resolved?.rows || [];
+    if (!rows.length) throw new Error(`Could not prepare automatic location for ${match.part_number}`);
+    const reserved = session.stagedParents.get(line.line_id);
+    _ptQbClearStagedLine(session, line.line_id, { preserveReservedDependents: true });
+    if (["quantity_changed", "supply_changed"].includes(line.comparison?.status)) {
+      session.replacements.set(
+        line.line_id, new Set(line.comparison.matching_manifest_line_ids || []),
+      );
+    }
+    rows.forEach((row, index) => {
+      const lineId = index === 0 ? (reserved?.line_id || _ptQbReservedLineId()) : _ptQbReservedLineId();
+      const pickerConfig = {
+        mode: "uniform",
+        colorsPerHead: colors.length === 1 ? "single" : colors.length === 2 ? "duo" : colors.length >= 3 ? "trio" : "single",
+        uniform: colors,
+        splitSecondary: [], custom: [], _noColor: !colors.length,
+        count: quantity, lens: match.lens_type || "", skuChoices: {}, details: {},
+        qb_import: {
+          estimate_id: estimate.id, estimate_number: estimate.number,
+          line_id: line.line_id, item_id: line.item_id,
+          description: line.description, amount: line.amount, related_line_ids: [],
+        },
+      };
+      const importedPrice = Number(line.unit_price);
+      if (line.unit_price != null && Number.isFinite(importedPrice) && importedPrice >= 0) {
+        pickerConfig.quote_unit_price_override = importedPrice;
+      }
+      const body = {
+        ...row, line_id: lineId, supply_type: "new", customer_condition: "",
+        customer_source: "", new_or_used: "New", source: "",
+        picker_config: pickerConfig,
+        ...(match.primary_part_type_id ? { part_type: match.primary_part_type_id } : {}),
+      };
+      session.operations.push({
+        path: `/api/draft/${session.draftId}/part`, sourceLineId: line.line_id, body,
+      });
+      if (index === 0) {
+        session.stagedParents.set(line.line_id, {
+          line_id: lineId, source_line_id: line.line_id,
+          name: body.name || match.model || match.part_number,
+          location: body.location || "", part_number: body.part_number || "",
+          product_ids: [match.product_id].filter(Boolean), reserved: false,
+        });
+      }
+    });
+    session.resolved.add(line.line_id);
+    session.skipped.delete(line.line_id);
+    for (const manifestLineId of (session.replacements.get(line.line_id) || [])) {
+      session.removals.add(manifestLineId);
+    }
+  }
+}
+
+function _ptQbStageMatchedAccessory(session, line, match, relation, estimate) {
+  _ptQbClearStagedLine(session, line.line_id);
+  if (["quantity_changed", "supply_changed"].includes(line.comparison?.status)) {
+    session.replacements.set(
+      line.line_id, new Set(line.comparison.matching_manifest_line_ids || []),
+    );
+  }
+  const importedPrice = Number(line.unit_price);
+  const pickerConfig = {
+    qb_import: {
+      estimate_id: estimate.id, estimate_number: estimate.number,
+      line_id: line.line_id, item_id: line.item_id,
+      description: line.description, amount: line.amount, related_line_ids: [],
+    },
+  };
+  if (line.unit_price != null && Number.isFinite(importedPrice) && importedPrice >= 0) {
+    pickerConfig.quote_unit_price_override = importedPrice;
+  }
+  const parentLocation = /^(?:will be imported|automatic fixture)$/i.test(
+    String(relation.parent_location || "").trim(),
+  ) ? "" : String(relation.parent_location || "").trim();
+  session.operations.push({
+    path: `/api/draft/${session.draftId}/part`, sourceLineId: line.line_id,
+    body: {
+      line_id: _ptQbReservedLineId(),
+      name: relation.parent_line_id
+        ? `${relation.parent_name} · ${match.model || match.part_number}`
+        : (match.model || match.part_number),
+      location: parentLocation,
+      manufacturer: match.manufacturer || "",
+      part_number: match.part_number,
+      quantity: Math.max(1, Number(line.quantity) || 1),
+      supply_type: "new", customer_condition: "", customer_source: "",
+      new_or_used: "New", source: "",
+      parent_line_id: relation.parent_line_id,
+      accessory_category: relation.parent_line_id
+        ? (relation.accessory_category || match.accessory_category || "other") : "",
+      accessory_parent_product: relation.parent_line_id ? (relation.parent_product_id || "") : "",
+      picker_config: pickerConfig,
+      ...(match.primary_part_type_id ? { part_type: match.primary_part_type_id } : {}),
+    },
+  });
+  session.resolved.add(line.line_id);
+  session.skipped.delete(line.line_id);
+  for (const manifestLineId of (session.replacements.get(line.line_id) || [])) {
+    session.removals.add(manifestLineId);
+  }
+}
+
+window.PT_getQbEstimateImportSession = function (sessionId) {
+  return _ptQbImportSessions.get(sessionId) || null;
+};
+
+window.PT_stageQbEstimateLineResolved = function (sessionId, lineId) {
+  const session = _ptQbImportSessions.get(sessionId);
+  if (!session || !lineId) return;
+  session.resolved.add(lineId);
+  session.skipped.delete(lineId);
+  for (const manifestLineId of (session.replacements.get(lineId) || [])) {
+    session.removals.add(manifestLineId);
+  }
+};
+
+function _ptQbClearStagedLine(session, lineId, { preserveReservedDependents = false } = {}) {
+  const stagedParentLineId = session.stagedParents.get(lineId)?.line_id || "";
+  const parentWasStaged = session.operations.some(operation => operation.sourceLineId === lineId);
+  const dependentSources = new Set();
+  // A quoted parent gets a reserved ID before it is configured so accessories
+  // can safely target it on a blank build. Opening that parent for the first
+  // time must preserve those accessory decisions; only changing/removing an
+  // already-staged parent invalidates its children.
+  if (stagedParentLineId && (parentWasStaged || !preserveReservedDependents)) {
+    for (const operation of session.operations) {
+      const rows = operation.body?.rows || [];
+      if (operation.body?.parent_line_id === stagedParentLineId
+          || rows.some(row => row?.parent_line_id === stagedParentLineId)) {
+        dependentSources.add(operation.sourceLineId);
+      }
+    }
+  }
+  session.operations = session.operations.filter(operation =>
+    operation.sourceLineId !== lineId && !dependentSources.has(operation.sourceLineId)
+  );
+  session.resolved.delete(lineId);
+  session.stagedParents.delete(lineId);
+  for (const sourceLineId of dependentSources) {
+    session.resolved.delete(sourceLineId);
+    session.stagedParents.delete(sourceLineId);
+    session.parentAccessoryRestoredSkips?.delete(sourceLineId);
+    for (const manifestLineId of (session.replacements.get(sourceLineId) || [])) {
+      session.removals.delete(manifestLineId);
+    }
+    session.replacements.delete(sourceLineId);
+  }
+  for (const manifestLineId of (session.replacements.get(lineId) || [])) {
+    session.removals.delete(manifestLineId);
+  }
+  session.replacements.delete(lineId);
+  session.parentAccessoryRestoredSkips?.delete(lineId);
+}
+
+const _ptQbAccessoryCatalogCache = new Map();
+
+async function _ptQbLoadParentAccessoryCatalog(lines) {
+  const productIds = new Set();
+  for (const line of (lines || [])) {
+    if (line.ambiguous_match || line.classification === "accessory"
+        || line.classification === "guided_system") continue;
+    const match = (line.catalog_matches || [])[0];
+    if (match?.product_id && !match.is_accessory) productIds.add(match.product_id);
+  }
+  await Promise.all([...productIds].map(async productId => {
+    if (!_ptQbAccessoryCatalogCache.has(productId)) {
+      _ptQbAccessoryCatalogCache.set(productId, api(
+        `/api/parts-db/accessories?product_id=${encodeURIComponent(productId)}`,
+      ).then(result => result?.accessories || []).catch(() => []));
+    }
+    await _ptQbAccessoryCatalogCache.get(productId);
+  }));
+  return new Map(await Promise.all([...productIds].map(async productId => [
+    productId, await _ptQbAccessoryCatalogCache.get(productId),
+  ])));
+}
+
+function _ptQbStagedOperationRows(session) {
+  const rows = [];
+  for (const operation of (session?.operations || [])) {
+    const add = row => {
+      if (row && typeof row === "object" && row.part_number) {
+        rows.push({ ...row, _sourceLineId: operation.sourceLineId });
+      }
+    };
+    if (/\/part$/.test(operation.path || "")) add(operation.body);
+    (operation.body?.rows || []).forEach(add);
+    add(operation.body?.printer);
+    (operation.body?.printer_cables || []).forEach(add);
+  }
+  return rows;
+}
+
+function _ptQbReconcileQuotedAccessoriesWithStagedChildren(lines, session, estimate) {
+  const stagedRows = _ptQbStagedOperationRows(session);
+  for (const line of (lines || [])) {
+    if (line.classification !== "accessory" || line.ambiguous_match
+        || line.already_imported || line.covered_by_guided_line_id
+        || session.resolved.has(line.line_id) || session.skipped.has(line.line_id)) continue;
+    const match = (line.catalog_matches || [])[0];
+    const sku = String(match?.part_number || "").trim().toLowerCase();
+    if (!sku) continue;
+    const staged = stagedRows.find(row => (
+      row.parent_line_id
+      && row._sourceLineId !== line.line_id
+      && String(row.part_number || "").trim().toLowerCase() === sku
+    ));
+    if (!staged) continue;
+    const provenance = {
+      estimate_id: estimate.id, estimate_number: estimate.number,
+      line_id: line.line_id, item_id: line.item_id,
+      description: line.description, amount: line.amount, related_line_ids: [],
+    };
+    staged.picker_config = { ...(staged.picker_config || {}), qb_import: provenance };
+    const operation = session.operations.find(item => item.sourceLineId === staged._sourceLineId);
+    const candidates = [operation?.body, ...(operation?.body?.rows || []), operation?.body?.printer,
+      ...(operation?.body?.printer_cables || [])].filter(Boolean);
+    const original = candidates.find(row => (
+      row.parent_line_id
+      && String(row.part_number || "").trim().toLowerCase() === sku
+    ));
+    if (original) {
+      original.picker_config = { ...(original.picker_config || {}), qb_import: provenance };
+      const importedPrice = Number(line.unit_price);
+      if (line.unit_price != null && Number.isFinite(importedPrice) && importedPrice >= 0) {
+        original.picker_config.quote_unit_price_override = importedPrice;
+      }
+    }
+    session.resolved.add(line.line_id);
+  }
+}
+
+function _ptQbParentAccessoryTarget(line, session, context) {
+  const staged = session.stagedParents.get(line.line_id);
+  if (session.resolved.has(line.line_id) && staged && !staged.reserved) return staged;
+  if (line.already_imported || line.comparison?.status === "matched") {
+    const matching = new Set(line.comparison?.matching_manifest_line_ids || []);
+    const existing = (context.manifestParents || []).find(row => matching.has(row.line_id));
+    if (existing) return existing;
+  }
+  return null;
+}
+
+function _ptQbAccessoryQuotedLines(option, context) {
+  const sku = String(option.part_number || "").trim().toLowerCase();
+  return (context.activeLines || []).filter(line => {
+    if (line.ignored || line.line_id === option.parentSourceLineId) return false;
+    const match = !line.ambiguous_match ? (line.catalog_matches || [])[0] : null;
+    if (!match) return false;
+    return sku
+      ? String(match.part_number || "").trim().toLowerCase() === sku
+      : Boolean(option.product_id && match.product_id === option.product_id);
+  });
+}
+
+function _ptQbAccessoryRecommendedQuantity(sku, parentQuantity) {
+  const rule = sku?.accessory_quantity || {};
+  if (rule.mode !== "cover_parent_quantity") return 1;
+  const coverage = Math.max(1, Number(rule.parent_units_per_item) || 1);
+  return Math.max(1, Math.ceil(Math.max(1, Number(parentQuantity) || 1) / coverage));
+}
+
+function _ptQbParentAccessoryStatus(option, target, session, context) {
+  const sku = String(option.part_number || "").trim().toLowerCase();
+  const sameSku = row => String(row.part_number || "").trim().toLowerCase() === sku;
+  const existing = (context.manifestAccessories || []).filter(sameSku);
+  const staged = _ptQbStagedOperationRows(session).filter(sameSku);
+  const attached = existing.find(row => row.parent_line_id === target?.line_id);
+  const stagedHere = staged.find(row => row.parent_line_id === target?.line_id);
+  const elsewhere = existing.find(row => row.parent_line_id !== target?.line_id)
+    || staged.find(row => row.parent_line_id !== target?.line_id);
+  const quoted = _ptQbAccessoryQuotedLines(option, context);
+  const skipped = quoted.find(line => session.skipped.has(line.line_id));
+  const quotedReady = quoted.find(line => session.resolved.has(line.line_id));
+  const quotedImported = quoted.find(line => line.already_imported || line.comparison?.status === "matched");
+  const guided = quoted.find(line => line.covered_by_guided_line_id);
+
+  if (attached) return {
+    label: quoted.length
+      ? "Already on build under this part" : "Already on build under this part · not on Estimate",
+    disabled: true, satisfiesGroup: true,
+  };
+  if (stagedHere) return {
+    label: quoted.length ? "Ready under this part" : "Ready under this part · not on Estimate",
+    disabled: true, satisfiesGroup: true,
+    stagedSourceLineId: stagedHere._sourceLineId,
+  };
+  if (elsewhere) return {
+    label: quoted.length
+      ? "Already on build or staged elsewhere" : "On build or staged elsewhere · not on Estimate",
+    disabled: true,
+  };
+  if (guided) return { label: "Included by guided setup", disabled: true };
+  if (quotedReady) return { label: "On Estimate — already staged", disabled: true };
+  if (quotedImported) return { label: "On Estimate — already imported", disabled: true };
+  if (quoted.length && !skipped) {
+    return { label: "On Estimate — resolve its listed line first", disabled: true };
+  }
+  if (skipped) {
+    return {
+      label: "On Estimate — left out; select to attach here",
+      disabled: !target, quotedLine: skipped,
+    };
+  }
+  return { label: "Not on Estimate — add to build", disabled: !target };
+}
+
+function _ptQbMissingRequiredParentAccessories(context, session) {
+  return [...(context?.menus?.values() || [])].filter(menu => {
+    if (!menu.target || !menu.group?.required) return false;
+    // Do not make an older, otherwise-matched manifest row block unrelated
+    // Estimate decisions. Enforce the relationship when this review is
+    // actually adding or replacing the parent.
+    const parentIsStaged = (session?.operations || []).some(operation =>
+      operation.sourceLineId === menu.line?.line_id
+    );
+    return parentIsStaged
+      && !menu.options.some(option => option.status?.satisfiesGroup);
+  });
+}
+
+function _ptQbParentAccessoriesHtml(line, actionIndex, session, context) {
+  if (actionIndex === null || line.ambiguous_match || line.classification === "accessory"
+      || line.classification === "guided_system") return "";
+  const match = (line.catalog_matches || [])[0];
+  const groups = context.catalogByProductId.get(match?.product_id) || [];
+  if (!match || !groups.length) return "";
+  const target = _ptQbParentAccessoryTarget(line, session, context);
+  const rendered = [];
+  groups.forEach((group, groupIndex) => {
+    const menuId = `${actionIndex}:${groupIndex}`;
+    const options = [];
+    for (const product of (group.options || [])) {
+      for (const sku of (product.skus || [])) {
+        if (!sku.part_number) continue;
+        const option = {
+          parentSourceLineId: line.line_id,
+          parentMatch: match,
+          parentTarget: target,
+          category: group.category || "other",
+          product_id: product.product_id || "",
+          model: product.model || sku.friendly_name || sku.part_number,
+          manufacturer: product.manufacturer_label || "",
+          part_number: sku.part_number,
+          price: sku.price,
+          quantity: _ptQbAccessoryRecommendedQuantity(sku, line.quantity),
+          part_type: product.part_type || "",
+        };
+        option.status = _ptQbParentAccessoryStatus(option, target, session, context);
+        if (option.status.quotedLine) option.quantity = Math.max(1, Number(option.status.quotedLine.quantity) || 1);
+        options.push(option);
+      }
+    }
+    if (!options.length) return;
+    context.menus.set(menuId, { line, match, group, target, options });
+    const staged = options.filter(option => option.status.stagedSourceLineId);
+    const optionHtml = options.map((option, optionIndex) => {
+      const price = option.price != null ? ` · ${_ptMoney2(option.price)}` : "";
+      const label = `${option.part_number} · ${option.model}${price} — ${option.status.label}`;
+      return `<option value="${optionIndex}"${option.status.disabled ? " disabled" : ""}>${esc(label)}</option>`;
+    }).join("");
+    rendered.push(`<div class="qb-import-parent-accessory-row">
+      <label><span>${esc(group.label || group.category || "Accessory")}${group.required ? " · required" : ""}</span>
+        <select data-qb-parent-accessory-select="${esc(menuId)}"${target ? "" : " disabled"}>
+          <option value="" selected>${target ? "Choose an accessory…" : "Resolve the parent part first"}</option>${optionHtml}
+        </select>
+      </label>
+      <label class="qb-import-parent-accessory-qty">Qty<input type="number" min="1" max="999" step="1" value="1" data-qb-parent-accessory-qty="${esc(menuId)}"${target ? "" : " disabled"}></label>
+      <label>Supply<select data-qb-parent-accessory-supply="${esc(menuId)}"${target ? "" : " disabled"}><option value="new">DTM supplied / New</option><option value="customer_new">Customer supplied / New</option><option value="customer_used">Customer supplied / Used</option></select></label>
+      <label class="qb-import-parent-accessory-source" data-qb-parent-accessory-source-wrap="${esc(menuId)}" hidden>Used-part source<input type="text" data-qb-parent-accessory-source="${esc(menuId)}" placeholder="Agency, old vehicle, customer stock…"></label>
+      <button type="button" class="btn btn-secondary btn-sm" data-qb-parent-accessory-add="${esc(menuId)}" disabled>Add under part</button>
+      ${staged.map(option => `<span class="qb-import-parent-accessory-ready">✓ ${esc(option.part_number)} ready${option.status.stagedSourceLineId !== line.line_id ? ` <button type="button" data-qb-parent-accessory-remove="${esc(option.status.stagedSourceLineId)}">Undo</button>` : ""}</span>`).join("")}
+    </div>`);
+  });
+  return rendered.length ? `<details class="qb-import-parent-accessories"><summary>Accessories for this part</summary><p>Add compatible child parts here. Options already represented by the Estimate or build are marked and protected from duplicate selection.</p>${rendered.join("")}</details>` : "";
+}
+
+function _ptQbStageMissingParentAccessory(session, menu, option, quantity, estimate, supplyValue, customerSource) {
+  const sourceLineId = `extra-accessory:${menu.line.line_id}:${option.category}:${option.part_number}:${_ptQbReservedLineId()}`;
+  const parentLocation = /^(?:will be imported|automatic fixture)$/i.test(
+    String(menu.target.location || "").trim(),
+  ) ? "" : String(menu.target.location || "").trim();
+  const customerSupplied = supplyValue === "customer_new" || supplyValue === "customer_used";
+  const customerCondition = supplyValue === "customer_used" ? "used" : supplyValue === "customer_new" ? "new" : "";
+  session.operations.push({
+    path: `/api/draft/${session.draftId}/part`,
+    sourceLineId,
+    body: {
+      line_id: _ptQbReservedLineId(),
+      name: `${menu.target.name} · ${option.model || option.part_number}`,
+      location: parentLocation,
+      manufacturer: option.manufacturer || "",
+      part_number: option.part_number,
+      quantity,
+      supply_type: customerSupplied ? "customer_supplied" : "new",
+      customer_condition: customerCondition,
+      customer_source: customerSupplied ? customerSource : "",
+      new_or_used: customerSupplied ? "Used" : "New",
+      source: customerSupplied ? customerSource : "",
+      parent_line_id: menu.target.line_id,
+      accessory_category: option.category || "other",
+      accessory_parent_product: menu.match.product_id || "",
+      ...(option.part_type ? { part_type: option.part_type } : {}),
+      picker_config: {
+        added_during_estimate_review: {
+          estimate_id: estimate.id,
+          estimate_number: estimate.number,
+          parent_estimate_line_id: menu.line.line_id,
+          absent_from_estimate: true,
+        },
+      },
+    },
+  });
+  session.resolved.add(sourceLineId);
+}
+
+function _ptQbAccessoryControlHtml(line, match, actionIndex, parentOptions) {
+  if (actionIndex === null || line.ambiguous_match || !match) return "";
+  const suggestedRows = [];
+  const suggestedLineIds = new Set();
+  for (const candidate of (match.accessory_parent_candidates || [])) {
+    for (const row of (candidate.manifest_options || [])) {
+      if (!row.line_id || suggestedLineIds.has(row.line_id)) continue;
+      suggestedLineIds.add(row.line_id);
+      suggestedRows.push({ ...row, suggested_product_id: candidate.product_id });
+    }
+    for (const row of (parentOptions || [])) {
+      if (!row.line_id || suggestedLineIds.has(row.line_id)) continue;
+      if (!(row.product_ids || []).includes(candidate.product_id)) continue;
+      suggestedLineIds.add(row.line_id);
+      suggestedRows.push({ ...row, suggested_product_id: candidate.product_id });
+    }
+  }
+  const otherRows = (parentOptions || []).filter(row =>
+    row.line_id && !suggestedLineIds.has(row.line_id)
+  );
+  const option = (row, selected = false) => {
+    const detail = [row.location, row.part_number].filter(Boolean).join(" · ");
+    return `<option value="${esc(row.line_id)}"${selected ? " selected" : ""}>${esc(row.name)}${detail ? ` — ${esc(detail)}` : ""}</option>`;
+  };
+  return `<div class="qb-import-accessory-control">
+    <label>Accessory of
+      <select data-qb-accessory-parent="${actionIndex}">
+        ${suggestedRows.length ? `<optgroup label="Suggested">${suggestedRows.map((row, index) => option(row, index === 0)).join("")}</optgroup>` : `<option value="" selected>Choose a manifest parent…</option>`}
+        ${otherRows.length ? `<optgroup label="Other manifest parts">${otherRows.map(row => option(row)).join("")}</optgroup>` : ""}
+        <option value="standalone">Not an accessory — keep standalone</option>
+      </select>
+    </label>
+    <label data-qb-accessory-standalone-location="${actionIndex}" hidden>Standalone location
+      <input data-qb-accessory-location="${actionIndex}" placeholder="Where it goes">
+    </label>
+    <button type="button" class="btn btn-primary btn-sm" data-qb-accessory-add="${actionIndex}"${suggestedRows.length ? "" : " disabled"}>Resolve for import</button>
+  </div>`;
+}
+
+function _ptQbCustomLineDefaults(line) {
+  const quotedQuantity = Number(line?.quantity);
+  const quantity = Number.isInteger(quotedQuantity) && quotedQuantity >= 1 && quotedQuantity <= 999
+    ? quotedQuantity : 1;
+  const quotedPrice = Number(line?.unit_price);
+  const quotedAmount = Number(line?.amount);
+  const unitPrice = line?.unit_price != null && Number.isFinite(quotedPrice) && quotedPrice >= 0
+    ? quotedPrice
+    : Number.isFinite(quotedAmount) && quotedAmount >= 0
+      ? quotedAmount / quantity : 0;
+  const itemName = String(line?.item_name || "").trim();
+  return {
+    sku: itemName && itemName.toLowerCase() !== "misc part" ? itemName : "",
+    description: String(line?.description || itemName || "Custom part").trim() || "Custom part",
+    location: "",
+    quantity,
+    unitPrice,
+    formPrice: line?.unit_price == null ? "" : String(line.unit_price),
+  };
+}
+
+function _ptQbStageCustomEstimateLine(session, line, estimate, values = null) {
+  const custom = values || _ptQbCustomLineDefaults(line);
+  _ptQbClearStagedLine(session, line.line_id);
+  session.operations.push({
+    path: `/api/draft/${session.draftId}/custom-part`,
+    sourceLineId: line.line_id,
+    body: {
+      sku: String(custom.sku || "").trim(),
+      description: String(custom.description || "Custom part").trim() || "Custom part",
+      location: String(custom.location || "").trim(),
+      unit_price: Number(custom.unitPrice),
+      quantity: Number(custom.quantity),
+      qb_import: {
+        estimate_id: estimate.id, estimate_number: estimate.number,
+        line_id: line.line_id, item_id: line.item_id,
+        description: line.description, amount: line.amount,
+      },
+    },
+  });
+  session.resolved.add(line.line_id);
+  session.skipped.delete(line.line_id);
+}
+
+function _ptQbImportLineHtml(line, actionIndex = null, parentOptions = [], session = null, accessoryContext = null) {
+  const comparisonStatus = line.comparison?.status || "not_comparable";
+  const staged = !!session?.resolved.has(line.line_id);
+  const skipped = !!session?.skipped.has(line.line_id);
+  const matched = comparisonStatus === "matched" && !line.already_imported;
+  let [label, tone] = _QB_IMPORT_LABELS[line.classification] || [line.classification || "Review", "unknown"];
+  if (matched) [label, tone] = ["Matches build", "matched"];
+  else if (comparisonStatus === "quantity_changed") [label, tone] = ["Quantity changed", "changed"];
+  else if (comparisonStatus === "supply_changed") [label, tone] = ["New vs. reused", "changed"];
+  else if (comparisonStatus === "new" && (line.comparison?.different_from || []).length) [label, tone] = ["Different from build", "changed"];
+  else if (comparisonStatus === "new") [label, tone] = ["New on Estimate", tone];
+  if (line.covered_by_guided_line_id) [label, tone] = [`Included in ${line.covered_by_guided_kind} setup`, "guided"];
+  if (staged) [label, tone] = ["Ready to import", "staged"];
+  if (skipped) [label, tone] = ["Leaving out", "ignored"];
+  const match = (line.catalog_matches || [])[0];
+  const automaticLocation = Boolean(
+    (match?.is_fixture || match?.fixed_location)
+    && !match?.picker_location_allocation
+    && !match?.has_configured_accessories
+  );
+  const stagedOperation = session?.operations?.find(operation => operation.sourceLineId === line.line_id);
+  const incompleteCustomFields = stagedOperation && /\/custom-part$/.test(stagedOperation.path)
+    ? [
+        !String(stagedOperation.body?.sku || "").trim() ? "SKU" : "",
+        !String(stagedOperation.body?.location || "").trim() ? "location" : "",
+      ].filter(Boolean)
+    : [];
+  const incompleteCustomWarning = incompleteCustomFields.length
+    ? `<div class="qb-import-suggestion qb-import-suggestion--warning">⚠ Missing ${esc(incompleteCustomFields.join(" and "))}. Import is allowed, but the build cannot be finalized until this is completed.</div>`
+    : "";
+  const identity = match
+    ? `${match.part_number || match.model}${match.model && match.model !== match.part_number ? ` · ${match.model}` : ""}`
+    : line.item_name || line.description || "QuickBooks line";
+  const colors = match
+    ? [match.color, match.secondary_color, match.tertiary_color].filter(Boolean).join("/")
+    : "";
+  const details = [
+    Number(line.quantity) > 0 ? `Qty ${line.quantity}` : "",
+    comparisonStatus === "quantity_changed" ? `Build has ${line.comparison.current_quantity}` : "",
+    comparisonStatus === "supply_changed" ? `Build has ${line.comparison.physical_quantity} customer-supplied/reused` : "",
+    colors ? `Color ${colors}` : "",
+    match?.lens_type ? `${match.lens_type} lens` : "",
+    line.unit_price != null ? _ptMoney2(line.unit_price) : "",
+  ].filter(Boolean).join(" · ");
+  const parent = match?.accessory_parent_candidates?.[0];
+  const relationship = parent
+    ? `<div class="qb-import-suggestion">Suggested parent: <strong>${esc(parent.model)}</strong> · ${esc(parent.reason)}${(parent.manifest_options || []).length ? "" : " · the quoted parent can be configured before or after this accessory"}</div>`
+    : "";
+  const guided = (line.guided_kinds || []).length
+    ? `<div class="qb-import-suggestion">Run complete ${esc(line.guided_kinds.join(" / "))} setup</div>`
+    : "";
+  const different = (line.comparison?.different_from || []).length
+    ? `<div class="qb-import-suggestion">Possible replacement for ${esc(line.comparison.different_from.map(item => item.name).join(", "))}. The existing build part remains unless you mark it for removal below.</div>`
+    : "";
+  const quantity = Number(line.quantity);
+  const placementIssue = !Number.isInteger(quantity) || quantity < 1
+    ? "This physical-part quantity needs manual review before placement."
+    : colors && quantity > 12
+      ? "This line exceeds the 12-head placement limit and will need to be split."
+      : "";
+  const canPlace = actionIndex !== null
+    && ["catalog_part", "guided_system"].includes(line.classification)
+    && !line.ambiguous_match
+    && match
+    && !placementIssue
+    && !line.already_imported
+    && !line.covered_by_guided_line_id;
+  const accessoryControl = line.classification === "accessory" && !placementIssue && !staged && !skipped && !matched
+    ? _ptQbAccessoryControlHtml(line, match, actionIndex, parentOptions)
+    : "";
+  const customDecision = ["custom", "unknown_item", "pending_part"].includes(line.classification)
+    && !staged && !skipped && !matched && actionIndex !== null
+    ? `<div class="qb-import-custom-grid">
+        <label>SKU<input data-qb-custom-sku="${actionIndex}" value="${_ptEscAttr(line.item_name && line.item_name.toLowerCase() !== "misc part" ? line.item_name : "")}" placeholder="Required SKU"></label>
+        <label>Description<input data-qb-custom-description="${actionIndex}" value="${_ptEscAttr(line.description || line.item_name || "Custom part")}"></label>
+        <label>Location<input data-qb-custom-location="${actionIndex}" placeholder="Where it goes"></label>
+        <label>Qty<input data-qb-custom-quantity="${actionIndex}" type="number" min="1" max="999" step="1" value="${Math.max(1, Number(line.quantity) || 1)}"></label>
+        <label>Unit price<input data-qb-custom-price="${actionIndex}" type="number" min="0" step="0.01" value="${line.unit_price == null ? "" : esc(line.unit_price)}"></label>
+        <label class="qb-import-custom-render"><input data-qb-custom-render-light="${actionIndex}" type="checkbox"> Render as light head</label>
+        <button type="button" class="btn btn-primary btn-sm" data-qb-custom-stage="${actionIndex}">Create custom entry</button>
+        <p class="qb-import-custom-warning">SKU and location may be left blank for now, but the build cannot be finalized until both are completed.</p>
+      </div>`
+    : "";
+  const decisionButtons = !line.already_imported && !matched && actionIndex !== null
+    ? `<button type="button" class="btn btn-secondary btn-sm" data-qb-import-skip="${actionIndex}">${skipped ? "Include after all" : "Leave out"}</button>`
+    : "";
+  const action = line.covered_by_guided_line_id
+    ? `<div class="qb-import-line-action"><span class="qb-import-complete">✓ Configured with the related ${esc(line.covered_by_guided_kind)} system</span></div>`
+    : line.already_imported
+    ? `<div class="qb-import-line-action"><span class="qb-import-complete">✓ Already added from this Estimate line</span></div>`
+    : matched
+      ? `<div class="qb-import-line-action"><span class="qb-import-complete">✓ No action required</span></div>`
+    : staged
+      ? `<div class="qb-import-line-action"><span class="qb-import-complete">✓ Ready for final import</span><button type="button" class="btn btn-secondary btn-sm" ${automaticLocation ? `data-qb-import-skip="${actionIndex}">Leave out` : `data-qb-import-undo="${actionIndex}">Change decision`}</button></div>`
+    : skipped
+      ? `<div class="qb-import-line-action">${decisionButtons}</div>`
+    : canPlace
+      ? `<div class="qb-import-line-action"><button type="button" class="btn btn-primary btn-sm" data-qb-import-index="${actionIndex}">${line.classification === "guided_system" ? "Complete guided setup" : match?.picker_location_allocation ? "Assign round light locations" : match?.is_fixture ? (match.has_configured_accessories ? "Review fixture options" : `Automatic location: ${esc(match.default_location || match.fixture_label || "fixture")}`) : match?.fixed_location ? `Automatic location: ${esc(match.fixed_location)}` : comparisonStatus === "quantity_changed" ? "Use Estimate quantity" : comparisonStatus === "supply_changed" ? "Use Estimate as New" : "Set location"}</button>${decisionButtons}</div>`
+      : accessoryControl
+        ? `${accessoryControl}<div class="qb-import-line-action">${decisionButtons}</div>`
+      : customDecision
+        ? `${customDecision}<div class="qb-import-line-action">${decisionButtons}</div>`
+      : placementIssue && !line.already_imported
+        ? `<div class="qb-import-suggestion">${esc(placementIssue)}</div><div class="qb-import-line-action">${decisionButtons}</div>`
+        : decisionButtons ? `<div class="qb-import-line-action">${decisionButtons}</div>` : "";
+  const parentAccessories = session && accessoryContext
+    ? _ptQbParentAccessoriesHtml(line, actionIndex, session, accessoryContext) : "";
+  return `<article class="qb-import-line qb-import-line--${tone}">
+    <div class="qb-import-line-main"><div><strong>${esc(identity)}</strong>${line.description && line.description !== identity ? `<p>${esc(line.description)}</p>` : ""}</div>
+      <span class="qb-import-chip">${esc(label)}</span></div>
+    ${details ? `<div class="qb-import-meta">${esc(details)}</div>` : ""}${relationship}${guided}${different}${incompleteCustomWarning}${action}${parentAccessories}
+  </article>`;
+}
+
+window.PT_previewQbEstimateImport = async function (projectId, individualId) {
+  if (!(await _ptQbConnected())) {
+    toast("Connect QuickBooks before importing an Estimate", "error");
+    return;
+  }
+  let controls = _ptEstModalEls();
+  const preservingReview = Boolean(
+    controls.modal?.classList.contains("open")
+    && controls.title?.textContent === "Import parts from QuickBooks Estimate"
+    && controls.body?.querySelector(".qb-import-summary"),
+  );
+  const priorScrollTop = controls.modal?.scrollTop || 0;
+  if (!preservingReview) {
+    _ptOpenEstModal(
+      "Import parts from QuickBooks Estimate",
+      `<div class="qb-import-loading">Reading the connected Estimate and matching its lines to the Parts DB…</div>`,
+    );
+    controls = _ptEstModalEls();
+  } else {
+    controls.modal?.classList.add("qb-import-refreshing");
+  }
+  try {
+    const result = await api("/api/quickbooks/estimates/import-preview", {
+      project_id: projectId,
+      individual_id: individualId,
+    });
+    if (!result?.ok) {
+      const messages = {
+        estimate_not_connected: "Connect an Estimate to this vehicle before importing its parts.",
+        existing_estimate_not_found: "The connected Estimate no longer exists in this QuickBooks company.",
+        unknown_individual: "This vehicle could not be found.",
+      };
+      throw new Error(messages[result?.error] || _ptEstError(result?.error));
+    }
+    const estimate = result.estimate || {};
+    const sessionId = _ptQbImportSessionId(projectId, individualId, estimate.id);
+    let session = _ptQbImportSessions.get(sessionId);
+    if (!session) {
+      session = {
+        id: sessionId, projectId, individualId, estimateId: estimate.id,
+        draftId: result.draft_id, operations: [], resolved: new Set(), skipped: new Set(),
+        removals: new Set(), replacements: new Map(), stagedParents: new Map(),
+        parentAccessoryRestoredSkips: new Set(),
+      };
+      _ptQbImportSessions.set(sessionId, session);
+    }
+    session.draftId = result.draft_id;
+    if (!session.parentAccessoryRestoredSkips) session.parentAccessoryRestoredSkips = new Set();
+    const activeLines = (result.lines || []).filter(line => !line.ignored);
+    // Reserve future parent IDs up front. Accessories can therefore point at
+    // quoted parents on a blank build before either line has been staged.
+    for (const line of activeLines) {
+      const match = (line.catalog_matches || [])[0];
+      if (!match || line.ambiguous_match || line.classification === "accessory"
+          || line.covered_by_guided_line_id || line.already_imported
+          || session.skipped.has(line.line_id)) continue;
+      if (!session.stagedParents.has(line.line_id)) {
+        session.stagedParents.set(line.line_id, {
+          line_id: _ptQbReservedLineId(), source_line_id: line.line_id,
+          name: match.model || match.part_number || "Quoted part",
+          location: match.fixed_location
+            || (match.is_fixture ? (match.default_location || match.fixture_label || "Automatic fixture") : "Will be imported"),
+          part_number: match.part_number || "", product_ids: [match.product_id].filter(Boolean),
+          reserved: true,
+        });
+      }
+    }
+    await _ptQbStageAutomaticLocations(activeLines, session, estimate);
+    _ptQbReconcileQuotedAccessoriesWithStagedChildren(activeLines, session, estimate);
+    const outstandingLines = activeLines.filter(line =>
+      !line.already_imported && !line.covered_by_guided_line_id && line.comparison?.status !== "matched"
+    );
+    const ignoredLines = (result.lines || []).filter(line => line.ignored);
+    const parentOptions = [
+      ...(result.manifest_parent_options || []),
+      ...session.stagedParents.values(),
+    ];
+    const accessoryContext = {
+      activeLines,
+      manifestParents: result.manifest_parent_options || [],
+      manifestAccessories: result.manifest_accessory_rows || [],
+      catalogByProductId: await _ptQbLoadParentAccessoryCatalog(activeLines),
+      menus: new Map(),
+    };
+    const reuse = (result.memo_reuse_suggestions || []).filter(item => !item.also_quoted);
+    const unresolvedLines = outstandingLines.filter(line =>
+      !session.resolved.has(line.line_id) && !session.skipped.has(line.line_id)
+    );
+    const bulkCustomLines = unresolvedLines.filter(line =>
+      ["custom", "unknown_item", "pending_part"].includes(line.classification)
+    );
+    const summary = [
+      result.build_is_blank ? "Blank build" : "Existing build comparison",
+      `${outstandingLines.length} difference${outstandingLines.length === 1 ? "" : "s"}`,
+      `${activeLines.filter(line => line.comparison?.status === "matched" || line.already_imported).length} match${activeLines.filter(line => line.comparison?.status === "matched" || line.already_imported).length === 1 ? "" : "es"}`,
+      session.resolved.size ? `${session.resolved.size} ready` : "",
+      ignoredLines.length ? `${ignoredLines.length} header/charge line${ignoredLines.length === 1 ? "" : "s"} ignored` : "",
+    ].filter(Boolean).join(" · ");
+    controls.body.innerHTML = `<div class="qb-import-summary">
+        <strong>Estimate ${esc(estimate.number || estimate.id)}</strong>
+        <span>${esc([estimate.customer, estimate.date, estimate.status].filter(Boolean).join(" · "))}</span>
+        <p>${esc(summary)}</p>
+      </div>
+      <div class="qb-import-notice"><strong>${result.build_is_blank ? "Resolve first, import once" : "Choose only the changes you want"}</strong><p>${result.build_is_blank
+        ? "Work through locations, accessory relationships, guided systems, and custom entries here. The build stays blank until every line is resolved or intentionally left out, then one Import button applies the ready parts."
+        : "Exact matches need no action. New and changed Estimate parts can be staged, while build-only parts stay unless you explicitly mark them for removal. Nothing changes until you press Apply decisions."}</p>${bulkCustomLines.length ? `<div class="qb-import-bulk-custom"><button type="button" class="btn btn-secondary btn-sm" data-qb-custom-stage-all>Add all ${bulkCustomLines.length} custom part${bulkCustomLines.length === 1 ? "" : "s"}</button><span>Uses the Estimate description, quantity, and price. Blank SKU/location remain finalization warnings.</span></div>` : ""}</div>
+      <section class="qb-import-section"><h3>Parts to reconcile</h3>
+        ${activeLines.length ? activeLines.map((line, index) => _ptQbImportLineHtml(line, index, parentOptions, session, accessoryContext)).join("") : `<p class="qb-import-empty">No material lines were found.</p>`}
+      </section>
+      ${!result.build_is_blank && (result.build_only_parts || []).length ? `<section class="qb-import-section"><h3>On build, not on Estimate</h3>
+        <p class="qb-import-section-note">These stay on the build unless you explicitly remove them.</p>
+        ${(result.build_only_parts || []).map(part => `<article class="qb-import-line qb-import-line--missing">
+          <div class="qb-import-line-main"><div><strong>${esc(part.name)}</strong><p>${esc([part.part_number, part.location, `Qty ${part.quantity}`, part.supply_label].filter(Boolean).join(" · "))}</p></div><span class="qb-import-chip">Missing from Estimate</span></div>
+          <div class="qb-import-line-action"><button type="button" class="btn btn-secondary btn-sm" data-qb-build-remove="${esc(part.line_id)}">${session.removals.has(part.line_id) ? "Keep on build" : "Remove when applying"}</button></div>
+        </article>`).join("")}
+      </section>` : ""}
+      ${reuse.length || estimate.customer_memo || estimate.private_note ? `<section class="qb-import-section"><h3>Estimate memo / possible reused parts</h3>
+        ${estimate.customer_memo ? `<div class="qb-import-memo"><strong>Customer memo</strong><p>${esc(estimate.customer_memo)}</p></div>` : ""}
+        ${estimate.private_note ? `<div class="qb-import-memo"><strong>Private note</strong><p>${esc(estimate.private_note)}</p></div>` : ""}
+        ${reuse.length ? `<div class="qb-import-reuse"><strong>Exact catalog SKUs mentioned but not quoted</strong>${reuse.map(item => `<span>${esc(item.part_number)} · ${esc(item.model || item.description)}</span>`).join("")}</div>` : ""}
+      </section>` : ""}
+      ${ignoredLines.length ? `<details class="qb-import-ignored"><summary>${ignoredLines.length} ignored Estimate line${ignoredLines.length === 1 ? "" : "s"}</summary>${ignoredLines.map(_ptQbImportLineHtml).join("")}</details>` : ""}`;
+    const missingRequiredAccessories = _ptQbMissingRequiredParentAccessories(
+      accessoryContext, session,
+    );
+    if (missingRequiredAccessories.length) {
+      controls.body.querySelector(".qb-import-notice")?.insertAdjacentHTML(
+        "afterend",
+        `<div class="qb-est-change-alert"><strong>Required accessories still need a choice</strong><p>${missingRequiredAccessories.length} required accessory group${missingRequiredAccessories.length === 1 ? "" : "s"} must be attached before these parent parts can be imported.</p></div>`,
+      );
+    }
+    controls.modal?.classList.remove("qb-import-refreshing");
+    if (preservingReview && controls.modal) controls.modal.scrollTop = priorScrollTop;
+    const pendingChangeCount = session.resolved.size + session.removals.size;
+    controls.cancel.textContent = pendingChangeCount ? "Import ready parts & leave" : "Leave review…";
+    const readyToApply = pendingChangeCount > 0
+      && missingRequiredAccessories.length === 0
+      && (!result.build_is_blank || unresolvedLines.length === 0);
+    controls.create.style.display = pendingChangeCount ? "" : "none";
+    controls.create.textContent = result.build_is_blank
+      ? `Import ${session.resolved.size} ready part${session.resolved.size === 1 ? "" : "s"}`
+      : `Apply ${pendingChangeCount} decision${pendingChangeCount === 1 ? "" : "s"}`;
+    controls.create.disabled = !readyToApply;
+    controls.create.title = missingRequiredAccessories.length
+      ? `Choose ${missingRequiredAccessories.length} required accessory group${missingRequiredAccessories.length === 1 ? "" : "s"}`
+      : result.build_is_blank && unresolvedLines.length
+        ? `Resolve or leave out ${unresolvedLines.length} remaining line${unresolvedLines.length === 1 ? "" : "s"}` : "";
+    const openEstimateLine = async (button, index, accessoryRelation = null) => {
+        const line = activeLines[index];
+        const match = line?.catalog_matches?.[0];
+        const project = _PT.projects.find(item => item.project_id === projectId) || _PT.viewProject;
+        const unit = (project?.build_units || []).find(item =>
+          (item.individuals || []).some(individual => individual.individual_id === individualId)
+        );
+        const individual = (unit?.individuals || []).find(item => item.individual_id === individualId);
+        if (!line || !match || !unit || !individual?.draft_id) {
+          toast("This vehicle build is no longer available", "error");
+          return;
+        }
+        button.disabled = true;
+        try {
+          const reservedParent = session.stagedParents.get(line.line_id);
+          _ptQbClearStagedLine(session, line.line_id, { preserveReservedDependents: true });
+          if (reservedParent?.reserved) session.stagedParents.set(line.line_id, reservedParent);
+          if (["quantity_changed", "supply_changed"].includes(line.comparison?.status)) {
+            const replacements = new Set(line.comparison.matching_manifest_line_ids || []);
+            session.replacements.set(line.line_id, replacements);
+          }
+          await _ptShowBuildEditor(individual.draft_id, unit, project, "overview", individual);
+          await window.pickerOpenEstimateLine({
+            ...line,
+            catalog_match: match,
+            estimate_id: estimate.id,
+            estimate_number: estimate.number,
+            stage_session_id: sessionId,
+            guided_estimate_components: line.guided_estimate_components || [],
+            accessory_relation: accessoryRelation,
+            return_to_import: { project_id: projectId, individual_id: individualId },
+          });
+        } catch (error) {
+          button.disabled = false;
+          toast(error?.message || "The Part Picker could not be opened", "error");
+        }
+    };
+    controls.body.querySelectorAll("[data-qb-import-index]").forEach(button => {
+      button.addEventListener("click", async () => {
+        await openEstimateLine(button, Number(button.dataset.qbImportIndex));
+      });
+    });
+    controls.body.querySelectorAll("[data-qb-import-skip]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const line = activeLines[Number(button.dataset.qbImportSkip)];
+        if (!line) return;
+        if (session.skipped.has(line.line_id)) session.skipped.delete(line.line_id);
+        else {
+          _ptQbClearStagedLine(session, line.line_id);
+          session.skipped.add(line.line_id);
+        }
+        await window.PT_previewQbEstimateImport(projectId, individualId);
+      });
+    });
+    controls.body.querySelectorAll("[data-qb-import-undo]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const line = activeLines[Number(button.dataset.qbImportUndo)];
+        if (!line) return;
+        _ptQbClearStagedLine(session, line.line_id);
+        await window.PT_previewQbEstimateImport(projectId, individualId);
+      });
+    });
+    controls.body.querySelectorAll("[data-qb-parent-accessory-select]").forEach(select => {
+      const menuId = select.dataset.qbParentAccessorySelect;
+      const quantityInput = [...controls.body.querySelectorAll("[data-qb-parent-accessory-qty]")]
+        .find(item => item.dataset.qbParentAccessoryQty === menuId);
+      const supplySelect = [...controls.body.querySelectorAll("[data-qb-parent-accessory-supply]")]
+        .find(item => item.dataset.qbParentAccessorySupply === menuId);
+      const sourceWrap = [...controls.body.querySelectorAll("[data-qb-parent-accessory-source-wrap]")]
+        .find(item => item.dataset.qbParentAccessorySourceWrap === menuId);
+      const addButton = [...controls.body.querySelectorAll("[data-qb-parent-accessory-add]")]
+        .find(item => item.dataset.qbParentAccessoryAdd === menuId);
+      const refresh = (resetQuantity = false) => {
+        const menu = accessoryContext.menus.get(menuId);
+        const option = select.value === "" ? null : menu?.options?.[Number(select.value)];
+        if (option && quantityInput && resetQuantity) quantityInput.value = String(option.quantity || 1);
+        if (quantityInput) quantityInput.disabled = !option || Boolean(option?.status?.quotedLine);
+        if (supplySelect) {
+          if (option?.status?.quotedLine) supplySelect.value = "new";
+          supplySelect.disabled = !option || Boolean(option?.status?.quotedLine);
+        }
+        if (sourceWrap) sourceWrap.hidden = !option || supplySelect?.value !== "customer_used";
+        if (addButton) addButton.disabled = !option || option.status.disabled || !menu?.target;
+      };
+      select.addEventListener("change", () => refresh(true));
+      supplySelect?.addEventListener("change", () => refresh(false));
+      refresh();
+    });
+    controls.body.querySelectorAll("[data-qb-parent-accessory-add]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const menuId = button.dataset.qbParentAccessoryAdd;
+        const menu = accessoryContext.menus.get(menuId);
+        const select = [...controls.body.querySelectorAll("[data-qb-parent-accessory-select]")]
+          .find(item => item.dataset.qbParentAccessorySelect === menuId);
+        const quantityInput = [...controls.body.querySelectorAll("[data-qb-parent-accessory-qty]")]
+          .find(item => item.dataset.qbParentAccessoryQty === menuId);
+        const supplySelect = [...controls.body.querySelectorAll("[data-qb-parent-accessory-supply]")]
+          .find(item => item.dataset.qbParentAccessorySupply === menuId);
+        const sourceInput = [...controls.body.querySelectorAll("[data-qb-parent-accessory-source]")]
+          .find(item => item.dataset.qbParentAccessorySource === menuId);
+        const option = !select || select.value === "" ? null : menu?.options?.[Number(select.value)];
+        const quantity = Number(quantityInput?.value);
+        if (!menu?.target || !option || option.status.disabled) return;
+        if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) {
+          toast("Accessory quantity must be a whole number from 1 to 999", "error");
+          return;
+        }
+        if (supplySelect?.value === "customer_used" && !sourceInput?.value.trim()) {
+          toast("Enter where the customer-supplied used accessory will come from", "error");
+          sourceInput?.focus();
+          return;
+        }
+        button.disabled = true;
+        if (option.status.quotedLine) {
+          const quotedLine = option.status.quotedLine;
+          const quotedMatch = (quotedLine.catalog_matches || [])[0];
+          _ptQbStageMatchedAccessory(session, quotedLine, quotedMatch, {
+            parent_line_id: menu.target.line_id,
+            parent_name: menu.target.name,
+            parent_location: menu.target.location || "",
+            parent_product_id: menu.match.product_id || "",
+            accessory_category: option.category || quotedMatch?.accessory_category || "other",
+          }, estimate);
+          session.parentAccessoryRestoredSkips.add(quotedLine.line_id);
+        } else {
+          _ptQbStageMissingParentAccessory(
+            session, menu, option, quantity, estimate,
+            supplySelect?.value || "new", sourceInput?.value.trim() || "",
+          );
+        }
+        await window.PT_previewQbEstimateImport(projectId, individualId);
+      });
+    });
+    controls.body.querySelectorAll("[data-qb-parent-accessory-remove]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const sourceLineId = button.dataset.qbParentAccessoryRemove;
+        const restoreSkip = session.parentAccessoryRestoredSkips.has(sourceLineId);
+        _ptQbClearStagedLine(session, sourceLineId);
+        session.parentAccessoryRestoredSkips.delete(sourceLineId);
+        if (restoreSkip) session.skipped.add(sourceLineId);
+        await window.PT_previewQbEstimateImport(projectId, individualId);
+      });
+    });
+    controls.body.querySelector("[data-qb-custom-stage-all]")?.addEventListener("click", async event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      let stagedCount = 0;
+      let editedCount = 0;
+      for (const line of bulkCustomLines) {
+        const index = activeLines.indexOf(line);
+        const defaults = _ptQbCustomLineDefaults(line);
+        const sku = controls.body.querySelector(`[data-qb-custom-sku="${index}"]`)?.value.trim() ?? defaults.sku;
+        const description = controls.body.querySelector(`[data-qb-custom-description="${index}"]`)?.value.trim() ?? defaults.description;
+        const location = controls.body.querySelector(`[data-qb-custom-location="${index}"]`)?.value.trim() ?? "";
+        const quantityValue = controls.body.querySelector(`[data-qb-custom-quantity="${index}"]`)?.value ?? String(defaults.quantity);
+        const priceValue = controls.body.querySelector(`[data-qb-custom-price="${index}"]`)?.value.trim() ?? defaults.formPrice;
+        const renderAsLight = controls.body.querySelector(`[data-qb-custom-render-light="${index}"]`)?.checked === true;
+        const wasEdited = sku !== defaults.sku
+          || description !== defaults.description
+          || location !== ""
+          || quantityValue !== String(defaults.quantity)
+          || priceValue !== defaults.formPrice
+          || renderAsLight;
+        if (wasEdited) {
+          editedCount += 1;
+          continue;
+        }
+        _ptQbStageCustomEstimateLine(session, line, estimate, defaults);
+        stagedCount += 1;
+      }
+      if (!stagedCount) {
+        button.disabled = false;
+        toast(editedCount
+          ? "No untouched custom parts remain; finish the edited entries individually"
+          : "No custom parts are ready for bulk addition", "info");
+        return;
+      }
+      await window.PT_previewQbEstimateImport(projectId, individualId);
+      toast(`${stagedCount} custom part${stagedCount === 1 ? "" : "s"} ready for import${editedCount ? ` · ${editedCount} edited entr${editedCount === 1 ? "y was" : "ies were"} left for individual review` : ""}`, "success");
+    });
+    controls.body.querySelectorAll("[data-qb-custom-stage]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const index = Number(button.dataset.qbCustomStage);
+        const line = activeLines[index];
+        const sku = controls.body.querySelector(`[data-qb-custom-sku="${index}"]`)?.value.trim();
+        const description = controls.body.querySelector(`[data-qb-custom-description="${index}"]`)?.value.trim();
+        const location = controls.body.querySelector(`[data-qb-custom-location="${index}"]`)?.value.trim();
+        const quantity = Number(controls.body.querySelector(`[data-qb-custom-quantity="${index}"]`)?.value);
+        const rawPrice = controls.body.querySelector(`[data-qb-custom-price="${index}"]`)?.value.trim() || "";
+        const unitPrice = Number(rawPrice);
+        if (!description || !Number.isInteger(quantity) || quantity < 1 || quantity > 999
+            || !rawPrice || !Number.isFinite(unitPrice) || unitPrice < 0) {
+          toast("Enter a description, quantity from 1 to 999, and valid unit price", "error");
+          return;
+        }
+        const renderAsLight = controls.body.querySelector(
+          `[data-qb-custom-render-light="${index}"]`,
+        )?.checked === true;
+        if (renderAsLight) {
+          if (quantity > 12) {
+            toast("Rendered custom lights are limited to 12 heads per line", "error");
+            return;
+          }
+          if (typeof window.pickerOpenCustomEstimateLine !== "function") {
+            toast("The custom light editor is unavailable", "error");
+            return;
+          }
+          button.disabled = true;
+          await window.pickerOpenCustomEstimateLine({
+            values: { sku, description, location, unitPrice, quantity },
+            estimate_id: estimate.id,
+            estimate_number: estimate.number,
+            line_id: line.line_id,
+            item_id: line.item_id,
+            description: line.description,
+            amount: line.amount,
+            stage_session_id: sessionId,
+            return_to_import: { project_id: projectId, individual_id: individualId },
+          });
+          return;
+        }
+        if (!sku || !location) {
+          toast("This custom part will import with a warning and must be completed before finalizing", "warn");
+        }
+        _ptQbStageCustomEstimateLine(session, line, estimate, {
+          sku, description, location, unitPrice, quantity,
+        });
+        await window.PT_previewQbEstimateImport(projectId, individualId);
+      });
+    });
+    controls.body.querySelectorAll("[data-qb-build-remove]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const lineId = button.dataset.qbBuildRemove;
+        if (session.removals.has(lineId)) session.removals.delete(lineId);
+        else session.removals.add(lineId);
+        await window.PT_previewQbEstimateImport(projectId, individualId);
+      });
+    });
+    controls.body.querySelectorAll("[data-qb-accessory-parent]").forEach(select => {
+      const index = Number(select.dataset.qbAccessoryParent);
+      const button = controls.body.querySelector(`[data-qb-accessory-add="${index}"]`);
+      const locationLabel = controls.body.querySelector(`[data-qb-accessory-standalone-location="${index}"]`);
+      const locationInput = controls.body.querySelector(`[data-qb-accessory-location="${index}"]`);
+      const refresh = () => {
+        const standalone = select.value === "standalone";
+        if (locationLabel) locationLabel.hidden = !standalone;
+        if (button) button.disabled = !select.value || (standalone && !locationInput?.value.trim());
+      };
+      select.addEventListener("change", refresh);
+      locationInput?.addEventListener("input", refresh);
+      refresh();
+    });
+    controls.body.querySelectorAll("[data-qb-accessory-add]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const index = Number(button.dataset.qbAccessoryAdd);
+        const select = controls.body.querySelector(`[data-qb-accessory-parent="${index}"]`);
+        const choice = select?.value || "";
+        if (!choice) return;
+        const line = activeLines[index];
+        const match = line?.catalog_matches?.[0];
+        let relation = null;
+        if (choice !== "standalone") {
+          const parent = parentOptions.find(row => row.line_id === choice);
+          if (!parent) {
+            toast("That parent is no longer available", "error");
+            return;
+          }
+          const candidate = (match?.accessory_parent_candidates || []).find(item =>
+            (item.manifest_options || []).some(row => row.line_id === choice)
+          );
+          relation = {
+            parent_line_id: parent.line_id,
+            parent_name: parent.name,
+            parent_location: parent.location || "",
+            parent_product_id: candidate?.product_id || parent.product_ids?.[0] || "",
+            accessory_category: match?.accessory_category || "other",
+          };
+        } else {
+          const location = controls.body.querySelector(`[data-qb-accessory-location="${index}"]`)?.value.trim() || "";
+          if (!location) {
+            toast("Enter where the standalone part goes", "error");
+            return;
+          }
+          relation = {
+            parent_line_id: "", parent_name: "", parent_location: location,
+            parent_product_id: "", accessory_category: "",
+          };
+        }
+        button.disabled = true;
+        _ptQbStageMatchedAccessory(session, line, match, relation, estimate);
+        await window.PT_previewQbEstimateImport(projectId, individualId);
+      });
+    });
+    const applyReadyParts = async ({ closeAfter = false } = {}) => {
+      if (missingRequiredAccessories.length) {
+        toast("Choose the required accessories before importing these parent parts", "error");
+        return false;
+      }
+      if (!session.operations.length && !session.removals.size) {
+        toast("No ready Estimate parts have been selected", "info");
+        return false;
+      }
+      controls.create.disabled = true;
+      controls.create.textContent = result.build_is_blank ? "Importing…" : "Applying…";
+      try {
+        for (const lineId of [...session.removals]) {
+          const response = await api(`/api/draft/${session.draftId}/part/${lineId}/delete`, {});
+          if (!response?.ok) throw new Error(response?.error || "A selected build part could not be removed");
+          session.removals.delete(lineId);
+        }
+        const orderedOperations = [...session.operations].sort((left, right) => {
+          const leftIsChild = Boolean(left.body?.parent_line_id);
+          const rightIsChild = Boolean(right.body?.parent_line_id);
+          return Number(leftIsChild) - Number(rightIsChild);
+        });
+        for (const operation of orderedOperations) {
+          const response = await api(operation.path, operation.body);
+          if (!response?.ok) throw new Error(response?.error || "A staged Estimate part could not be imported");
+          session.operations.splice(session.operations.indexOf(operation), 1);
+        }
+        _ptQbImportSessions.delete(sessionId);
+        if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
+        if (typeof loadDraftManifest === "function") await loadDraftManifest(session.draftId);
+        if ($("card-preview") && !$("card-preview").hidden && typeof pvLoad === "function") {
+          await pvLoad(session.draftId);
+        }
+        toast(result.build_is_blank ? "Estimate parts imported" : "Estimate decisions applied", "success");
+        _ptQbCloseLeavePrompt();
+        if (closeAfter) {
+          controls.modal?.classList.remove("open");
+          _PT.qbEstCloseHandler = null;
+          _PT.qbEstCancelHandler = null;
+        } else {
+          await window.PT_previewQbEstimateImport(projectId, individualId);
+        }
+        return true;
+      } catch (error) {
+        controls.create.disabled = false;
+        controls.create.textContent = result.build_is_blank ? "Continue import" : "Continue applying";
+        toast(error?.message || "The Estimate decisions could not be applied", "error");
+        return false;
+      }
+    };
+    controls.create.onclick = async () => {
+      if (controls.create.disabled) return;
+      await applyReadyParts();
+    };
+    const closeReview = () => {
+      controls.modal?.classList.remove("open");
+      _ptQbCloseLeavePrompt();
+      _PT.qbEstCloseHandler = null;
+      _PT.qbEstCancelHandler = null;
+    };
+    const showLeaveWarning = () => {
+      _ptQbOpenLeavePrompt({
+        readyCount: pendingChangeCount,
+        onDiscard: () => {
+          _ptQbImportSessions.delete(sessionId);
+          closeReview();
+          toast("Estimate import decisions discarded", "info");
+        },
+        onSave: () => {
+          closeReview();
+          toast("Estimate import decisions saved for later", "info");
+        },
+        onImport: async () => { await applyReadyParts({ closeAfter: true }); },
+      });
+    };
+    const hasUnappliedReview = Boolean(
+      outstandingLines.length || session.operations.length
+      || session.removals.size || session.skipped.size,
+    );
+    _PT.qbEstCloseHandler = hasUnappliedReview ? showLeaveWarning : closeReview;
+    _PT.qbEstCancelHandler = async () => {
+      if (session.operations.length || session.removals.size) {
+        await applyReadyParts({ closeAfter: true });
+      } else if (!hasUnappliedReview) {
+        closeReview();
+      } else {
+        showLeaveWarning();
+      }
+    };
+  } catch (error) {
+    controls.modal?.classList.remove("qb-import-refreshing");
+    if (preservingReview) {
+      toast(error?.message || "The Estimate could not be refreshed", "error");
+    } else {
+      controls.body.innerHTML = `<div class="qb-est-change-alert"><strong>Could not prepare the import</strong><p>${esc(error?.message || "The Estimate could not be read.")}</p></div>`;
+    }
+  }
 };
 
 window.PT_buildCreateEstimate = async function (projectId, unitId, individualId) {

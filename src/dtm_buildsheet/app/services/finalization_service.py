@@ -10,7 +10,7 @@ from ...paths import AppPaths
 from .draft_service import _current_user_display_name, load_draft_for_request
 
 
-CHECK_VERSION = "4"
+CHECK_VERSION = "5"
 
 _CONSOLE_SETUP_FACT_TYPES = {
     "armRest": "arm_rest",
@@ -351,6 +351,23 @@ def _check(project_id: str, unit_id: str, individual_id: str, paths: AppPaths) -
         return {"ok": False, "error": "Configure this build before finalizing"}
     draft = load_draft_for_request(holder.draft_id, paths)
     blocking = []
+    for part in draft.parts:
+        picker = part.picker_config if isinstance(part.picker_config, dict) else {}
+        if not part.include or not isinstance(picker.get("custom_part"), dict):
+            continue
+        missing = []
+        if not str(part.part_number or "").strip():
+            missing.append("SKU")
+        if not str(part.location or "").strip():
+            missing.append("location")
+        if missing:
+            blocking.append({
+                "id": f"custom_part_incomplete:{part.line_id}",
+                "message": (
+                    f"Custom part {part.name or 'Custom part'} needs "
+                    f"{' and '.join(missing)} before finalizing."
+                ),
+            })
     if individual_id:
         from ...domain.vehicle_naming import vehicle_identity_ready
         if not vehicle_identity_ready(holder):

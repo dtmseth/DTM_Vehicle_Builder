@@ -838,6 +838,10 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
             options.append({
                 "product_id": apid, "model": ap.get("model", apid),
                 "manufacturer_label": mfr.get("label", ap.get("manufacturer_id", "")),
+                "part_type": next((
+                    part_type_id for part_type_id in (ap.get("fits_part_types") or [])
+                    if (part_types.get(part_type_id) or {}).get("accessory_category") == cat_id
+                ), (ap.get("fits_part_types") or [""])[0]),
                 "skus": skus,
             })
         entry = {

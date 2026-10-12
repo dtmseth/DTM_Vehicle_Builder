@@ -11,7 +11,6 @@ from ..services.preset_service import (
     save_preset,
     delete_preset,
     clone_preset,
-    import_from_workbook,
     export_preset_workbook,
 )
 from .http import send_json
@@ -59,15 +58,6 @@ def route_presets(handler: BaseHTTPRequestHandler, method: str, path: str,
     if method == "POST" and path == "/api/presets/save":
         overwrite = bool(body.get("overwrite", False))
         send_json(handler, save_preset(body, paths, overwrite=overwrite))
-        return True
-
-    # POST /api/presets/import-workbook
-    if method == "POST" and path == "/api/presets/import-workbook":
-        file_b64 = body.get("data", "")
-        if not file_b64:
-            send_json(handler, {"ok": False, "error": "No file data provided"})
-        else:
-            send_json(handler, import_from_workbook(file_b64, paths))
         return True
 
     # POST /api/presets/{preset_id}/clone

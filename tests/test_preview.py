@@ -514,6 +514,73 @@ def test_preview_service_includes_render_only_setina_pb450l6_lights(app_paths):
         assert [round(x - old_x, 6) for x, old_x in zip(after[key], xs)] == [0.05] * len(xs)
 
 
+def test_preview_service_custom_mirror_points_have_distinct_symmetric_overrides(app_paths):
+    from dtm_buildsheet.app.services.preview_service import handle_preview_plan
+    from dtm_buildsheet.inputs.project_drafts import draft_from_project_input, save_draft
+
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "CUSTOM-MIRROR-PREVIEW"},
+        parts=[PartInput(
+            name="Forward Warning 1",
+            part_type="warning_light",
+            part_number="ION",
+            raw_color="Red/White / Blue/White",
+            driver_color="Red/White",
+            passenger_color="Blue/White",
+            location="Custom grille pair",
+            quantity=2,
+            line_id="custom-mirror-line",
+            components=[
+                {"part_number": "XI2D", "color": "Red/White", "quantity": 1},
+                {"part_number": "XI2E", "color": "Blue/White", "quantity": 1},
+            ],
+            picker_config={"custom_location": {
+                "label": "Custom grille pair",
+                "layout": "mirrored_pairs",
+                "placements": {"front": [
+                    {"x": 0.25, "y": 0.62, "head_index": 0, "group_id": "left"},
+                    {"x": 0.75, "y": 0.62, "head_index": 1, "group_id": "right"},
+                ]},
+            }},
+        )],
+        notes={},
+    )
+    draft = draft_from_project_input(project)
+    save_draft(draft, app_paths.workspace_drafts_dir)
+
+    preview = handle_preview_plan({"draft_id": draft.draft_id}, app_paths)
+    assert preview["ok"], preview.get("error")
+    placements = next(
+        part["placements"] for part in preview["planned_parts"]
+        if part["part_name"] == "Forward Warning 1"
+    )
+    assert len(placements) == 2
+    assert len({placement["override_key"] for placement in placements}) == 2
+    assert {placement["custom_layout"] for placement in placements} == {"mirrored_pairs"}
+    assert {placement["custom_group_id"] for placement in placements} == {"left", "right"}
+    assert len({placement["group_key"] for placement in placements}) == 1
+
+    by_side = {placement["custom_group_id"]: placement for placement in placements}
+    before = {
+        side: placement["instances"][0]["x_pct"]
+        for side, placement in by_side.items()
+    }
+    draft.placement_overrides = {
+        by_side["left"]["override_key"]: {"translate_dx": 0.03},
+        by_side["right"]["override_key"]: {"translate_dx": -0.03},
+    }
+    save_draft(draft, app_paths.workspace_drafts_dir)
+
+    moved = handle_preview_plan({"draft_id": draft.draft_id}, app_paths)
+    moved_placements = next(
+        part["placements"] for part in moved["planned_parts"]
+        if part["part_name"] == "Forward Warning 1"
+    )
+    moved_by_side = {placement["custom_group_id"]: placement for placement in moved_placements}
+    assert moved_by_side["left"]["instances"][0]["x_pct"] == pytest.approx(before["left"] + 0.03)
+    assert moved_by_side["right"]["instances"][0]["x_pct"] == pytest.approx(before["right"] - 0.03)
+
+
 def test_preview_service_views_have_bg_url(app_paths, stearns_input):
     from dtm_buildsheet.app.services.preview_service import handle_preview_plan
     from dtm_buildsheet.inputs.project_drafts import draft_from_project_input, save_draft

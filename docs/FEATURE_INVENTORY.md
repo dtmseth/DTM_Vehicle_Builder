@@ -796,7 +796,6 @@ Duplicate detection: if a preset already exists with the same agency + build_typ
 | GET | `/api/presets/{id}` | Get single preset |
 | GET | `/api/presets/{id}/export-workbook` | Fill blank template with preset parts → downloadable `.xlsx` |
 | POST | `/api/presets/save` | Create or update preset |
-| POST | `/api/presets/import-workbook` | Parse `.xlsx` body → extract parts → return preset payload |
 | POST | `/api/presets/{id}/clone` | Copy with new ID, strip agency_ids |
 | DELETE | `/api/presets/{id}` | Delete workspace preset (cannot delete bundled) |
 
@@ -890,7 +889,6 @@ Load Preset next to Save as New Preset in both action areas.
 | `/api/agency/save` | Create or update agency |
 | `/api/sales-rep/save` | Create or update sales rep |
 | `/api/presets/save` | Create or update preset |
-| `/api/presets/import-workbook` | Parse `.xlsx` body → return preset payload |
 | `/api/presets/{id}/clone` | Clone preset with new ID |
 | `/api/project/save` | Create or update project |
 | `/api/project/{id}/unit/{uid}/create-draft` | Create build draft for a BuildUnit |

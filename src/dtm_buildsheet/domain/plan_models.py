@@ -63,6 +63,25 @@ class PlannedPlacement:
     instances: list[RenderInstance] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     line_id: str = ""
+    # Free-point custom locations are rendered as one placement per point.
+    # These fields preserve the relationship between those points so the
+    # preview can distinguish a locked row/pair from a true mirrored layout.
+    custom_layout: str = ""
+    custom_group_id: str = ""
+    custom_point_index: int | None = None
+
+
+def planned_placement_override_key(placement: PlannedPlacement) -> str:
+    """Return the durable preview override key for one placement.
+
+    Ordinary placements retain the historic ``line:view`` key.  Free custom
+    points need a stable point suffix; without it, moving either side writes
+    one shared override and permanently locks every point together.
+    """
+    prefix = placement.line_id or placement.part_id
+    if placement.custom_point_index is not None:
+        return f"{prefix}:custom-{placement.custom_point_index}:{placement.view}"
+    return f"{prefix}:{placement.view}"
 
 
 @dataclass
@@ -136,4 +155,10 @@ class BuildPlan:
                     placement.pop("compound_group_style")
                 if placement.get("compound_item_spacing") == 1.0:
                     placement.pop("compound_item_spacing")
+                if placement.get("custom_layout") == "":
+                    placement.pop("custom_layout")
+                if placement.get("custom_group_id") == "":
+                    placement.pop("custom_group_id")
+                if placement.get("custom_point_index") is None:
+                    placement.pop("custom_point_index")
         return data
