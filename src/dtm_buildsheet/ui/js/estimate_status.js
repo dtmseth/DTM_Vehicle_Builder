@@ -14,11 +14,16 @@ function estimateStatus(vehicle = {}) {
 
 function estimateGroupStatus(vehicles = []) {
   if (!vehicles.length) return estimateStatus();
-  const statuses = vehicles.map(estimateStatus);
-  if (statuses.every(status => status.key === statuses[0].key)) return statuses[0];
-  const counts = new Map();
-  statuses.forEach(status => counts.set(status.label, (counts.get(status.label) || 0) + 1));
-  return {key: 'estimate-mixed', label: [...counts].map(([label, count]) => `${count}/${vehicles.length} ${label}`).join(' · ')};
+  const connected = vehicles.filter(vehicle =>
+    Boolean(vehicle.qbo_estimate_id || vehicle.qb_estimate_id)
+  ).length;
+  const key = connected === vehicles.length
+    ? 'estimate-connected'
+    : connected
+      ? 'estimate-mixed'
+      : 'estimate-unlinked';
+  const noun = vehicles.length === 1 ? 'Estimate' : 'Estimates';
+  return {key, label: `${connected}/${vehicles.length} ${noun} Connected`};
 }
 
 function estimateSendDetail(vehicle) {

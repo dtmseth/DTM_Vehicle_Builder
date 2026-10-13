@@ -34,7 +34,7 @@ cross-cutting catalogs (manufacturers, tags, placements, accessory categories):
 | `zones` / `sub_zones` | Where on the vehicle (drives role naming for lights) |
 | `part_types` | The "slot types" (Forward Warning, Radar, …). Carry `type_id`, `tree_positions[{section,zone,sub_zone}]`, `tag_ids`, `max_count`, `accessory_of`, `accessory_category`, `accessories[]`, `allowed_products[]`, `allowed_placements[]`, `workbook_label_pattern`, `sequence_scope`, `category` (warning/scene/interior/interior_bar/roof_bar) |
 | `products` | A catalog product (e.g. ION). Carry `model`, `manufacturer_id`, `description`, `fits_part_types[]`, `tag_ids[]`, `accessories[]`, `part_numbers[]` |
-| `part_numbers` | A concrete SKU under a product. Carry `part_number`, `friendly_name`, `color`/`secondary_color`/`tertiary_color`, `lens_type`, `vehicle_tags[]`, `price_usd`, QB fields (`qb_item_id`, `qb_sku`, `qb_sales_description`, `qb_unit_price`, `qb_inactive`, `qb_last_synced`), `qb_pending`, `options{}` |
+| `part_numbers` | A concrete SKU under a product. Carry `part_number`, `friendly_name`, `color`/`secondary_color`/`tertiary_color`, `lens_type`, `vehicle_tags[]`, `price_usd`, QB fields (`qb_item_id`, `qb_sku`, `qb_sales_description`, `qb_unit_price`, `qb_inactive`, `qb_last_synced`), `qb_pending`, `options{}`. Vehicle tags are normalized against the selected vehicle's layout ID, make, model, and combined make+model. Prefer `MAKE MODEL` when known; use `MAKE` only when catalog fitment is not model-specific. |
 | `manufacturers` | `label`, `website` |
 | `tags` | `label` (vehicle/attribute tags) |
 | `placements` | Physical location vocabulary |

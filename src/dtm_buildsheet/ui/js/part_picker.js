@@ -1411,16 +1411,67 @@ function _pickerResetState() {
 }
 
 // ── Vehicle compatibility ──────────────────────────────
-// The draft's VehicleType string is the same vocabulary as a SKU's
-// vehicle_tags. A SKU is compatible when it carries no tags, an "any" tag,
-// or the selected vehicle's tag. Empty vehicle (none selected) = show all.
+// Vehicle tags use the rich vehicle identity vocabulary.  A tag can name the
+// layout, make, model, or "make model"; make-only tags are an intentional
+// fallback for parts whose catalog copy is not model-specific.  Normalizing
+// punctuation keeps historical tags such as RAM-1500 working while new data
+// uses the names selected by the guided vehicle picker.
 function _pickerVehicle() {
   return (typeof _meDraft !== "undefined" && _meDraft?.vehicle_info?.VehicleType) || "";
 }
+
+function _vehicleCompatibilityKey(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .toUpperCase()
+    .replace(/\bCHEVY\b/g, "CHEVROLET")
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function _pickerVehicleCompatibilityKeys(veh) {
+  const layoutId = String(veh || "").trim();
+  const info = (typeof _meDraft !== "undefined" && _meDraft?.vehicle_info) || {};
+  const identity = info.VehicleIdentity && typeof info.VehicleIdentity === "object"
+    ? info.VehicleIdentity : {};
+  const outputVehicle = info.NewVehicle && typeof info.NewVehicle === "object"
+    ? info.NewVehicle : {};
+  const make = identity.make || outputVehicle.MAKE || "";
+  const model = identity.model || outputVehicle.MODEL || "";
+  const packageName = identity.package || "";
+  const values = [layoutId, make, model];
+  if (make && model) values.push(`${make} ${model}`);
+  if (make && model && packageName) values.push(`${make} ${model} ${packageName}`);
+  return new Set(values.map(_vehicleCompatibilityKey).filter(Boolean));
+}
+
 function _skuCompatible(s, veh) {
   if (!veh) return true;
-  const tags = (s.vehicle_tags || []).map(t => String(t).toUpperCase());
-  return !tags.length || tags.includes("ANY") || tags.includes(String(veh).toUpperCase());
+  const tags = (s.vehicle_tags || []).map(_vehicleCompatibilityKey).filter(Boolean);
+  if (!tags.length || tags.includes("ANY")) return true;
+  const keys = _pickerVehicleCompatibilityKeys(veh);
+  if (tags.some(tag => keys.has(tag))) return true;
+
+  // Compatibility shims for historical family tags.  New catalog work should
+  // use make or make+model tags, but existing records remain usable.
+  const make = _vehicleCompatibilityKey(
+    ((typeof _meDraft !== "undefined" && _meDraft?.vehicle_info?.VehicleIdentity) || {}).make ||
+    ((typeof _meDraft !== "undefined" && _meDraft?.vehicle_info?.NewVehicle) || {}).MAKE || ""
+  );
+  const model = _vehicleCompatibilityKey(
+    ((typeof _meDraft !== "undefined" && _meDraft?.vehicle_info?.VehicleIdentity) || {}).model ||
+    ((typeof _meDraft !== "undefined" && _meDraft?.vehicle_info?.NewVehicle) || {}).MODEL || ""
+  );
+  return tags.some(tag =>
+    (tag === "SUPER DUTY" && make === "FORD" && /^F (?:250|350|450|550)$/.test(model)) ||
+    (tag === "CHEVROLET 1500" && make === "CHEVROLET" && model === "SILVERADO 1500") ||
+    (tag === "CHEVROLET SILVERADO" && make === "CHEVROLET" && /^SILVERADO(?: |$)/.test(model)) ||
+    (tag === "SILVERADO HD" && make === "CHEVROLET" && /^SILVERADO (?:2500|3500)(?: HD)?$/.test(model)) ||
+    (tag === "GMC SIERRA" && make === "GMC" && /^SIERRA(?: |$)/.test(model)) ||
+    (tag === "RAM 2500" && make === "RAM" && model === "2500 HD") ||
+    (tag === "RAM HD" && make === "RAM" && /^(?:2500|3500|4500|5500)(?: HD)?$/.test(model))
+  );
 }
 
 function _pickerOpenPanel(title) {

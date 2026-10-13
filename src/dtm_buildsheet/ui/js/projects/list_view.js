@@ -314,7 +314,7 @@ function _ptRenderList() {
   show("proj-list-rows");
   $("proj-list-rows").innerHTML = projects.map(p => {
     const projectName = esc(_ptProjName(p));
-    const name = projectName + ` <span class="project-type-badge">${esc(_ptTypeLabel(p))}</span>`;
+    const name = projectName + ` <span class="project-type-badge project-type-badge-${_ptTypeClass(p)}">${esc(_ptTypeLabel(p))}</span>`;
     const n    = (p.build_units || []).reduce((s, u) => s + (u.quantity || 1), 0);
     const listStatuses = _ptProjectListStatuses(p);
     const listVehicles = _ptProjectVehiclesForList(p, mode);

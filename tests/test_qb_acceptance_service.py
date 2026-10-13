@@ -196,14 +196,14 @@ const sent = {...linked, qbo_estimate_sent_status:'sent'};
 assert.equal(estimateStatus(sent).label, 'Estimate Sent');
 assert.equal(estimateStatus({...sent,qbo_estimate_status:'Rejected'}).label, 'Estimate Declined');
 assert.equal(estimateStatus({acceptance_status:'accepted'}).label, 'Accepted');
-assert.equal(estimateGroupStatus([sent, linked]).label, '1/2 Estimate Sent · 1/2 Estimate Created');
+assert.equal(estimateGroupStatus([sent, linked]).label, '2/2 Estimates Connected');
 const _PT = {operationsByProject:{p:[{...sent, vehicle_id:'a'}]}};
 const project = {project_id:'p',build_units:[{individuals:[{individual_id:'a', qb_estimate_id:'1'}, {individual_id:'b'}]}]};
-assert.equal(_ptProjectProgress(project).label, '1/2 Estimate Sent · 1/2 No Estimate Connected');
+assert.equal(_ptProjectProgress(project).label, '1/2 Estimates Connected');
 project.build_units[0].individuals[0].qb_estimate_id = '2';
-assert.equal(_ptProjectProgress(project).label, '1/2 Estimate Created · 1/2 No Estimate Connected');
+assert.equal(_ptProjectProgress(project).label, '1/2 Estimates Connected');
 _PT.operationsByProject = {};
-assert.equal(_ptProjectProgress(project).label, '1/2 Estimate Created · 1/2 No Estimate Connected');
+assert.equal(_ptProjectProgress(project).label, '1/2 Estimates Connected');
 """
     result = subprocess.run(['node'], input=script, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr

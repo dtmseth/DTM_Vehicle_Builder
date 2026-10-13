@@ -34,7 +34,7 @@ let _pvAutosavePromise  = null;
 async function pvLoad(draftId) {
   if (_pvDraftId && pvHasPendingChanges()) {
     const saved = await pvApplyChanges();
-    if (!saved) return;
+    if (!saved) return false;
   }
   if (_pvAutosaveTimer) clearTimeout(_pvAutosaveTimer);
   _pvAutosaveTimer = null;
@@ -57,16 +57,18 @@ async function pvLoad(draftId) {
 
   if (!res.ok) {
     pvShowError(res.error || "Preview failed");
-    return;
+    return false;
   }
 
   _pvPlan = res;
   pvBuildViewTabs(res.views);
   pvSelectView(_pvView in res.views ? _pvView : Object.keys(res.views)[0]);
+  return true;
 }
 
-function pvReload() {
-  if (_pvDraftId) pvLoad(_pvDraftId);
+async function pvReload() {
+  if (!_pvDraftId) return false;
+  return pvLoad(_pvDraftId);
 }
 
 function pvSelectView(viewName) {

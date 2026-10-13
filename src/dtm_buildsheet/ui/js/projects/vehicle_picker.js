@@ -215,7 +215,11 @@ function _ptWireVehicleSearch(container, loadItems, onClear) {
     timer = setTimeout(() => show(input.value.trim()), 220);
   });
   input.addEventListener("keydown", event => {
-    if (event.key === "Escape") menu.hidden = true;
+    if (event.key === "Escape" && !menu.hidden) {
+      event.preventDefault();
+      event.stopPropagation();
+      menu.hidden = true;
+    }
     if (event.key === "ArrowDown") menu.querySelector("button")?.focus();
   });
   toggle.addEventListener("click", () => {

@@ -1942,7 +1942,7 @@ window.PT_setupQbProject = async function (projectId, individualId) {
   });
 };
 
-window.PT_linkQbEstimate = function (projectId, individualId) {
+window.PT_linkQbEstimate = function (projectId, individualId, onChanged = null) {
   const project = _PT.projects.find(item => item.project_id === projectId) || _PT.viewProject;
   let vehicle = null;
   for (const buildUnit of (project?.build_units || [])) {
@@ -1954,110 +1954,158 @@ window.PT_linkQbEstimate = function (projectId, individualId) {
     return;
   }
   const existingId = String(vehicle.qb_estimate_id || "").trim();
+  const existingNumber = String(vehicle.qb_estimate_snapshot?.doc_number || existingId).trim();
   _ptOpenEstModal(
-    existingId ? "Manage estimate connection" : "Connect an existing estimate",
-    `<div class="qb-est-change-alert"><strong>Read-only connection</strong><p>This checks that the Estimate exists and saves its number, status, last-updated time, and comparison snapshot for the rest of the team. It will not change anything in QuickBooks.</p></div>
-     <div><button type="button" id="qb-estimate-list-load" class="btn btn-secondary btn-sm">Browse QBO Estimates</button>
-     <label>Filter loaded Estimates<input id="qb-estimate-list-search" class="qb-setup-input" type="search" placeholder="Customer, number, date or status"></label>
-     <div id="qb-estimate-list-message" role="status"></div><div id="qb-estimate-list" class="qb-estimate-list"></div></div>
-     <label for="qb-estimate-link-id" style="font-size:12px;font-weight:600;color:var(--navy)">Estimate ID or Estimate page URL</label>
-     <input id="qb-estimate-link-id" class="qb-setup-input" autocomplete="off" placeholder="Estimate ID or QuickBooks Estimate URL" value="${_ptEscAttr(existingId)}" />
-     ${existingId ? `<p class="qb-setup-hint">Clear this field and choose Remove connection to stop tracking this Estimate. Entering a different Estimate will require confirmation. Neither action changes QuickBooks.</p>` : ""}`,
-    existingId ? "Refresh connection" : "Connect estimate",
+    existingId ? "Manage estimate connection" : "Connect an estimate",
+    `<div class="qb-estimate-connector">
+      ${existingId ? `<div class="qb-estimate-current"><div><span>Current connection</span><strong>Quote ${esc(existingNumber)}</strong></div><button type="button" id="qb-estimate-disconnect" class="btn btn-secondary btn-sm">Disconnect</button></div>` : ""}
+      <label class="qb-estimate-search" for="qb-estimate-list-search">
+        <span>Search QuickBooks estimates</span>
+        <input id="qb-estimate-list-search" type="search" autocomplete="off" placeholder="Search by agency, quote number, vehicle, VIN, or memo">
+        <small>Suggested estimates match this vehicle's agency and build year and are not connected elsewhere.</small>
+      </label>
+      <div id="qb-estimate-list-message" class="qb-estimate-list-message" role="status">Loading recent estimates…</div>
+      <div id="qb-estimate-list" class="qb-estimate-list"></div>
+    </div>`,
+    "",
   );
   const controls = _ptEstModalEls();
-  const input = $("qb-estimate-link-id");
-  const refresh = () => {
-    const value = String(input?.value || "").trim();
-    controls.create.disabled = !value && !existingId;
-    controls.create.textContent = !value && existingId ? "Remove connection" :
-      existingId ? "Refresh connection" : "Connect estimate";
+  const searchInput = $("qb-estimate-list-search");
+  const message = $("qb-estimate-list-message");
+  const listHost = $("qb-estimate-list");
+  const picker = { rows: [], next: 1, busy: false, complete: false };
+  const searchTerms = () => String(searchInput?.value || "").trim().toLowerCase()
+    .split(/\s+/).filter(Boolean);
+  const resultContext = row => {
+    const details = [];
+    if (row.project_name) details.push(["Vehicle / project", row.project_name]);
+    (row.vehicle_fields || []).forEach(field => details.push([field.label || "Vehicle", field.value]));
+    if (row.customer_memo) details.push(["Memo", row.customer_memo]);
+    if (row.private_note) details.push(["Internal note", row.private_note]);
+    return details.length
+      ? `<dl class="qb-estimate-result-context">${details.slice(0, 4).map(([label, value]) =>
+          `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>`
+      : `<p class="qb-estimate-result-empty">No vehicle, VIN, or memo details are recorded on this estimate.</p>`;
   };
-  input?.addEventListener("input", refresh);
-  refresh();
-  const picker = {rows: [], next: 1, busy: false};
-  const listHost = $('qb-estimate-list'), loadButton = $('qb-estimate-list-load');
-  const drawEstimates = () => {
-    listHost.replaceChildren();
-    const search = $('qb-estimate-list-search').value.trim().toLowerCase();
-    const rows = picker.rows.filter(row => [row.customer,row.number,row.id,row.date,row.status].join(' ').toLowerCase().includes(search));
-    rows.forEach(row => {
-      const button = document.createElement('button');button.type='button';button.className='btn btn-secondary btn-sm';
-      button.textContent=`${row.number || row.id} · ${row.customer || 'Customer not recorded'} · ${row.date || 'Undated'} · ${row.status || 'Status unknown'}${row.linked_elsewhere?' · Linked to another vehicle':row.linked_here?' · Current connection':''}`;
-      button.disabled=row.linked_elsewhere;
-      button.onclick=()=>{input.value=row.id;refresh();$('qb-estimate-list-message').textContent=`Selected Estimate ${row.number || row.id}. Choose Connect estimate to review and link.`;};
-      listHost.append(button);
-    });
-    if(!rows.length)listHost.textContent='No matching Estimates in the loaded pages.';
+  const finish = async (result, messageText) => {
+    controls.modal?.classList.remove("open");
+    await _ptLoadAll();
+    const updated = _PT.projects.find(item => item.project_id === projectId);
+    if (updated) {
+      _PT.viewProject = updated;
+      _ptRenderOverview(updated);
+    }
+    toast(messageText, "success");
+    if (typeof onChanged === "function") await onChanged(result);
   };
-  $('qb-estimate-list-search').oninput=drawEstimates;
-  loadButton.onclick=async()=>{
-    if(picker.busy||!picker.next)return;
-    picker.busy=true;loadButton.disabled=true;$('qb-estimate-list-message').textContent='Reading Estimates from QuickBooks…';
+  let drawEstimates = () => {};
+  const connect = async row => {
+    if (row.linked_elsewhere || row.linked_here) return;
+    const replacing = !!existingId && row.id !== existingId;
+    if (replacing && !confirm(`Replace the connection to Quote ${existingNumber}?\n\nThis only changes which estimate this vehicle tracks. It will not edit either estimate in QuickBooks.`)) return;
+    listHost.querySelectorAll("button").forEach(button => { button.disabled = true; });
+    message.textContent = `Checking Quote ${row.number || row.id}…`;
     try {
-      const result=await api('/api/quickbooks/estimates/list',{project_id:projectId,individual_id:individualId,start_position:picker.next});
-      if(!listHost.isConnected)return;
-      if(!result?.ok)throw new Error(_ptEstError(result?.error));
-      const known=new Set(picker.rows.map(row=>row.id));picker.rows.push(...result.estimates.filter(row=>!known.has(row.id)));picker.next=result.next_position;
-      drawEstimates();$('qb-estimate-list-message').textContent=`${picker.rows.length} Estimates loaded. Select one to connect to this vehicle.`;
-      loadButton.textContent=picker.next?'Load more Estimates':'All Estimates loaded';
-    } catch(error) {if(listHost.isConnected)$('qb-estimate-list-message').textContent=error.message || 'Could not read Estimates. Connect QuickBooks and try again.';}
-    finally {picker.busy=false;loadButton.disabled=!picker.next;}
-  };
-  controls.create.onclick = async () => {
-    controls.create.disabled = true;
-    controls.create.textContent = "Checking…";
-    try {
-      const value = String(input?.value || "").trim();
-      if (value && !(await _ptQbConnected())) {
-        toast("Connect QuickBooks before checking an existing Estimate", "error");
-        refresh();
-        return;
-      }
-      const replacing = !!existingId && !!value && value !== existingId;
-      if (replacing && !confirm(`Replace the connection to Estimate ${existingId}?\n\nThis only changes which Estimate this vehicle tracks. It will not edit either Estimate in QuickBooks.`)) {
-        refresh();
-        return;
-      }
       const result = await api("/api/quickbooks/estimates/bind", {
-        project_id: projectId,
-        individual_id: individualId,
-        qb_estimate_id: value,
-        replace_existing: replacing,
+        project_id: projectId, individual_id: individualId,
+        qb_estimate_id: row.id, replace_existing: replacing,
       });
       if (!result?.ok) {
-        toast(result?.error === "invalid_estimate_id"
-          ? "Enter a numeric Estimate ID or paste a QuickBooks Estimate page address"
-          : result?.error === "existing_estimate_not_found"
-            ? "That Estimate was not found in the connected QuickBooks company"
-            : result?.error === "estimate_already_linked_to_another_vehicle"
-              ? "That Estimate is already connected to another vehicle"
-              : result?.error === "estimate_connection_replacement_confirmation_required"
-                ? "Confirm before replacing this vehicle's Estimate connection"
+        toast(result?.error === "existing_estimate_not_found"
+          ? "That estimate was not found in the connected QuickBooks company"
+          : result?.error === "estimate_already_linked_to_another_vehicle"
+            ? "That estimate is already connected to another vehicle"
             : result?.error || "Estimate connection could not be saved", "error");
-        refresh();
+        drawEstimates();
         return;
-      }
-      controls.modal?.classList.remove("open");
-      await _ptLoadAll();
-      const updated = _PT.projects.find(item => item.project_id === projectId);
-      if (updated) {
-        _PT.viewProject = updated;
-        _ptRenderOverview(updated);
       }
       if (result.operations_sync?.ok === false) {
         toast(result.operations_sync.error || "Estimate connected, but its shared status was not updated", "error");
-      } else {
-        const status = result.estimate_status ? ` · ${result.estimate_status}` : "";
-        toast(result.linked
-          ? `Estimate ${result.estimate_number || result.qb_estimate_id} connected${status}`
-          : "Estimate connection removed", "success");
       }
+      const status = result.estimate_status ? ` · ${result.estimate_status}` : "";
+      await finish(result, `Quote ${result.estimate_number || result.qb_estimate_id} connected${status}`);
     } catch (_) {
       toast("Estimate connection could not be saved", "error");
-      refresh();
+      drawEstimates();
     }
   };
+  drawEstimates = () => {
+    listHost.replaceChildren();
+    const terms = searchTerms();
+    const rows = picker.rows.filter(row => terms.every(term =>
+      String(row.search_text || [row.customer, row.number, row.id, row.date, row.status,
+        row.project_name, row.customer_memo, row.private_note].join(" ")).toLowerCase().includes(term)
+    )).sort((a, b) =>
+      Number(b.linked_here) - Number(a.linked_here)
+      || Number(b.suggested) - Number(a.suggested)
+      || Number(a.linked_elsewhere) - Number(b.linked_elsewhere)
+      || String(b.date || "").localeCompare(String(a.date || ""))
+    ).slice(0, 40);
+    rows.forEach(row => {
+      const card = document.createElement("article");
+      card.className = `qb-estimate-result${row.suggested ? " qb-estimate-result--suggested" : ""}${row.linked_elsewhere ? " qb-estimate-result--unavailable" : ""}`;
+      const connection = row.linked_here ? "Current connection" : row.linked_elsewhere ? "Connected elsewhere" : "";
+      card.innerHTML = `<div class="qb-estimate-result-heading">
+          <div><strong>Quote ${esc(row.number || row.id)}</strong><span>${esc(row.customer || "Customer not recorded")}</span></div>
+          <div class="qb-estimate-result-badges">${row.suggested ? `<span class="qb-estimate-suggested">Suggested</span>` : ""}${connection ? `<span>${esc(connection)}</span>` : ""}</div>
+        </div>
+        <div class="qb-estimate-result-meta">${esc([row.date || "Undated", row.status || "Status unknown"].join(" · "))}</div>
+        ${row.suggested_reason ? `<p class="qb-estimate-suggestion-reason">${esc(row.suggested_reason)}</p>` : ""}
+        ${resultContext(row)}
+        <div class="qb-estimate-result-action"><button type="button" class="btn ${row.linked_here ? "btn-secondary" : "btn-primary"} btn-sm"${row.linked_elsewhere || row.linked_here ? " disabled" : ""}>${row.linked_here ? "Connected" : row.linked_elsewhere ? "Unavailable" : existingId ? "Use this estimate" : "Connect estimate"}</button></div>`;
+      card.querySelector("button").onclick = () => connect(row);
+      listHost.append(card);
+    });
+    if (!rows.length && picker.complete) {
+      listHost.innerHTML = `<div class="qb-estimate-list-empty">No estimates match that search.</div>`;
+    }
+    const suffix = picker.complete ? "" : " More recent estimates are still loading…";
+    message.textContent = terms.length
+      ? `${rows.length} matching estimate${rows.length === 1 ? "" : "s"}.${suffix}`
+      : `${picker.rows.filter(row => row.suggested).length} suggested · ${picker.rows.length} recent estimates loaded.${suffix}`;
+  };
+  searchInput.oninput = drawEstimates;
+  const loadEstimates = async () => {
+    if (picker.busy) return;
+    picker.busy = true;
+    try {
+      while (picker.next && picker.rows.length < 200) {
+        const result = await api("/api/quickbooks/estimates/list", {
+          project_id: projectId, individual_id: individualId, start_position: picker.next,
+        });
+        if (!listHost.isConnected) return;
+        if (!result?.ok) throw new Error(_ptEstError(result?.error));
+        const known = new Set(picker.rows.map(row => row.id));
+        picker.rows.push(...(result.estimates || []).filter(row => !known.has(row.id)));
+        picker.next = result.next_position;
+        drawEstimates();
+      }
+      picker.complete = !picker.next || picker.rows.length >= 200;
+      drawEstimates();
+      searchInput?.focus();
+    } catch (error) {
+      picker.complete = true;
+      message.textContent = error.message || "Could not read estimates. Connect QuickBooks and try again.";
+      if (!picker.rows.length) listHost.innerHTML = `<div class="qb-estimate-list-empty">Estimates are unavailable.</div>`;
+    } finally {
+      picker.busy = false;
+    }
+  };
+  $("qb-estimate-disconnect")?.addEventListener("click", async event => {
+    if (!confirm(`Disconnect Quote ${existingNumber}?\n\nThis will not edit or delete anything in QuickBooks.`)) return;
+    event.currentTarget.disabled = true;
+    try {
+      const result = await api("/api/quickbooks/estimates/bind", {
+        project_id: projectId, individual_id: individualId, qb_estimate_id: "",
+      });
+      if (!result?.ok) throw new Error(result?.error || "Estimate connection could not be removed");
+      await finish(result, "Estimate connection removed");
+    } catch (error) {
+      toast(error.message || "Estimate connection could not be removed", "error");
+      event.currentTarget.disabled = false;
+    }
+  });
+  loadEstimates();
 };
 
 const _QB_IMPORT_LABELS = {
@@ -2087,7 +2135,7 @@ function _ptQbOpenLeavePrompt({ readyCount, onDiscard, onSave, onImport }) {
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
     modal.innerHTML = `<div class="modal qb-import-leave-dialog">
-      <div class="modal-title"><span>Leave Estimate review?</span></div>
+      <div class="modal-title"><span>Leave Estimate review?</span><button type="button" class="modal-close" data-qb-leave-cancel aria-label="Keep reviewing">×</button></div>
       <p>Your current import decisions have not been applied to the build.</p>
       <div class="modal-actions qb-import-leave-actions">
         <button type="button" class="btn btn-secondary" data-qb-leave-discard>Leave without saving</button>
@@ -2097,6 +2145,8 @@ function _ptQbOpenLeavePrompt({ readyCount, onDiscard, onSave, onImport }) {
     </div>`;
     document.body.appendChild(modal);
   }
+  normalizeModalOverlay(modal);
+  modal.querySelector("[data-qb-leave-cancel]").onclick = _ptQbCloseLeavePrompt;
   const importButton = modal.querySelector("[data-qb-leave-import]");
   if (importButton) {
     importButton.disabled = readyCount < 1;
@@ -3567,7 +3617,7 @@ async function _ptOpenBatchEstimateSetup(project) {
   const targets = _ptBatchEstimateTargets(project);
   if (!targets.length) { toast("No configured individual vehicles to estimate", "error"); return; }
 
-  _ptOpenEstModal("Prepare batch QuickBooks estimates",
+  _ptOpenEstModal("Checking batch QuickBooks estimates",
     `<p style="font-size:13px;margin:0">Checking ${targets.length} vehicle${targets.length === 1 ? "" : "s"} before anything is created…</p>`);
   let checks, customer;
   try {

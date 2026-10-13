@@ -1272,8 +1272,12 @@ def test_estimate_picker_reads_bounded_pages_without_writes(paths, monkeypatch):
         statements.append(statement)
         if 'STARTPOSITION 51 ' in statement:
             return {'Estimate': []}
-        return {'Estimate': [{'Id':str(i), 'DocNumber':f'E-{i}', 'CustomerRef':{'name':'Agency'},
+        return {'Estimate': [{'Id':str(i), 'DocNumber':f'E-{i}', 'CustomerRef':{'name':'Lakeville PD'},
             'TxnDate':'2026-09-01', 'TxnStatus':'Accepted', 'AcceptedDate':'2026-09-02',
+            'ProjectRef': {'name': '2026 Tahoe | Unit 12'},
+            'CustomerMemo': 'Patrol vehicle VIN 1GNSK2026',
+            'PrivateNote': 'White Tahoe for Lakeville fleet',
+            'CustomField': [{'Name': 'VIN', 'StringValue': '1GNSK2026'}],
             'Line':[{'Description':'Private line data'}], 'SyncToken':'not-for-picker'} for i in range(1,51)]}
     client.query = query
     monkeypatch.setattr(sync, '_build_client', lambda _paths:(client, None))
@@ -1282,6 +1286,13 @@ def test_estimate_picker_reads_bounded_pages_without_writes(paths, monkeypatch):
     assert result['estimates'][0]['linked_here']
     assert result['estimates'][1]['linked_elsewhere']
     assert not result['estimates'][2]['linked_elsewhere']
+    assert result['estimates'][2]['suggested'] is True
+    assert result['estimates'][1]['suggested'] is False
+    assert result['estimates'][2]['suggested_reason'] == 'Agency and build year match'
+    assert result['estimates'][2]['project_name'] == '2026 Tahoe | Unit 12'
+    assert result['estimates'][2]['customer_memo'] == 'Patrol vehicle VIN 1GNSK2026'
+    assert result['estimates'][2]['vehicle_fields'] == [{'label': 'VIN', 'value': '1GNSK2026'}]
+    assert '1gnsk2026' in result['estimates'][2]['search_text']
     assert result['estimates'][0]['accepted_date'] == '2026-09-02'
     assert all('Line' not in row and 'SyncToken' not in row for row in result['estimates'])
     assert est.list_available_estimates(paths, project_id=pid, individual_id='ind1', start_position=51)['next_position'] is None
@@ -1546,28 +1557,37 @@ def test_estimate_picker_ui_selects_without_binding_and_confirms_replacement():
         pytest.skip('Node is needed for isolated UI function checks')
     script = r"""
 const fs=require('fs'),assert=require('assert'),window={};
-const element=()=>({value:'',textContent:'',disabled:false,isConnected:true,children:[],addEventListener(){},replaceChildren(){this.children=[];},append(child){this.children.push(child);}});
+const element=()=>({
+ value:'',textContent:'',disabled:false,isConnected:true,children:[],_html:'',className:'',
+ classList:{remove(){}},focus(){this.focused=true;},
+ addEventListener(type,callback){this['on'+type]=callback;},
+ replaceChildren(){this.children=[];},append(child){this.children.push(child);},
+ set innerHTML(value){this._html=value;},get innerHTML(){return this._html;},
+ querySelector(selector){if(selector!=='button')return null;if(!this._button)this._button=element();this._button.disabled=/ disabled/.test(this._html);return this._button;},
+ querySelectorAll(selector){return selector==='button'?this.children.map(child=>child.querySelector('button')).filter(Boolean):[];},
+});
 const nodes=new Map(),$=id=>{if(!nodes.has(id))nodes.set(id,element());return nodes.get(id);};
-const document={createElement:element},controls={create:element(),modal:{classList:{remove(){}}}};
+const document={createElement:element},controls={modal:{classList:{remove(){}}}};
 const _PT={projects:[{project_id:'p',build_units:[{individuals:[{individual_id:'v',qb_estimate_id:'10'}]}]}]};
-const _ptOpenEstModal=()=>{$('qb-estimate-link-id').value='10';},_ptEstModalEls=()=>controls,_ptEscAttr=x=>x,_ptEstError=x=>x;
-const _ptQbConnected=async()=>true,toast=()=>{},_ptLoadAll=async()=>{},_ptRenderOverview=()=>{};
+const _ptOpenEstModal=()=>{},_ptEstModalEls=()=>controls,_ptEstError=x=>x,esc=x=>String(x??'');
+const toast=()=>{},_ptLoadAll=async()=>{},_ptRenderOverview=()=>{};
 let consent=false,calls=[];const confirm=()=>consent;
 const api=async(path,body)=>{calls.push({path,body});return path.endsWith('/list')?{ok:true,next_position:null,estimates:[
- {id:'20',number:'E20',customer:'Agency',status:'Accepted',date:'2026-09-01'},
- {id:'30',number:'E30',customer:'Other agency',linked_elsewhere:true}]}:{ok:false,error:'estimate_already_linked_to_another_vehicle'};};
+ {id:'20',number:'E20',customer:'Lakeville PD',status:'Accepted',date:'2026-09-01',suggested:true,suggested_reason:'Agency and build year match',search_text:'e20 lakeville pd vin20',vehicle_fields:[{label:'VIN',value:'VIN20'}],customer_memo:'White Tahoe'},
+ {id:'30',number:'E30',customer:'Other agency',linked_elsewhere:true,search_text:'e30 other agency'}]}:{ok:true,estimate_number:'E20',qb_estimate_id:'20',estimate_status:'Accepted'};};
 const source=fs.readFileSync(process.argv[1],'utf8');
 eval(source.slice(source.indexOf('window.PT_linkQbEstimate ='),source.indexOf('window.PT_buildCreateEstimate =')));
 (async()=>{
- window.PT_linkQbEstimate('p','v');await $('qb-estimate-list-load').onclick();
+ window.PT_linkQbEstimate('p','v');await new Promise(resolve=>setTimeout(resolve,0));
  assert.equal(calls.length,1);assert.equal($('qb-estimate-list').children.length,2);
- assert.equal($('qb-estimate-list').children[1].disabled,true);
- $('qb-estimate-list').children[0].onclick();assert.equal($('qb-estimate-link-id').value,'20');assert.equal(calls.length,1);
- await controls.create.onclick();assert.equal(calls.length,1); // replacement rejected by user
- consent=true;await controls.create.onclick();assert.equal(calls.length,2);
+ assert.match($('qb-estimate-list').children[0].innerHTML,/Suggested/);
+ assert.match($('qb-estimate-list').children[0].innerHTML,/VIN20/);
+ assert.equal($('qb-estimate-list').children[1].querySelector('button').disabled,true);
+ await $('qb-estimate-list').children[0].querySelector('button').onclick();assert.equal(calls.length,1);
+ consent=true;await $('qb-estimate-list').children[0].querySelector('button').onclick();assert.equal(calls.length,2);
  assert.equal(calls[1].path,'/api/quickbooks/estimates/bind');
  assert.deepEqual(calls[1].body,{project_id:'p',individual_id:'v',qb_estimate_id:'20',replace_existing:true});
- $('qb-estimate-list-search').value='E20';$('qb-estimate-list-search').oninput();assert.equal($('qb-estimate-list').children.length,1);
+ $('qb-estimate-list-search').value='VIN20';$('qb-estimate-list-search').oninput();assert.equal($('qb-estimate-list').children.length,1);
 })().catch(error=>{console.error(error);process.exitCode=1;});
 """
     path = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui/js/projects/detail_builds.js'

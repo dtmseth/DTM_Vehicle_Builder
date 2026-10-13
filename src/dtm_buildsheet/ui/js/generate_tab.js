@@ -68,7 +68,9 @@ $("btn-clear").addEventListener("click", ()=>{
 });
 
 // Reload preview button
-$("btn-reload-preview").addEventListener("click", () => pvReload());
+$("btn-reload-preview").addEventListener("click", async () => {
+  if (await pvReload()) toast("Preview refreshed", "success");
+});
 
 $("btn-generate").addEventListener("click", async ()=>{
   if(!fileB64 && !_parsedDraftId) return;

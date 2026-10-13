@@ -92,6 +92,50 @@ function show(id){$(id).removeAttribute("hidden")}
 function hide(id){$(id).setAttribute("hidden","")}
 let _toastTimer;
 
+// Shared modal guardrails. Individual modules still own save/cancel behavior;
+// this only normalizes dialog semantics and routes Escape through that modal's
+// existing close control so dirty-state and in-flight-save checks still run.
+function normalizeModalOverlay(overlay) {
+  if (!overlay) return;
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  const titleContainer = overlay.querySelector(".modal-title, .modal-header, .picker-header");
+  const title = titleContainer?.querySelector?.("[id]") || titleContainer;
+  if (!overlay.hasAttribute("aria-label") && !overlay.hasAttribute("aria-labelledby") && title) {
+    if (!title.id) {
+      const base = `${overlay.id || "app-modal"}-title`;
+      title.id = document.getElementById(base) ? `${base}-label` : base;
+    }
+    overlay.setAttribute("aria-labelledby", title.id);
+  }
+  overlay.querySelectorAll("button.modal-close:not([type])").forEach(button => {
+    button.type = "button";
+  });
+}
+
+function topOpenModal() {
+  const openModals = [...document.querySelectorAll(".modal-overlay.open")];
+  return openModals[openModals.length - 1] || null;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".modal-overlay").forEach(normalizeModalOverlay);
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape" || event.defaultPrevented) return;
+  const modal = topOpenModal();
+  if (!modal) return;
+  normalizeModalOverlay(modal);
+  const dismiss = modal.querySelector(
+    '.modal-close, [data-modal-dismiss], button[id$="-close"], button[id*="-cancel"], button[id$="-done"]'
+  );
+  if (!dismiss || dismiss.disabled) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  dismiss.click();
+});
+
 async function _copyToastMessage(message){
   try {
     await navigator.clipboard.writeText(message);

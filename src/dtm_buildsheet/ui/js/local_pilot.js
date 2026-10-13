@@ -26,8 +26,11 @@
       list.appendChild(item);
     }
     if (!list.children.length) list.textContent = 'Generate a build PDF to see downloads here.';
+    return true;
   }
   panel.addEventListener('toggle', () => { if (panel.open) load(); });
-  refresh.addEventListener('click', load);
+  refresh.addEventListener('click', async () => {
+    if (await load() && typeof toast === 'function') toast('Downloads refreshed', 'success');
+  });
   document.body.prepend(panel);
 })();

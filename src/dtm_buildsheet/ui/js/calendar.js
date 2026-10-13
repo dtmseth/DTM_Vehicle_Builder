@@ -29,7 +29,8 @@
     if(['ready_for_delivery','delivered'].includes(j.final_finish_status))badges.push([j.final_finish_status==='delivered'?'Delivered'+(j.delivered_date?' · '+label(j.delivered_date):''):'Ready for delivery'+(j.ready_for_delivery_at?' · '+label(j.ready_for_delivery_at):''),'green']);
     return badges;
   }
-  function projectTypeLabel(j){return ({build:'Build',service:'Service',offsite:'Off-Site Service'})[j.project_type||'build']||'Build';}
+  function projectTypeKey(j){return ['service','offsite'].includes(j?.project_type)?j.project_type:'build';}
+  function projectTypeLabel(j){return ({build:'Build',service:'Service',offsite:'Off-Site Service'})[projectTypeKey(j)];}
   function statusBadges(j){return renderStatusBadges(statusEntries(j));}
   function renderStatusBadges(badges){
     return '<span class="calendar-status-badges">'+badges.map(([name,color])=>`<span class="calendar-status-badge calendar-status-${color}">${text(name)}</span>`).join('')+'</span>';
@@ -173,8 +174,8 @@
   window.initCalendarTab = async function(quiet=false) {
     const seq=++state.request;pollSave();
     if(!quiet)message('Loading Calendar…');
-    try {const data=await request('/api/calendar');if(seq!==state.request)return;state.data=data;render();state.refreshDetail?.();message(`${data.local_only?'Local preview · ':''}${data.plan.jobs.length} reservations · ${data.plan.queue.length} accepted vehicles awaiting scheduling`);}
-    catch(e){if(seq===state.request)message(e.message);}
+    try {const data=await request('/api/calendar');if(seq!==state.request)return false;state.data=data;render();state.refreshDetail?.();message(`${data.local_only?'Local preview · ':''}${data.plan.jobs.length} reservations · ${data.plan.queue.length} accepted vehicles awaiting scheduling`);return true;}
+    catch(e){if(seq===state.request)message(e.message);return false;}
   };
   new ResizeObserver(()=>{const main=$('calendar-board').parentElement;if(main.offsetHeight)$('calendar-queue').style.height=window.innerWidth>850?`${main.offsetHeight}px`:'280px';}).observe($('calendar-board').parentElement);
   function render() {
@@ -324,7 +325,7 @@
     b.style.setProperty('--calendar-left',`${start/dates.length*100}%`);
     b.style.setProperty('--calendar-width',`${(end-start)/dates.length*100}%`);
     const top=document.createElement('strong');const name=document.createElement('span');name.textContent=`${job.historical?'✓ ':''}${job.calendar_label||job.title}`;top.append(name);
-    if(!job.custom){const type=document.createElement('span');type.className='project-type-badge';type.textContent=projectTypeLabel(job);top.append(type);}
+    if(!job.custom){const type=document.createElement('span');type.className=`project-type-badge project-type-badge-${projectTypeKey(job)}`;type.textContent=projectTypeLabel(job);top.append(type);}
     const vin=String(job.vin||'').trim(),vinEnding=!job.custom&&vin.length>=6?vin.slice(-6).toUpperCase():'';
     if(vinEnding){const suffix=document.createElement('span');suffix.className='calendar-vin-ending';suffix.textContent=vinEnding;suffix.title='VIN ending '+vinEnding;top.append(suffix);}
     if(!job.custom){const count=document.createElement('span');count.className='calendar-build-count';count.textContent=`${job.build_number}/${job.build_count}`;top.append(count);}b.append(top);
@@ -432,10 +433,11 @@
         $('calendar-drop-impact').innerHTML=result.changes.map(change=>`<div><strong>${text(change.title)}</strong><span>${change.after?'Start '+dateTime(change.after.start)+' → Ready '+dateTime(change.after.ready):'Unscheduled'}</span></div>`).join('');
         if(result.conflicts.length)throw new Error(result.conflicts.join(' · '));
         reviewedAction={body,preview:result};$('calendar-drop-save').disabled=false;
-      }catch(error){if(sequence===pending&&form.isConnected&&!detail.hidden)$('calendar-job-error').textContent=error.message;}
+        return true;
+      }catch(error){if(sequence===pending&&form.isConnected&&!detail.hidden)$('calendar-job-error').textContent=error.message;return false;}
     };
     ['calendar-drop-scope','calendar-drop-team','calendar-drop-date'].forEach(id=>$(id)?.addEventListener('change',preview));
-    $('calendar-drop-refresh').onclick=preview;
+    $('calendar-drop-refresh').onclick=async()=>{if(await preview())toast('Calendar dates refreshed','success');};
     form.onsubmit=async event=>{event.preventDefault();if(!reviewedAction)return;await saveSchedule(null,{},reviewedAction);};
     showBubble('detail');preview();
   }
@@ -446,7 +448,7 @@
     const scheduled=active.filter(j=>j.start).sort((a,b)=>a.start.localeCompare(b.start));
     const first=scheduled[0]||active[0],team=first?.team_id||state.data.settings.teams.find(t=>t.active)?.id;
     const detail=$('calendar-detail');
-    detail.innerHTML=`<div class="calendar-detail-heading"><div><small>Whole project · ${rows.length} units</small><h3 id="calendar-detail-title">${text(rows[0].agency_name||rows[0].title)}</h3><span class="project-type-badge">${text(projectTypeLabel(rows[0]))}</span></div>${btn('×','calendar-detail-close')}</div>
+    detail.innerHTML=`<div class="calendar-detail-heading"><div><small>Whole project · ${rows.length} units</small><h3 id="calendar-detail-title">${text(rows[0].agency_name||rows[0].title)}</h3><span class="project-type-badge project-type-badge-${projectTypeKey(rows[0])}">${text(projectTypeLabel(rows[0]))}</span></div>${btn('×','calendar-detail-close')}</div>
       <div class="calendar-project-unit-list">${rows.map(j=>`<button type="button" class="calendar-project-unit btn btn-secondary" data-project-unit="${text(j.id)}"><strong>${text(vehicleName(j))}</strong><span>${j.start?text(j.team_name)+' · '+dateTime(j.start)+' → '+dateTime(j.end):text(j.reason||'Unscheduled')}</span>${statusBadges(j)}</button>`).join('')}</div>
       ${canEdit()&&first?`<form id="calendar-project-form" class="calendar-fields"><label>Assigned team<select id="calendar-project-team">${state.data.settings.teams.filter(t=>t.active).map(t=>`<option value="${text(t.id)}" ${t.id===team?'selected':''}>${text(t.name)}</option>`).join('')}</select></label><label>Scheduled start<input type="date" id="calendar-project-start" required value="${text(first.start?.slice(0,10)||iso(new Date()))}"></label><p class="calendar-help">Schedules all ${active.length} active accepted units together. Open a unit above to reschedule it individually.</p><button type="submit" class="btn btn-primary">${scheduled.length?'Reschedule':'Schedule'} project</button></form>`:''}
       <div id="calendar-job-error" role="status"></div>
@@ -703,7 +705,7 @@
     }
   };
   ['calendar-review-close','calendar-review-cancel'].forEach(id=>$(id).onclick=closeReview);
-  $('calendar-review').onclick=async()=>{if(state.syncConflict)return reviewSync();if(!state.syncFailed)return saveSchedule();try{const result=await request('/api/calendar/retry-sync',{});showSave(result.save);}catch(e){message(e.message);}};$('calendar-refresh').onclick=initCalendarTab;
+  $('calendar-review').onclick=async()=>{if(state.syncConflict)return reviewSync();if(!state.syncFailed)return saveSchedule();try{const result=await request('/api/calendar/retry-sync',{});showSave(result.save);}catch(e){message(e.message);}};$('calendar-refresh').onclick=async()=>{if(await initCalendarTab())toast('Calendar refreshed','success');};
   window.refreshCalendarDetails=id=>{if(state.selected===id)openJob(id);};
   $('calendar-team-filter').onchange=e=>{state.teamFilter=e.target.value;render();};
   $('calendar-today').onclick=()=>{state.date=new Date();render();};

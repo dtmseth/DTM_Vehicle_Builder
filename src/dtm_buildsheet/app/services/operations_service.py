@@ -489,8 +489,7 @@ class OperationsService:
         reason = str(correction_reason or "").strip()
         if not normal:
             self._require(actor, Capability.OPERATIONS_CORRECT)
-            if not reason:
-                raise OperationsValidationError("A correction reason is required")
+            reason = reason or "Confirmed out-of-order status change"
 
         now = _utc_iso(self._clock())
         source = self._source(source_client)
@@ -581,8 +580,7 @@ class OperationsService:
                 return OperationsMutationResult(record=current, event=None, unchanged=True)
             self._require(actor, Capability.OPERATIONS_CORRECT)
             reason = str(correction_reason or "").strip()
-            if not reason:
-                raise OperationsValidationError("A correction reason is required")
+            reason = reason or "Confirmed effective-date correction"
             now = _utc_iso(self._clock())
             source = self._source(source_client)
             updated = replace(current)
@@ -609,8 +607,7 @@ class OperationsService:
         reason = str(correction_reason or "").strip()
         if previous == VehicleAvailabilityStatus.DELIVERED:
             self._require(actor, Capability.OPERATIONS_CORRECT)
-            if not reason:
-                raise OperationsValidationError("A correction reason is required")
+            reason = reason or "Confirmed availability status correction"
 
         now = _utc_iso(self._clock())
         source = self._source(source_client)
@@ -694,8 +691,7 @@ class OperationsService:
         reason = str(correction_reason or "").strip()
         if previous == AcceptanceStatus.ACCEPTED and target == AcceptanceStatus.NOT_ACCEPTED:
             self._require(actor, Capability.OPERATIONS_CORRECT)
-            if not reason:
-                raise OperationsValidationError("A correction reason is required")
+            reason = reason or "Confirmed acceptance status correction"
 
         now = _utc_iso(self._clock())
         source = self._source(source_client)

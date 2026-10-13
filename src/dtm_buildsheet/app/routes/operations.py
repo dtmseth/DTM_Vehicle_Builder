@@ -428,16 +428,18 @@ def route_operations(
     except OperationsConflictError:
         send_json(handler, {
             "ok": False,
+            "conflict": True,
             "error": (
-                "This vehicle changed on another device; refresh before continuing"
+                "This vehicle changed while you were editing. Your entries were not discarded."
                 if is_status_update or is_schedule_update or is_acceptance_date
-                else "That vehicle already has an Operations record; refresh before continuing"
+                else "That vehicle already has an Operations record; reload Operations to see it"
             ),
         }, status=409)
     except OperationsAlreadyExistsError:
         send_json(handler, {
             "ok": False,
-            "error": "That vehicle already has an Operations record; refresh before continuing",
+            "conflict": True,
+            "error": "That vehicle already has an Operations record; reload Operations to see it",
         }, status=409)
     except OperationsRepositoryError:
         logger.exception("Operations list query failed")

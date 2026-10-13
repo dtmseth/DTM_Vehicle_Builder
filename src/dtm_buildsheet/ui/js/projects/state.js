@@ -405,6 +405,7 @@ function _ptUnitFleetSummaryCards(units) {
 
 const _PT_PROJECT_TYPES = {build:'Build',service:'Service',offsite:'Off-Site Service'};
 function _ptTypeLabel(project){ return _PT_PROJECT_TYPES[project?.project_type||'build']||'Build'; }
+function _ptTypeClass(project){ return ['service','offsite'].includes(project?.project_type) ? project.project_type : 'build'; }
 function _ptTypeFields(prefix,project={}){
   const type=project.project_type||'build', details=project.service_details||{};
   return `<section class="project-work-fields"><label>Project type<select id="${prefix}-project-type">${Object.entries(_PT_PROJECT_TYPES).map(([key,label])=>`<option value="${key}" ${type===key?'selected':''}>${label}</option>`).join('')}</select></label>

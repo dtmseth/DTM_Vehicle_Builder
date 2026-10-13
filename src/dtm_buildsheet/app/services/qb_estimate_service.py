@@ -1045,21 +1045,112 @@ def _estimate_link_owners(projects) -> dict[str, tuple[str, str]]:
     return owners
 
 
+def _picker_text(value: object, limit: int = 220) -> str:
+    text = _estimate_text_value(value).replace("\x00", "").strip()
+    return text if len(text) <= limit else f"{text[:limit - 1].rstrip()}…"
+
+
+def _estimate_vehicle_fields(estimate: dict) -> list[dict[str, str]]:
+    fields: list[dict[str, str]] = []
+    for item in estimate.get("CustomField") or []:
+        if not isinstance(item, dict):
+            continue
+        label = _picker_text(item.get("Name"), 50)
+        value = _picker_text(
+            item.get("StringValue", item.get("NumberValue", item.get("DateValue", ""))),
+            120,
+        )
+        normalized = label.casefold()
+        if value and any(word in normalized for word in ("vin", "vehicle", "year", "make", "model")):
+            fields.append({"label": label or "Vehicle", "value": value})
+    return fields[:4]
+
+
+def _picker_match_text(value: object) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", str(value or "").casefold()).strip()
+
+
+def _estimate_picker_context(paths: AppPaths, project, unit=None) -> dict:
+    agency_names = {
+        str(value or "").strip()
+        for value in (
+            project.customer.name,
+            project.customer.agency,
+            project.customer.agency_abbreviation,
+            _project_customer_name(paths, project),
+        )
+        if str(value or "").strip()
+    }
+    quote_numbers = {
+        str(value or "").strip().casefold()
+        for value in project.quote_numbers
+        if str(value or "").strip()
+    }
+    if unit is not None:
+        quote_numbers.update(
+            str(reference.quote_number or "").strip().casefold()
+            for reference in unit.quote_references
+            if str(reference.quote_number or "").strip()
+        )
+    return {
+        "agency_names": tuple(agency_names),
+        "build_year": str(project.customer.build_year or getattr(unit, "year", "") or "").strip(),
+        "quote_numbers": frozenset(quote_numbers),
+    }
+
+
 def _estimate_search_row(estimate: dict, owners: dict[str, tuple[str, str]],
-                         owner: tuple[str, str] | None) -> dict:
+                         owner: tuple[str, str] | None,
+                         suggestion_context: dict | None = None) -> dict:
     estimate_id = str(estimate.get("Id") or "").strip()
     customer = estimate.get("CustomerRef") or {}
     linked_owner = owners.get(estimate_id)
-    return {
+    customer_name = _picker_text(customer.get("name") or customer.get("value"), 120)
+    project_name = _picker_text((estimate.get("ProjectRef") or {}).get("name"), 160)
+    customer_memo = _picker_text(estimate.get("CustomerMemo"))
+    private_note = _picker_text(estimate.get("PrivateNote"))
+    vehicle_fields = _estimate_vehicle_fields(estimate)
+    row = {
         "id": estimate_id,
         "number": str(estimate.get("DocNumber") or "").strip(),
-        "customer": str(customer.get("name") or customer.get("value") or "").strip(),
+        "customer": customer_name,
         "date": str(estimate.get("TxnDate") or "").strip(),
         "status": str(estimate.get("TxnStatus") or "").strip(),
         "accepted_date": str(estimate.get("AcceptedDate") or "").strip(),
         "linked_elsewhere": bool(linked_owner and linked_owner != owner),
         "linked_here": bool(owner and linked_owner == owner),
+        "project_name": project_name,
+        "customer_memo": customer_memo,
+        "private_note": private_note,
+        "vehicle_fields": vehicle_fields,
     }
+    searchable = " ".join([
+        row["number"], customer_name, row["date"], row["status"], project_name,
+        customer_memo, private_note,
+        *(f"{field['label']} {field['value']}" for field in vehicle_fields),
+    ])
+    row["search_text"] = searchable.casefold()
+    context = suggestion_context or {}
+    normalized_customer = _picker_match_text(customer_name)
+    agency_match = bool(normalized_customer) and any(
+        len(alias := _picker_match_text(name)) >= 3
+        and (alias in normalized_customer or normalized_customer in alias)
+        for name in context.get("agency_names", ())
+    )
+    build_year = str(context.get("build_year") or "").strip()
+    year_match = bool(build_year and re.search(
+        rf"(?<!\d){re.escape(build_year)}(?!\d)", searchable,
+    ))
+    quote_match = row["number"].casefold() in context.get("quote_numbers", frozenset())
+    row["suggested"] = bool(not row["linked_elsewhere"] and agency_match and year_match)
+    row["suggested_reason"] = (
+        "Agency, build year, and saved quote number match"
+        if row["suggested"] and quote_match
+        else "Agency and build year match"
+        if row["suggested"]
+        else ""
+    )
+    return row
 
 
 def search_quote_estimates(paths: AppPaths, *, query: str, project_id: str = "",
@@ -1069,17 +1160,21 @@ def search_quote_estimates(paths: AppPaths, *, query: str, project_id: str = "",
     if not term or len(term) > 80:
         return {"ok": False, "error": "invalid_quote_number"}
     owner = None
+    suggestion_context = None
     if project_id or individual_id:
         if individual_id:
             loaded = _load_individual(paths, project_id, individual_id)
             if isinstance(loaded, dict):
                 return loaded
+            project, _build_unit, unit = loaded
+            suggestion_context = _estimate_picker_context(paths, project, unit)
         else:
             from ...inputs import project_entry
             try:
-                project_entry.load_project(project_id, paths)
+                project = project_entry.load_project(project_id, paths)
             except FileNotFoundError:
                 return {"ok": False, "error": "unknown_project"}
+            suggestion_context = _estimate_picker_context(paths, project)
         owner = (project_id, individual_id)
     client, error = qb_sync_service._build_client(paths)
     if error:
@@ -1092,7 +1187,7 @@ def search_quote_estimates(paths: AppPaths, *, query: str, project_id: str = "",
         logger.warning("QuickBooks quote-number search failed")
         return {"ok": False, "error": "estimate_lookup_failed"}
     estimates = [
-        _estimate_search_row(row, owners, owner)
+        _estimate_search_row(row, owners, owner, suggestion_context)
         for row in rows
         if str(row.get("Id") or "").strip()
     ]
@@ -1262,12 +1357,15 @@ def list_available_estimates(paths: AppPaths, *, project_id: str, individual_id:
         loaded = _load_individual(paths, project_id, individual_id)
         if isinstance(loaded, dict):
             return loaded
+        project, _build_unit, unit = loaded
+        suggestion_context = _estimate_picker_context(paths, project, unit)
     else:
         from ...inputs import project_entry
         try:
-            project_entry.load_project(project_id, paths)
+            project = project_entry.load_project(project_id, paths)
         except FileNotFoundError:
             return {"ok": False, "error": "unknown_project"}
+        suggestion_context = _estimate_picker_context(paths, project)
     if type(start_position) is not int or not 1 <= start_position <= 100000:
         return {'ok': False, 'error': 'invalid_estimate_page'}
     client, error = qb_sync_service._build_client(paths)
@@ -1286,7 +1384,7 @@ def list_available_estimates(paths: AppPaths, *, project_id: str, individual_id:
         if not ident:
             continue
         estimates.append(_estimate_search_row(
-            row, linked, (project_id, individual_id),
+            row, linked, (project_id, individual_id), suggestion_context,
         ))
     return {'ok': True, 'estimates': estimates,
             'next_position': start_position + 50 if len(rows) == 50 and start_position + 50 <= 100000 else None}

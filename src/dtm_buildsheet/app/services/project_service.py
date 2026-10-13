@@ -427,6 +427,16 @@ def _canonical_vehicle_type(value: str, paths: AppPaths) -> str:
     return resolve_vehicle_type(value, layouts)
 
 
+def _draft_vehicle_identity(unit: BuildUnit, paths: AppPaths) -> dict:
+    """Expose the guided vehicle selection to draft-side compatibility checks."""
+    identity = asdict(unit.vehicle_identity)
+    identity["layout_id"] = _canonical_vehicle_type(
+        identity.get("layout_id") or unit.vehicle_model,
+        paths,
+    )
+    return identity
+
+
 def _project_output_root(paths: AppPaths) -> str:
     """Legacy compatibility hook; project output folders are no longer user-configured."""
     return ""
@@ -1377,6 +1387,12 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
             for draft_id in [unit.draft_id, *(ind.draft_id for ind in unit.individuals)]
             if draft_id
         }
+        draft_units = {
+            draft_id: unit
+            for unit in project.build_units
+            for draft_id in [unit.draft_id, *(ind.draft_id for ind in unit.individuals)]
+            if draft_id
+        }
         recovered_project_notes = False
         for draft_id in draft_ids:
             try:
@@ -1386,6 +1402,15 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 if any(draft.vehicle_info.get(k) != v for k, v in work_info.items()) and (project.project_type != 'build' or 'ProjectType' in draft.vehicle_info):
                     draft.vehicle_info.update(work_info)
                     changed = True
+                draft_unit = draft_units.get(draft_id)
+                if draft_unit is not None:
+                    desired_vehicle_info = {
+                        "VehicleType": _canonical_vehicle_type(draft_unit.vehicle_model, paths),
+                        "VehicleIdentity": _draft_vehicle_identity(draft_unit, paths),
+                    }
+                    if any(draft.vehicle_info.get(key) != value for key, value in desired_vehicle_info.items()):
+                        draft.vehicle_info.update(desired_vehicle_info)
+                        changed = True
                 if draft.project_notes != project.project_notes:
                     draft.project_notes = project.project_notes
                     changed = True
@@ -1526,6 +1551,7 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
 
     vehicle_info: dict = {
         "VehicleType": _canonical_vehicle_type(unit.vehicle_model, paths),
+        "VehicleIdentity": _draft_vehicle_identity(unit, paths),
         "Agency": project.customer.agency,
         "AgencyAbbreviation": project.customer.agency_abbreviation,
         "BuildYear": project.customer.build_year,
@@ -1621,6 +1647,7 @@ def handle_create_individual_draft(
     )
     vehicle_info: dict = {
         "VehicleType": _canonical_vehicle_type(unit.vehicle_model, paths),
+        "VehicleIdentity": _draft_vehicle_identity(unit, paths),
         "Agency": project.customer.agency,
         "AgencyAbbreviation": project.customer.agency_abbreviation,
         "BuildYear": project.customer.build_year,

@@ -32,7 +32,7 @@ Planning forms are hidden for Shop, and Sales has acceptance-date controls witho
       vehicle cards      — detail plus collapsible one-click individual overrides
     schedule editor      — independent optional dates; project or vehicle patch
     history modal        — complete applied event timeline for one vehicle
-    Add Builder vehicle  — legacy/import fallback for unsynchronized Builder vehicles
+    Unsynchronized Builder fallback appears automatically only when Operations is empty
 ```
 
 `ui/js/operations.js` owns access discovery, loading, filtering, and rendering. The header button

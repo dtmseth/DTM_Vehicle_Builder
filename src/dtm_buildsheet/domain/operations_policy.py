@@ -68,8 +68,17 @@ ROLE_CAPABILITIES: dict[AppRole, frozenset[Capability]] = {
     }),
     AppRole.PARTS_EDITOR: frozenset({
         Capability.OPERATIONS_VIEW,
+        Capability.OPERATIONS_AVAILABILITY_UPDATE,
         Capability.OPERATIONS_PARTS_UPDATE,
+        Capability.OPERATIONS_SHOP_UPDATE,
+        Capability.OPERATIONS_TRAY_UPDATE,
+        Capability.OPERATIONS_PROGRAMMING_QC_UPDATE,
+        Capability.OPERATIONS_FINAL_FINISH_UPDATE,
+        Capability.OPERATIONS_DELIVERY_UPDATE,
+        Capability.OPERATIONS_CORRECT,
+        Capability.OPERATIONS_QBO_OBSERVE,
         Capability.PROJECTS_VIEW,
+        Capability.PROJECTS_LIFECYCLE_UPDATE,
         Capability.ESTIMATES_MANAGE,
     }),
     AppRole.SHOP_EDITOR: frozenset({

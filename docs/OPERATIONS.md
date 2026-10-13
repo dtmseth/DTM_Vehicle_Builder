@@ -344,7 +344,8 @@ Phone users only create request rows with `ProcessingStatus=pending`. They do no
 request after creation and receive no direct write path to `DTMVehicleOperations` or
 `DTMVehicleEvents`. The processor owns every other processing/result field. A stale revision is a
 normal `conflict`, not an overwrite. Backward/skipped transitions and corrections are rejected on
-the phone and remain manager-only desktop actions with a required reason.
+the phone and remain correction-capable desktop actions with an explicit confirmation. The desktop
+records a standard audit reason automatically when the user does not supply one.
 
 ### Domain values and normal transitions
 
@@ -356,7 +357,8 @@ the phone and remain manager-only desktop actions with a required reason.
 | Programming & QC | not_ready | not_ready -> ready; ready -> complete |
 | Final Finish | not_ready | not_ready -> ready_for_wash_clean_photos; ready_for_wash_clean_photos -> ready_for_delivery; ready_for_delivery -> delivered |
 
-Identical-state requests are no-ops. Other transitions require correction permission and a reason.
+Identical-state requests are no-ops. Other transitions require correction permission and explicit
+confirmation; no free-text note is required.
 No cross-workstream ordering is enforced.
 
 Calendar and Operations share the existing acceptance fields. Manual corrections store the
@@ -373,7 +375,7 @@ time never substitutes for acceptance. Business-date fields use ISO `YYYY-MM-DD`
 | `AppAdmin` | Application owner/administrator | All workspaces |
 | `BuilderEditor` | Sales/build designer/estimator | Projects / Builder |
 | `OperationsManager` | Production coordinator or trusted workflow corrector | Operations overview |
-| `PartsEditor` | Parts staff and QuickBooks estimate-connection users | Parts queue |
+| `PartsEditor` | Parts manager and QuickBooks estimate-connection users | Operations overview |
 | `ShopEditor` | Shop technicians/build staff | Shop queue |
 | `ProgrammingQcEditor` | Programming and QC staff | Programming & QC queue |
 | `OperationsViewer` | Read-only management/office user | Operations overview |
@@ -395,7 +397,7 @@ assigned to app roles. Otherwise the small user population can receive direct us
 | `operations.programming_qc.update` | Change Programming & QC status |
 | `operations.final_finish.update` | Change Final Finish status |
 | `operations.delivery.update` | Record or correct physical delivery |
-| `operations.correct` | Regress/skip normal status flow with required reason |
+| `operations.correct` | Confirm a regression or skipped normal status step; a standard audit reason is recorded when no note is supplied |
 | `operations.qbo.observe` | Refresh shared QBO observation fields |
 | `projects.view` | Read Builder projects, vehicle details, build summaries, PDFs, folders, and photos |
 | `projects.edit` | Create/edit Builder projects and vehicle facts |
@@ -412,7 +414,7 @@ assigned to app roles. Otherwise the small user population can receive direct us
 | `AppAdmin` | all capabilities |
 | `BuilderEditor` | `projects.view`, `projects.edit`, `projects.lifecycle.update`, `estimates.manage`, `operations.view`, `operations.availability.update`, `operations.parts.update`, `operations.qbo.observe` |
 | `OperationsManager` | `projects.view`; all `operations.*`, including scheduling, delivery, and correction; `projects.lifecycle.update` |
-| `PartsEditor` | `projects.view`, `estimates.manage`, `operations.view`, `operations.parts.update` |
+| `PartsEditor` | `projects.view`, `projects.lifecycle.update`, `estimates.manage`, `operations.view`, every Operations status-update capability, `operations.correct`, `operations.qbo.observe` |
 | `ShopEditor` | `projects.view`, `operations.view`, `operations.shop.update`, `operations.tray.update`, `operations.final_finish.update` |
 | `ProgrammingQcEditor` | `projects.view`, `operations.view`, `operations.programming_qc.update`, `operations.final_finish.update` |
 | `OperationsViewer` | `projects.view`, `operations.view` |

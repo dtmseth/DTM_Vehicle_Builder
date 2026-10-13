@@ -288,10 +288,10 @@ def flow_tab_load(page, base_url: str) -> None:
     page.locator(".operations-project-group > summary").click()
     page.wait_for_selector(".operations-vehicle:visible")
     assert "1FTFW1E50NFA12345" in page.locator(".operations-vehicle").first.inner_text()
-    assert page.locator("#operations-add-builder").is_visible()
+    assert page.locator("#operations-add-builder").count() == 0
     assert page.locator(".operations-project-group").count() == 1
     assert "3 VEHICLES" in page.locator(".operations-project-group > summary").inner_text().upper()
-    assert "NO ESTIMATE CONNECTED" in page.locator(".operations-project-group > summary").inner_text().upper()
+    assert "3/3 QUOTES NEED CONNECTION" in page.locator(".operations-project-group > summary").inner_text().upper()
     assert page.locator(".operations-status-grid .operations-status").nth(1).evaluate(
         "item => item.classList.contains('operations-status-tone-unstarted')"
     )
@@ -544,7 +544,9 @@ def flow_tab_load(page, base_url: str) -> None:
     page.wait_for_selector(".operations-project-group")
     if not page.locator(".operations-project-group").evaluate("element => element.open"):
         page.locator(".operations-project-group > summary").click()
-    page.locator('[data-operations-history-vehicle="operations-preview-vehicle"]').click()
+    history_action = page.locator('[data-operations-history-vehicle="operations-preview-vehicle"]').first
+    history_action.locator("xpath=ancestor::details[contains(@class, 'operations-action-menu')][1]/summary").click()
+    history_action.click()
     page.wait_for_selector("#operations-history-modal.open")
     page.wait_for_selector(".operations-timeline-event")
     history_text = page.locator("#operations-history-body").inner_text().upper()

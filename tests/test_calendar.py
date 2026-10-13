@@ -542,7 +542,7 @@ eval(source.slice(source.indexOf('  async function stageDrop('),source.indexOf('
  assert.equal(dragPlacement({dataset:{},disabled:true},200),null);
  const ops=fs.readFileSync(process.argv[2],'utf8');
  const esc=x=>String(x||''),_operationsEscAttr=esc,_operationsLabel=esc,_operationsDate=esc;
- const _operationsEditableWorkstreams=()=>[],_operationsCanEditAcceptanceDate=()=>false,_operationsCanSchedule=()=>false,_operationsStatusTone=()=>'';
+	 const _operationsEditableWorkstreams=()=>[],_operationsCanEditAcceptanceDate=()=>false,_operationsCanSchedule=()=>false,_operationsCanManageEstimates=()=>false,_operationsStatusTone=()=>'';
  eval(ops.slice(ops.indexOf('function _operationsVehicleMarkup('),ops.indexOf('function _operationsQuickStatusMarkup(')));
  const markup=_operationsVehicleMarkup({vehicle_id:'v',project_state:'completed',shop_status:'complete',shop_completed_at:'2026-09-17',
    final_finish_status:'delivered',ready_for_delivery_at:'2026-09-18',delivered_date:'2026-09-21',build_team_names:["David's Team"],tray_status:'complete',tray_completed_at:'2026-09-16'});
@@ -552,11 +552,11 @@ eval(source.slice(source.indexOf('  async function stageDrop('),source.indexOf('
  eval(ops.slice(ops.indexOf('function _operationsProjectGroupMarkup('),ops.indexOf('function _operationsBindRowActions(')));
  for(const [project_type,label] of [['build','Build'],['service','Service'],['offsite','Off-Site Service']]){
   const group=_operationsProjectGroupMarkup({projectId:'p',vehicles:[{vehicle_id:'v',project_type}]},false);
-  assert(group.slice(0,group.indexOf('</summary>')).includes('project-type-badge">'+label+'</span>'));
+	  assert(group.slice(0,group.indexOf('</summary>')).includes('project-type-badge-'+project_type+'">'+label+'</span>'));
  }
-	 assert(ops.includes('$("operations-add-builder")?.addEventListener("click"'));
+	 assert(!ops.includes('$("operations-add-builder")?.addEventListener("click"'));
 	 assert(ops.includes('_operationsLoadProjectionPreview({ open: true })'));
-	 assert(fs.readFileSync(process.argv[2].replace('/js/operations.js','/index.html'),'utf8').includes('id="operations-add-builder"'));
+	 assert(!fs.readFileSync(process.argv[2].replace('/js/operations.js','/index.html'),'utf8').includes('id="operations-add-builder"'));
 })().catch(error=>{console.error(error);process.exitCode=1;});
 """
     root = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui/js'
@@ -660,7 +660,8 @@ for(const view of ['week','month']){
  for(const [project_type,label] of [['build','Build'],['service','Service'],['offsite','Off-Site Service']]){
   assert(statusBadges({...job,project_type}).includes('>'+label+'</span>'));
   const typed=booking({...job,project_type},[],['2026-09-17'],element());
-  assert.equal(typed.children[0].children.find(c=>c.className==='project-type-badge').textContent,label);
+	  const typeBadge=typed.children[0].children.find(c=>String(c.className||'').split(' ').includes('project-type-badge'));
+	  assert.equal(typeBadge.textContent,label);assert(typeBadge.className.includes('project-type-badge-'+project_type));
  }
  assert(card.attributes['aria-label'].includes('VIN ending 345678'));assert(card.title.includes('VIN ending 345678'));
  card.onclick();assert.deepEqual(opened.pop(),['project','p1']);

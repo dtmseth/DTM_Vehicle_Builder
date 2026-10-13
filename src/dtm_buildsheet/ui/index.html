@@ -110,7 +110,6 @@
       </div>
       <div class="operations-title-actions">
         <span class="operations-readonly-badge">Role-based access</span>
-        <button class="btn btn-secondary btn-sm" id="operations-add-builder" type="button" hidden>Add Builder vehicle</button>
         <button class="btn btn-secondary btn-sm" id="operations-refresh" type="button">Refresh</button>
       </div>
     </div>
@@ -163,10 +162,6 @@
       <div class="form-group operations-status-date" id="operations-status-date-wrap" hidden>
         <label for="operations-status-date">Effective date <span>optional</span></label>
         <input id="operations-status-date" type="date">
-      </div>
-      <div class="form-group operations-status-reason" id="operations-status-reason-wrap">
-        <label for="operations-status-reason">Correction note <span>only needed for reversals or skipped steps</span></label>
-        <textarea id="operations-status-reason" rows="2" placeholder="Explain a correction when required"></textarea>
       </div>
       <div class="operations-status-guidance" id="operations-status-guidance" role="status"></div>
       <div class="operations-status-progress" id="operations-status-progress" role="status" hidden></div>
@@ -653,7 +648,7 @@
   </div>
 
 <!-- ── ADD PART TYPE MODAL ── -->
-<div class="modal-overlay" id="addpart-modal">
+<div class="modal-overlay" id="addpart-modal" role="dialog" aria-modal="true" aria-label="Add new part type">
   <div class="modal" style="max-width:700px">
     <div class="modal-title">Add New Part Type
       <button class="modal-close" id="addpart-modal-close">✕</button>
@@ -968,7 +963,7 @@
   </div>
 
   <!-- ── PARTS DB modals ── -->
-  <div class="modal-overlay" id="pdb-modal">
+  <div class="modal-overlay" id="pdb-modal" role="dialog" aria-modal="true" aria-labelledby="pdb-modal-title">
     <div class="modal" style="width:720px">
       <div class="modal-title">
         <span id="pdb-modal-title">Edit</span>
@@ -983,7 +978,7 @@
   </div>
 
   <!-- ── SKU GRID modal (create-new entities + move SKU) ── -->
-  <div class="modal-overlay" id="skg-modal">
+  <div class="modal-overlay" id="skg-modal" role="dialog" aria-modal="true" aria-labelledby="skg-modal-title">
     <div class="modal" style="width:460px">
       <div class="modal-title">
         <span id="skg-modal-title">Create</span>
@@ -2115,10 +2110,8 @@
 </div>
 
 <!-- ══ QUICKBOOKS ESTIMATE MODAL ══
-     Drives the per-vehicle "Create QuickBooks Estimate" flow from the Builds
-     tab. Body content is rendered from JS (detail_builds.js): either a list of
-     blocking parts, a create-confirmation with line count + total, or a batch
-     result summary. -->
+     Shared by the per-vehicle estimate connector and estimate creation flow.
+     Body content is rendered from detail_builds.js. -->
 <div class="modal-overlay" id="qb-est-modal" role="dialog" aria-modal="true" hidden>
   <div class="modal" style="width:720px">
     <div class="modal-title">
@@ -2291,7 +2284,7 @@
 
 
 <!-- ══ EDIT PART MODAL ══ -->
-<div class="modal-overlay" id="edit-modal">
+<div class="modal-overlay" id="edit-modal" role="dialog" aria-modal="true" aria-label="Edit part">
   <div class="modal">
     <div class="modal-title">Edit Part <button class="modal-close" id="modal-close">✕</button></div>
     <div class="form-row">
@@ -2434,7 +2427,7 @@
 </div>
 
 <!-- ══ PARTS LIBRARY MODAL ══ -->
-<div class="modal-overlay" id="parts-modal">
+<div class="modal-overlay" id="parts-modal" role="dialog" aria-modal="true" aria-labelledby="parts-modal-title">
   <div class="modal" style="width:700px">
     <div class="modal-title">
       <span id="parts-modal-title">Add Part</span>
@@ -2497,7 +2490,7 @@
 <footer>DTM Vehicle Builder {{APP_VERSION}} · local server on port 7655</footer>
 
 <!-- ══ ADD LOCATION MODAL ══ -->
-<div class="modal-overlay" id="add-loc-modal">
+<div class="modal-overlay" id="add-loc-modal" role="dialog" aria-modal="true" aria-label="Add location">
   <div class="modal">
     <div class="modal-title">Add Location <button class="modal-close" id="alm-close">✕</button></div>
 
@@ -2531,7 +2524,7 @@
 </div>
 
 <!-- ── Add Fixture Modal ── -->
-<div class="modal-overlay" id="add-fixture-modal">
+<div class="modal-overlay" id="add-fixture-modal" role="dialog" aria-modal="true" aria-label="Add fixture part">
   <div class="modal" style="width:420px">
     <div class="modal-title">Add Fixture Part <button class="modal-close" id="afm-close">✕</button></div>
     <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Select a part from the catalog to add as a fixture for <strong id="afm-vehicle-label"></strong>. The part will be marked <code>is_fixture</code> and its position can be set per-view below.</p>

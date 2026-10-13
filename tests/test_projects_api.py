@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from dataclasses import asdict
 from pathlib import Path
 
@@ -42,6 +44,66 @@ def _paths(tmp_path: Path) -> AppPaths:
         bundled_presets_dir=BUNDLED_PRESETS_DIR,
         workspace_presets_dir=tmp_path / "presets",
     )
+
+
+def test_part_picker_vehicle_tags_match_rich_identity_and_make_fallback():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is required for the Part Picker compatibility check")
+    source_path = Path(__file__).parents[1] / "src/dtm_buildsheet/ui/js/part_picker.js"
+    script = r'''
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const source = fs.readFileSync(process.argv[1], "utf8");
+const start = source.indexOf("function _pickerVehicle()");
+const end = source.indexOf("function _pickerOpenPanel", start);
+if (start < 0 || end < 0) throw new Error("vehicle compatibility helpers not found");
+eval(source.slice(start, end));
+
+globalThis._meDraft = {vehicle_info: {
+  VehicleType: "RAM 1500",
+  VehicleIdentity: {make: "Ram", model: "1500", package: "SSV"},
+}};
+assert.equal(_skuCompatible({vehicle_tags: ["RAM"]}, "RAM 1500"), true);
+assert.equal(_skuCompatible({vehicle_tags: ["RAM 1500"]}, "RAM 1500"), true);
+assert.equal(_skuCompatible({vehicle_tags: ["RAM-1500"]}, "RAM 1500"), true);
+assert.equal(_skuCompatible({vehicle_tags: ["RAM 2500"]}, "RAM 1500"), false);
+
+globalThis._meDraft = {vehicle_info: {
+  VehicleType: "F-350",
+  VehicleIdentity: {make: "Ford", model: "F-350", package: ""},
+}};
+assert.equal(_skuCompatible({vehicle_tags: ["FORD"]}, "F-350"), true);
+assert.equal(_skuCompatible({vehicle_tags: ["FORD F-350"]}, "F-350"), true);
+assert.equal(_skuCompatible({vehicle_tags: ["SUPER-DUTY"]}, "F-350"), true);
+
+globalThis._meDraft = {vehicle_info: {
+  VehicleType: "CHEVROLET SILVERADO 1500",
+  VehicleIdentity: {make: "Chevrolet", model: "Silverado 1500", package: "SSV"},
+}};
+assert.equal(_skuCompatible({vehicle_tags: ["CHEVY-1500"]}, "CHEVROLET SILVERADO 1500"), true);
+assert.equal(_skuCompatible({vehicle_tags: ["CHEVROLET SILVERADO"]}, "CHEVROLET SILVERADO 1500"), true);
+assert.equal(_skuCompatible({vehicle_tags: ["CHEVROLET SILVERADO 1500"]}, "CHEVROLET SILVERADO 1500"), true);
+assert.equal(_skuCompatible({vehicle_tags: ["any"]}, "CHEVROLET SILVERADO 1500"), true);
+
+globalThis._meDraft = {vehicle_info: {
+  VehicleType: "RAM 2500",
+  VehicleIdentity: {make: "Ram", model: "2500 HD", package: "Emergency Response Vehicle"},
+}};
+assert.equal(_skuCompatible({vehicle_tags: ["RAM 2500"]}, "RAM 2500"), true);
+
+globalThis._meDraft = {vehicle_info: {
+  VehicleType: "GMC SIERRA",
+  VehicleIdentity: {make: "GMC", model: "Sierra 2500 HD", package: ""},
+}};
+assert.equal(_skuCompatible({vehicle_tags: ["GMC SIERRA"]}, "GMC SIERRA"), true);
+'''
+    result = subprocess.run(
+        [node, "-e", script, str(source_path)],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def _project_body(**overrides) -> dict:
@@ -957,6 +1019,42 @@ class TestHandleCreateDraft:
         assert info["SalesRep"] == "Alice"
         assert info["BuildType"] == "Patrol"
         assert info["ProjectID"]
+
+    def test_vehicle_identity_is_available_to_draft_part_compatibility(self, tmp_path):
+        paths = _paths(tmp_path)
+        create = handle_save_project(_project_body(build_units=[{
+            "unit_id": "ram-unit",
+            "vehicle_model": "RAM 1500",
+            "vehicle_identity": {
+                "source": "catalog",
+                "model_year": "2026",
+                "make": "Ram",
+                "model": "1500",
+                "package": "SSV",
+                "layout_id": "RAM 1500",
+                "display_name": "2026 Ram 1500 SSV",
+            },
+            "build_type": "Patrol",
+            "quantity": 1,
+        }]), paths)
+
+        result = handle_create_draft(create["project_id"], "ram-unit", paths)
+
+        draft = load_draft(result["draft_id"], paths.workspace_drafts_dir)
+        assert draft.vehicle_info["VehicleType"] == "RAM 1500"
+        assert draft.vehicle_info["VehicleIdentity"] == {
+            "source": "catalog",
+            "model_year": "2026",
+            "make": "Ram",
+            "model": "1500",
+            "package": "SSV",
+            "category": "automobile",
+            "catalog_source": "",
+            "catalog_make_id": "",
+            "catalog_model_id": "",
+            "layout_id": "RAM 1500",
+            "display_name": "2026 Ram 1500 SSV",
+        }
 
     def test_new_vehicle_block_set(self, tmp_path):
         paths = _paths(tmp_path)

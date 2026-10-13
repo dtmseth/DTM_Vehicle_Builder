@@ -124,7 +124,11 @@ def test_access_session_maps_known_roles_and_ignores_unknown_values():
     assert session["roles"] == ["PartsEditor"]
     assert "operations.view" in session["capabilities"]
     assert "operations.parts.update" in session["capabilities"]
-    assert "operations.shop.update" not in session["capabilities"]
+    assert "operations.shop.update" in session["capabilities"]
+    assert "operations.final_finish.update" in session["capabilities"]
+    assert "operations.correct" in session["capabilities"]
+    assert "operations.qbo.observe" in session["capabilities"]
+    assert "projects.lifecycle.update" in session["capabilities"]
     assert "projects.view" in session["capabilities"]
     assert session["default_workspace"] == "operations"
 
@@ -832,7 +836,8 @@ def test_status_route_rejects_stale_revision_and_unauthorized_role(monkeypatch, 
         route_operations, "POST", "/api/operations/status", body, paths,
     )
     assert (status, handled) == (409, True)
-    assert "another device" in payload["error"]
+    assert payload["conflict"] is True
+    assert "entries were not discarded" in payload["error"]
     assert repository.get_vehicle("vehicle-1").revision == 0
 
     set_active_bundle(_bundle(user=_user("OperationsViewer"), operations=repository))

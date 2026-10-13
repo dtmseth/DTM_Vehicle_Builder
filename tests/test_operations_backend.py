@@ -84,12 +84,29 @@ class TestOperationsPolicy:
 
     def test_multiple_roles_union_capabilities(self):
         capabilities = capabilities_for_roles([
-            AppRole.PARTS_EDITOR,
+            AppRole.SHOP_EDITOR,
             AppRole.PROGRAMMING_QC_EDITOR,
         ])
-        assert Capability.OPERATIONS_PARTS_UPDATE in capabilities
+        assert Capability.OPERATIONS_SHOP_UPDATE in capabilities
         assert Capability.OPERATIONS_PROGRAMMING_QC_UPDATE in capabilities
-        assert Capability.OPERATIONS_SHOP_UPDATE not in capabilities
+        assert Capability.OPERATIONS_PARTS_UPDATE not in capabilities
+
+    def test_parts_manager_can_update_every_operations_status_and_complete_projects(self):
+        capabilities = capabilities_for_roles([AppRole.PARTS_EDITOR])
+
+        assert {
+            Capability.OPERATIONS_AVAILABILITY_UPDATE,
+            Capability.OPERATIONS_PARTS_UPDATE,
+            Capability.OPERATIONS_SHOP_UPDATE,
+            Capability.OPERATIONS_TRAY_UPDATE,
+            Capability.OPERATIONS_PROGRAMMING_QC_UPDATE,
+            Capability.OPERATIONS_FINAL_FINISH_UPDATE,
+            Capability.OPERATIONS_DELIVERY_UPDATE,
+            Capability.OPERATIONS_CORRECT,
+            Capability.OPERATIONS_QBO_OBSERVE,
+            Capability.PROJECTS_LIFECYCLE_UPDATE,
+            Capability.ESTIMATES_MANAGE,
+        } <= capabilities
 
     def test_admin_has_every_known_capability(self):
         assert capabilities_for_roles([AppRole.APP_ADMIN]) == ALL_CAPABILITIES
@@ -423,8 +440,8 @@ class TestOperationsTransitions:
         assert corrected.record.vehicle_available_date == "2026-08-31"
         assert repository.list_events("vehicle-1")[-1].previous_value == "2026-09-01"
 
-    def test_invalid_forward_skip_requires_correction_permission_and_reason(self):
-        service, _, _ = _service()
+    def test_forward_skip_requires_correction_permission_but_no_free_text(self):
+        service, repository, _ = _service()
 
         with pytest.raises(OperationsAuthorizationError, match="operations.correct"):
             service.change_status(
@@ -437,15 +454,19 @@ class TestOperationsTransitions:
                 correction_reason="Imported already-complete work",
             )
 
-        with pytest.raises(OperationsValidationError, match="reason"):
-            service.change_status(
-                vehicle_id="vehicle-1",
-                workstream="shop",
-                new_status="complete",
-                actor=_actor(AppRole.OPERATIONS_MANAGER),
-                request_id="missing-reason",
-                source_client="builder_desktop",
-            )
+        completed = service.change_status(
+            vehicle_id="vehicle-1",
+            workstream="shop",
+            new_status="complete",
+            actor=_actor(AppRole.PARTS_EDITOR),
+            request_id="confirmed-skip",
+            source_client="builder_desktop",
+        )
+
+        assert completed.record.shop_status == "complete"
+        assert repository.list_events("vehicle-1")[-1].reason == (
+            "Confirmed out-of-order status change"
+        )
 
     def test_authorized_regression_clears_current_cycle_date_but_keeps_history(self):
         service, repository, _ = _service()

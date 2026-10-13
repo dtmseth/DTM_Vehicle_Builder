@@ -149,6 +149,11 @@ function _operationsCanSchedule() {
     (_OPERATIONS.session?.capabilities || []).includes("operations.schedule.update");
 }
 
+function _operationsCanManageEstimates() {
+  return window.DTM_QUICKBOOKS_UI_ENABLED === true &&
+    (_OPERATIONS.session?.capabilities || []).includes("estimates.manage");
+}
+
 function _operationsCanView(session) {
   return !!session?.authenticated &&
     (session.capabilities || []).includes("operations.view") &&
@@ -163,20 +168,17 @@ function _operationsCanAddBuilderVehicle(session) {
 
 async function initOperationsAccess() {
   const button = $("operations-header-tab");
-  const addBuilderButton = $("operations-add-builder");
   if (!button) return null;
   try {
     const session = await api("/api/operations/session");
     _OPERATIONS.session = session;
     if (typeof applyAppAccessSession === "function") applyAppAccessSession(session);
     else button.hidden = !_operationsCanView(session);
-    if (addBuilderButton) addBuilderButton.hidden = !_operationsCanAddBuilderVehicle(session);
     return session;
   } catch (error) {
     console.warn("Operations access check failed", error);
     if (typeof applyAppAccessSession === "function") applyAppAccessSession(null);
     else button.hidden = true;
-    if (addBuilderButton) addBuilderButton.hidden = true;
     return null;
   }
 }
@@ -223,7 +225,7 @@ function _operationsFollowVehicle(vehicleId) {
 }
 
 async function initOperationsTab({ followVehicleId = null, anchor = null } = {}) {
-  if (_OPERATIONS.loading) return;
+  if (_OPERATIONS.loading) return false;
   _OPERATIONS.loading = true;
   const keepView = !!_OPERATIONS.payload && !$("tab-operations").hidden && !$("operations-content").hidden;
   const view = keepView ? _operationsCaptureView(anchor) : null;
@@ -233,12 +235,12 @@ async function initOperationsTab({ followVehicleId = null, anchor = null } = {})
     const session = await initOperationsAccess();
     if (!_operationsCanView(session)) {
       _operationsShowMessage(_operationsAccessMessage(session), "warning");
-      return;
+      return false;
     }
     const payload = await api("/api/operations/vehicles");
     if (!payload?.ok) {
       loadError(payload?.error || "Operations data is unavailable");
-      return;
+      return false;
     }
     _OPERATIONS.payload = payload;
     _OPERATIONS.projectionPreview = null;
@@ -248,9 +250,11 @@ async function initOperationsTab({ followVehicleId = null, anchor = null } = {})
     if (!(payload.vehicles || []).length && _operationsCanAddBuilderVehicle(session)) {
       await _operationsLoadProjectionPreview({ open: true, quiet: true });
     }
+    return true;
   } catch (error) {
     console.error("Operations load failed", error);
     loadError("Operations data is temporarily unavailable");
+    return false;
   } finally {
     _OPERATIONS.loading = false;
   }
@@ -424,6 +428,9 @@ function _operationsProjectMode(project) {
 function _operationsVehicleMode(vehicle) {
   const state = String(vehicle.project_state || "active");
   if (state === "inactive" || state === "completed") return state;
+  // A delivered vehicle is operationally complete even while sibling vehicles
+  // keep the shared Builder project active.
+  if (String(vehicle.final_finish_status || "") === "delivered") return "completed";
   return vehicle.acceptance_status === "accepted" ? "active" : "started";
 }
 
@@ -554,6 +561,19 @@ function _operationsProjectGroupMarkup(project, open) {
   const progress = ["started", "active"].includes(mode)
     ? _operationsProjectProgress(vehicles)
     : null;
+  const connectedQuotes = vehicles.filter(vehicle =>
+    Boolean(vehicle.qbo_estimate_id || vehicle.qb_estimate_id)
+  ).length;
+  const quotesNeedingConnection = Math.max(0, vehicles.length - connectedQuotes);
+  const quoteStatus = quotesNeedingConnection
+    ? `${quotesNeedingConnection}/${vehicles.length} quotes need connection`
+    : "All quotes connected";
+  const quoteTarget = vehicles.find(vehicle =>
+    !(vehicle.qbo_estimate_id || vehicle.qb_estimate_id)
+  ) || vehicles[0];
+  const projectType = ["service", "offsite"].includes(first.project_type)
+    ? first.project_type
+    : "build";
   const deadline = _operationsProjectSortInfo(project).deadline;
   const split = allVehicles.length > vehicles.length;
   const otherCount = Math.max(0, allVehicles.length - vehicles.length);
@@ -572,10 +592,16 @@ function _operationsProjectGroupMarkup(project, open) {
   return `<details class="operations-project-group" data-operations-project-id="${_operationsEscAttr(project.projectId)}" data-operations-view-key="${_operationsEscAttr('project:' + project.projectId)}"${open ? " open" : ""}>
     <summary>
       <div class="operations-project-identity">
-        <strong>${esc(projectName)} <span class="project-type-badge">${esc(({build:"Build",service:"Service",offsite:"Off-Site Service"})[first.project_type||"build"] || "Build")}</span></strong>
+        <strong>${esc(projectName)}</strong>
+        <span class="operations-project-type-row"><span class="project-type-badge project-type-badge-${projectType}">${esc(({build:"Build",service:"Service",offsite:"Off-Site Service"})[projectType])}</span></span>
         <span>${esc(meta)}</span>
       </div>
-      <span class="operations-project-progress">${progress ? `<span class="proj-progress-badge proj-progress-badge-${progress.key}">${esc(progress.label)}</span>` : ""}</span>
+      <span class="operations-project-progress">
+        ${_operationsCanManageEstimates() && quoteTarget
+          ? `<button type="button" class="operations-quote-status operations-quote-status-${quotesNeedingConnection ? "missing" : "complete"} operations-badge-action" data-operations-estimate-vehicle="${_operationsEscAttr(quoteTarget.vehicle_id)}">${esc(quoteStatus)}</button>`
+          : `<span class="operations-quote-status operations-quote-status-${quotesNeedingConnection ? "missing" : "complete"}">${esc(quoteStatus)}</span>`}
+        ${progress && !String(progress.key || "").startsWith("estimate-") ? `<span class="proj-progress-badge proj-progress-badge-${progress.key}">${esc(progress.label)}</span>` : ""}
+      </span>
       <span class="operations-project-chevron" aria-hidden="true">⌄</span>
     </summary>
     <div class="operations-project-body">
@@ -598,7 +624,13 @@ function _operationsProjectGroupMarkup(project, open) {
 }
 
 function _operationsBindRowActions() {
-  document.querySelectorAll("[data-calendar-vehicle]").forEach(button => button.addEventListener("click", () => openCalendarVehicle(button.dataset.calendarVehicle)));
+  document.querySelectorAll("[data-calendar-vehicle]").forEach(button => button.addEventListener("click", event => {
+    if (button.closest?.("summary")) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    openCalendarVehicle(button.dataset.calendarVehicle);
+  }));
   document.querySelectorAll("[data-operations-quick-status]").forEach(button => {
     button.addEventListener("click", () => _operationsApplyQuickStatus(button));
   });
@@ -620,7 +652,19 @@ function _operationsBindRowActions() {
     });
   });
   document.querySelectorAll('[data-operations-accepted-date]').forEach(button=>{
-    button.onclick=()=>openAcceptanceDateEditor(button.dataset.operationsAcceptedDate);
+    button.onclick=event=>{
+      if (button.closest?.("summary")) { event.preventDefault(); event.stopPropagation(); }
+      openAcceptanceDateEditor(button.dataset.operationsAcceptedDate);
+    };
+  });
+  document.querySelectorAll("[data-operations-estimate-vehicle]").forEach(button => {
+    button.addEventListener("click", event => {
+      if (button.closest?.("summary")) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      _operationsOpenEstimateConnection(button.dataset.operationsEstimateVehicle);
+    });
   });
   document.querySelectorAll("[data-operations-schedule-project]").forEach(button => {
     button.addEventListener("click", () => {
@@ -644,6 +688,36 @@ function _operationsBindRowActions() {
       );
     });
   });
+  document.querySelectorAll(".operations-action-menu").forEach(menu => {
+    menu.addEventListener("toggle", () => {
+      if (!menu.open) return;
+      document.querySelectorAll(".operations-action-menu[open]").forEach(other => {
+        if (other !== menu) other.open = false;
+      });
+    });
+    menu.querySelectorAll("button").forEach(button => {
+      button.addEventListener("click", () => { menu.open = false; });
+    });
+  });
+}
+
+async function _operationsOpenEstimateConnection(vehicleId) {
+  const vehicle = (_OPERATIONS.payload?.vehicles || [])
+    .find(item => item.vehicle_id === vehicleId);
+  if (!vehicle || !_operationsCanManageEstimates() ||
+      typeof window.PT_linkQbEstimate !== "function" || typeof _ptLoadAll !== "function") {
+    toast("Estimate connections are unavailable", "error");
+    return;
+  }
+  try {
+    await _ptLoadAll();
+    window.PT_linkQbEstimate(vehicle.project_id, vehicle.vehicle_id, async () => {
+      await initOperationsTab({ followVehicleId: vehicle.vehicle_id });
+    });
+  } catch (error) {
+    console.error("Operations estimate connection could not open", error);
+    toast("Estimate connections are temporarily unavailable", "error");
+  }
 }
 
 function _operationsProjectionPreviewMarkup(preview) {
@@ -696,6 +770,54 @@ function _operationsRequestId() {
   return globalThis.crypto?.randomUUID
     ? globalThis.crypto.randomUUID()
     : `operations-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function _operationsConflictValue(change, vehicle) {
+  const value = change.read ? change.read(vehicle) : vehicle?.[change.field];
+  return String(value == null ? "" : value);
+}
+
+async function _operationsSaveWithConflictRecovery(path, body, vehicle, changes) {
+  let result = await api(path, body);
+  if (!result?.conflict) return result;
+
+  const latestPayload = await api("/api/operations/vehicles");
+  const latest = latestPayload?.ok
+    ? (latestPayload.vehicles || []).find(item => item.vehicle_id === vehicle.vehicle_id)
+    : null;
+  if (!latest) {
+    return {
+      ok: false,
+      error: "This vehicle changed while you were editing. Your entries are still here; reload Operations and try again.",
+    };
+  }
+
+  const overlap = changes.find(change => {
+    const current = _operationsConflictValue(change, latest);
+    return current !== String(change.before ?? "") && current !== String(change.after ?? "");
+  });
+  Object.assign(vehicle, latest);
+  if (overlap) {
+    const current = _operationsConflictValue(overlap, latest);
+    return {
+      ok: false,
+      conflict: true,
+      error: `${overlap.label} changed to ${overlap.format ? overlap.format(current) : _operationsLabel(current)} while you were editing. Your selection is still here; review the current value and save again.`,
+    };
+  }
+
+  result = await api(path, {
+    ...body,
+    expected_revision: latest.revision,
+    request_id: _operationsRequestId(),
+  });
+  if (result?.conflict) {
+    return {
+      ...result,
+      error: "This vehicle changed again while the save was retrying. Your entries are still here; review the current values and save again.",
+    };
+  }
+  return result;
 }
 
 function _operationsCreateProjection(vehicle, requestId = _operationsRequestId()) {
@@ -825,45 +947,75 @@ function _operationsVehicleMarkup(vehicle) {
     : vehicle.schedule_bucket === "unscheduled"
       ? "Unscheduled"
       : `Week of ${_operationsDate(vehicle.scheduled_week_of)}`;
-  const qbo = vehicle.qbo_estimate_id
-    ? `Estimate ${vehicle.qbo_estimate_number || vehicle.qbo_estimate_id}`
-      + ` · ${estimateSendDetail(vehicle)}`
-      + (vehicle.qbo_estimate_status ? ` · ${vehicle.qbo_estimate_status}` : "")
-      + (vehicle.qbo_checked_at ? ` · checked ${_operationsDateTime(vehicle.qbo_checked_at)}` : "")
-      + (vehicle.qbo_observation_stale ? " · data may be stale" : "")
-    : "No Estimate Connected";
+  const estimateDetail = vehicle.qbo_estimate_id
+    ? [estimateSendDetail(vehicle), vehicle.qbo_estimate_status,
+      vehicle.qbo_checked_at ? `Checked ${_operationsDateTime(vehicle.qbo_checked_at)}` : "",
+      vehicle.qbo_observation_stale ? "Data may be stale" : ""].filter(Boolean).join(" · ")
+    : "";
+  const availabilityDate = vehicle.vehicle_availability_status === "delivered"
+    ? vehicle.delivered_date
+    : vehicle.vehicle_availability_status === "at_dtm"
+      ? vehicle.vehicle_at_dtm_date
+      : vehicle.vehicle_availability_status === "ready_for_pickup"
+        ? vehicle.vehicle_available_date
+        : "";
+  const partsDate = vehicle.parts_status === "parts_ready"
+    ? vehicle.parts_ready_at
+    : vehicle.parts_status === "received"
+      ? vehicle.parts_received_at
+      : vehicle.parts_status === "ordered"
+        ? vehicle.parts_ordered_at
+        : "";
+  const shopDate = vehicle.shop_status === "complete"
+    ? vehicle.shop_completed_at
+    : vehicle.shop_status === "in_progress"
+      ? vehicle.shop_started_at
+      : "";
+  const planFacts = [
+    [(vehicle.build_team_names || []).length ? "Build team" : "", (vehicle.build_team_names || []).join(" + ")],
+    [vehicle.planned_start_date ? "Planned start" : "", _operationsDate(vehicle.planned_start_date)],
+    [vehicle.target_finish_date ? "Estimated ready" : "", _operationsDate(vehicle.target_finish_date)],
+    [vehicle.must_deliver_by_date ? `Must deliver${vehicle.must_deliver_override_date ? " · Manual" : ""}` : "", _operationsDate(vehicle.must_deliver_by_date)],
+  ].filter(([factLabel]) => factLabel);
   const canEdit = _operationsEditableWorkstreams().length > 0;
+  const acceptanceIsAction = _operationsCanEditAcceptanceDate() &&
+    vehicle.acceptance_status === "accepted";
+  const acceptanceTag = acceptanceIsAction ? "button" : "span";
+  const acceptanceBadge = `<${acceptanceTag}
+    class="operations-pill operations-pill-${esc(vehicle.acceptance_status)}${acceptanceIsAction ? " operations-badge-action" : ""}"
+    ${acceptanceIsAction ? `type="button" data-operations-accepted-date="${_operationsEscAttr(vehicle.vehicle_id)}"` : ""}>${esc(_operationsLabel(vehicle.acceptance_status))}${vehicle.acceptance_status === "accepted" && (vehicle.accepted_date || vehicle.accepted_at) ? `<small>${esc(_operationsDate(vehicle.accepted_date || vehicle.accepted_at))}</small>` : ""}</${acceptanceTag}>`;
+  const scheduleBadge = `<button class="operations-pill operations-pill-schedule operations-badge-action" type="button" data-calendar-vehicle="${_operationsEscAttr(vehicle.vehicle_id)}">${esc(schedule)}</button>`;
+  const estimateBadge = vehicle.qbo_estimate_number
+    ? _operationsCanManageEstimates()
+      ? `<button class="operations-pill operations-pill-quote operations-badge-action" type="button" data-operations-estimate-vehicle="${_operationsEscAttr(vehicle.vehicle_id)}" title="${_operationsEscAttr(estimateDetail)}">Quote ${esc(vehicle.qbo_estimate_number)}</button>`
+      : `<span class="operations-pill operations-pill-quote" title="${_operationsEscAttr(estimateDetail)}">Quote ${esc(vehicle.qbo_estimate_number)}</span>`
+    : _operationsCanManageEstimates()
+      ? `<button class="operations-connect-estimate-header" type="button" data-operations-estimate-vehicle="${_operationsEscAttr(vehicle.vehicle_id)}">Connect estimate</button>`
+      : "";
   return `<article class="operations-vehicle" data-operations-view-key="${_operationsEscAttr('vehicle:' + vehicle.vehicle_id)}">
     <div class="operations-vehicle-heading">
-      <div>
-        <h3>${esc(label)}</h3>
+      <div class="operations-vehicle-identity">
+        <span class="operations-vehicle-kicker">Vehicle</span>
+        <div class="operations-vehicle-title-row"><h3>${esc(label)}</h3>${estimateBadge}</div>
         <p>${esc(identity)}</p>
       </div>
       <div class="operations-badges">
-        <span class="project-type-badge">${esc(({build:"Build",service:"Service",offsite:"Off-Site Service"})[vehicle.project_type||"build"])}</span>
-        <span class="operations-pill operations-pill-${esc(vehicle.acceptance_status)}">${esc(_operationsLabel(vehicle.acceptance_status))}</span>
-        <span class="operations-pill operations-pill-schedule">${esc(schedule)}</span>
+        ${acceptanceBadge}
+        ${scheduleBadge}
       </div>
     </div>
-    <div class="operations-status-grid">
-      ${_operationsStatus("availability", "Vehicle", vehicle.vehicle_availability_status, vehicle.vehicle_availability_status === "delivered" ? vehicle.delivered_date : "")}
-      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("parts") ? `<div class="operations-status"><b>Parts</b><span>Not applicable</span></div>` : _operationsStatus("parts", "Parts", vehicle.parts_status || "not_started", vehicle.parts_status === "parts_ready" ? vehicle.parts_ready_at : "")}
-      ${_operationsStatus("shop", "Build / Shop", vehicle.shop_status || "not_started", vehicle.shop_status === "complete" ? vehicle.shop_completed_at : "")}
-      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("tray") ? `<div class="operations-status"><b>Tray</b><span>Not applicable</span></div>` : _operationsStatus("tray", "Tray", vehicle.tray_status, vehicle.tray_status === "complete" ? vehicle.tray_completed_at : vehicle.tray_status === "ready" ? vehicle.tray_ready_at : "")}
-      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("programming_qc") ? `<div class="operations-status"><b>Programming & QC</b><span>Not applicable</span></div>` : _operationsStatus("programming_qc", "Programming & QC", vehicle.programming_qc_status, vehicle.programming_qc_status === "complete" ? vehicle.programming_qc_completed_at : vehicle.programming_qc_status === "ready" ? vehicle.programming_qc_ready_at : "")}
-      ${_operationsStatus("final_finish", "Final Finish", vehicle.final_finish_status, vehicle.final_finish_status === "delivered" ? vehicle.delivered_date : vehicle.final_finish_status === "ready_for_delivery" ? vehicle.ready_for_delivery_at : vehicle.final_finish_status === "ready_for_wash_clean_photos" ? vehicle.final_finish_ready_at : "")}
+    ${planFacts.length ? `<div class="operations-vehicle-plan" aria-label="Vehicle planning details">${planFacts.map(([factLabel, value]) => `<span${factLabel.startsWith("Must deliver") ? ` class="operations-plan-deadline"` : ""}><b>${esc(factLabel)}</b>${esc(value)}</span>`).join("")}</div>` : ""}
+    <div class="operations-section-heading">
+      <strong>Workflow status</strong>
+      <span>Current stage for this vehicle</span>
     </div>
-    <div class="operations-dates">
-      <span><b>Accepted on</b>${esc(_operationsDate(vehicle.accepted_date||vehicle.accepted_at))}</span>
-      <span><b>Build started</b>${esc(_operationsDate(vehicle.shop_started_at))}</span>
-      <span><b>Build completed</b>${esc(_operationsDate(vehicle.shop_completed_at))}</span>
-      <span><b>Ready for delivery</b>${esc(_operationsDate(vehicle.ready_for_delivery_at))}</span>
-      <span><b>Delivered</b>${esc(_operationsDate(vehicle.delivered_date))}</span>
-      <span><b>Build team</b>${esc((vehicle.build_team_names || []).join(" + ") || "Not recorded")}</span>
-      <span><b>Planned start</b>${esc(_operationsDate(vehicle.planned_start_date))}</span>
-      <span><b>Estimated ready date</b>${esc(_operationsDate(vehicle.target_finish_date))}</span>
-      <span class="operations-must-deliver"><b>Must Deliver On${vehicle.must_deliver_override_date ? " · Manual" : ""}</b>${esc(_operationsDate(vehicle.must_deliver_by_date))}</span>
-      <span><b>QuickBooks</b>${esc(qbo)}</span>
+    <div class="operations-status-grid" aria-label="Workflow status for ${_operationsEscAttr(label)}">
+      ${_operationsStatus("availability", "Vehicle", vehicle.vehicle_availability_status, availabilityDate)}
+      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("parts") ? _operationsUnavailableStatus("Parts") : _operationsStatus("parts", "Parts", vehicle.parts_status || "not_started", partsDate)}
+      ${_operationsStatus("shop", "Build / Shop", vehicle.shop_status || "not_started", shopDate)}
+      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("tray") ? _operationsUnavailableStatus("Tray") : _operationsStatus("tray", "Tray", vehicle.tray_status, vehicle.tray_status === "complete" ? vehicle.tray_completed_at : vehicle.tray_status === "ready" ? vehicle.tray_ready_at : "")}
+      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("programming_qc") ? _operationsUnavailableStatus("Programming & QC") : _operationsStatus("programming_qc", "Programming & QC", vehicle.programming_qc_status, vehicle.programming_qc_status === "complete" ? vehicle.programming_qc_completed_at : vehicle.programming_qc_status === "ready" ? vehicle.programming_qc_ready_at : "")}
+      ${_operationsStatus("final_finish", "Final Finish", vehicle.final_finish_status, vehicle.final_finish_status === "delivered" ? vehicle.delivered_date : vehicle.final_finish_status === "ready_for_delivery" ? vehicle.ready_for_delivery_at : vehicle.final_finish_status === "ready_for_wash_clean_photos" ? vehicle.final_finish_ready_at : "", vehicle.final_finish_status === "delivered" && vehicle.ready_for_delivery_at ? [{ label: "Ready", date: vehicle.ready_for_delivery_at }] : [])}
     </div>
     ${canEdit ? `<details class="operations-vehicle-quick" data-operations-override-id="${_operationsEscAttr(vehicle.vehicle_id)}">
       <summary>Individual status override</summary>
@@ -871,18 +1023,30 @@ function _operationsVehicleMarkup(vehicle) {
     </details>` : ""}
     <div class="operations-vehicle-actions">
       <span>Last updated ${esc(_operationsDate(vehicle.updated_at))}${vehicle.updated_by_name ? ` by ${esc(vehicle.updated_by_name)}` : ""}</span>
-      <div>
-        <button class="btn btn-secondary btn-sm" type="button" data-calendar-vehicle="${_operationsEscAttr(vehicle.vehicle_id)}">Open Calendar</button>
-        <button class="btn btn-secondary btn-sm" type="button" data-operations-history-vehicle="${_operationsEscAttr(vehicle.vehicle_id)}">View history</button>
-        ${_operationsCanEditAcceptanceDate() && vehicle.acceptance_status === 'accepted' ? `<button class="btn btn-secondary btn-sm" type="button" data-operations-accepted-date="${_operationsEscAttr(vehicle.vehicle_id)}">Accepted date</button>` : ''}
-        ${_operationsCanSchedule() && vehicle.project_state === "active" ? `<button class="btn btn-secondary btn-sm" type="button" data-operations-schedule-vehicle="${_operationsEscAttr(vehicle.vehicle_id)}">Delivery deadline</button>` : ""}
-      </div>
+      <details class="operations-action-menu">
+        <summary><span class="operations-action-dots" aria-hidden="true">•••</span> Actions</summary>
+        <div class="operations-action-menu-popover" role="group" aria-label="Actions for ${_operationsEscAttr(label)}">
+          <button type="button" data-calendar-vehicle="${_operationsEscAttr(vehicle.vehicle_id)}"><strong>Open Calendar</strong><small>View scheduling and shop plan</small></button>
+          ${_operationsCanSchedule() && vehicle.project_state === "active" ? `<button type="button" data-operations-schedule-vehicle="${_operationsEscAttr(vehicle.vehicle_id)}"><strong>Delivery deadline</strong><small>Review or change the due date</small></button>` : ""}
+          ${_operationsCanManageEstimates() && vehicle.qbo_estimate_id ? `<button type="button" data-operations-estimate-vehicle="${_operationsEscAttr(vehicle.vehicle_id)}"><strong>Manage estimate</strong><small>Review or replace the connection</small></button>` : ""}
+          ${_operationsCanEditAcceptanceDate() && vehicle.acceptance_status === 'accepted' ? `<button type="button" data-operations-accepted-date="${_operationsEscAttr(vehicle.vehicle_id)}"><strong>Accepted date</strong><small>Review the recorded acceptance date</small></button>` : ''}
+          <button type="button" data-operations-history-vehicle="${_operationsEscAttr(vehicle.vehicle_id)}"><strong>View history</strong><small>See status changes and activity</small></button>
+        </div>
+      </details>
     </div>
   </article>`;
 }
 
-function _operationsStatus(key, label, value, completedAt = "") {
-  return `<div class="operations-status operations-status-tone-${_operationsStatusTone(key, value)}"><span>${esc(label)}</span><strong>${esc(_operationsLabel(value))}</strong>${completedAt ? `<small>${esc(_operationsDate(completedAt))}</small>` : ""}</div>`;
+function _operationsStatus(key, label, value, completedAt = "", milestones = []) {
+  const statusLabel = _operationsLabel(value);
+  const milestoneMarkup = milestones.map(item =>
+    `<small class="operations-status-milestone"><b>${esc(item.label)}</b>${esc(_operationsDate(item.date))}</small>`
+  ).join("");
+  return `<div class="operations-status operations-status-tone-${_operationsStatusTone(key, value)}" aria-label="${_operationsEscAttr(`${label}: ${statusLabel}`)}"><span>${esc(label)}</span><strong>${esc(statusLabel)}</strong>${milestoneMarkup}${completedAt ? `<small>${esc(_operationsDate(completedAt))}</small>` : ""}</div>`;
+}
+
+function _operationsUnavailableStatus(label) {
+  return `<div class="operations-status operations-status-tone-unavailable" aria-label="${_operationsEscAttr(`${label}: Not applicable`)}"><span>${esc(label)}</span><strong>Not applicable</strong></div>`;
 }
 
 function _operationsQuickStatusMarkup(vehicles, scope, id, mode = "") {
@@ -957,13 +1121,20 @@ async function _operationsApplyQuickStatus(button) {
   let autoCompleted = false;
   for (const vehicle of targets) {
     try {
-      const result = await api("/api/operations/status", {
+      const before = _operationsStatusValue(vehicle, definition);
+      const result = await _operationsSaveWithConflictRecovery("/api/operations/status", {
         vehicle_id: vehicle.vehicle_id,
         workstream: definition.key,
         new_status: target,
         expected_revision: vehicle.revision,
         request_id: _operationsRequestId(),
-      });
+      }, vehicle, [{
+        field: definition.field,
+        label: definition.label,
+        before,
+        after: target,
+        read: current => _operationsStatusValue(current, definition),
+      }]);
       if (!result?.ok) {
         failure = result?.error || "The status could not be saved";
         break;
@@ -1041,9 +1212,8 @@ function _operationsUpdateStatusGuidance() {
   const target = $("operations-status-value")?.value;
   const apply = $("operations-status-apply");
   const guidance = $("operations-status-guidance");
-  const reasonWrap = $("operations-status-reason-wrap");
   const dateWrap = $("operations-status-date-wrap");
-  if (!definition || !apply || !guidance || !reasonWrap || !dateWrap) return;
+  if (!definition || !apply || !guidance || !dateWrap) return;
 
   const showDate = definition.key === "availability" &&
     ["ready_for_pickup", "at_dtm", "delivered"].includes(target);
@@ -1051,7 +1221,6 @@ function _operationsUpdateStatusGuidance() {
   if (!showDate) $("operations-status-date").value = "";
 
   if (target === "__choose__") {
-    reasonWrap.hidden = true;
     guidance.textContent = "Choose one status to update.";
     guidance.className = "operations-status-guidance";
     apply.textContent = "Apply status";
@@ -1066,9 +1235,11 @@ function _operationsUpdateStatusGuidance() {
     target,
   ));
   const canCorrect = (_OPERATIONS.session?.capabilities || []).includes("operations.correct");
-  const correctionReason = String($("operations-status-reason")?.value || "").trim();
-  reasonWrap.hidden = !needsCorrection;
-  apply.textContent = targets.length > 1
+  apply.textContent = needsCorrection
+    ? targets.length > 1
+      ? `Confirm ${targets.length} updates`
+      : "Confirm update"
+    : targets.length > 1
     ? `Update ${targets.length} vehicles`
     : targets.length === 1
       ? "Update vehicle"
@@ -1083,9 +1254,9 @@ function _operationsUpdateStatusGuidance() {
     guidance.className = "operations-status-guidance operations-status-guidance-warning";
     apply.disabled = true;
   } else if (needsCorrection) {
-    guidance.textContent = "This change reverses or skips a normal step. Add a correction note to continue.";
+    guidance.textContent = "This change reverses or skips a normal step. Confirm to continue; no note is required.";
     guidance.className = "operations-status-guidance operations-status-guidance-warning";
-    apply.disabled = !correctionReason;
+    apply.disabled = false;
   } else {
     guidance.textContent = `A dated history entry will be recorded for ${targets.length} vehicle${targets.length === 1 ? "" : "s"}.`;
     guidance.className = "operations-status-guidance";
@@ -1109,7 +1280,6 @@ function _operationsOpenStatusEditor(vehicles, scopeLabel, selection = null) {
   $("operations-status-workstream").innerHTML = editable.map(item =>
     `<option value="${_operationsEscAttr(item.key)}">${esc(item.label)}</option>`
   ).join("");
-  $("operations-status-reason").value = "";
   $("operations-status-progress").hidden = true;
   if (selection?.workstream && editable.some(item => item.key === selection.workstream)) {
     $("operations-status-workstream").value = selection.workstream;
@@ -1142,9 +1312,13 @@ async function _operationsApplyStatus(event) {
   if (!definition || target === "__choose__") return;
   const targets = _operationsStatusTargets(definition, target);
   if (!targets.length) return;
-  const correctionReason = String($("operations-status-reason")?.value || "").trim();
   const effectiveDate = String($("operations-status-date")?.value || "");
-  const approved = targets.length === 1 || confirm(
+  const needsCorrection = targets.some(vehicle => _operationsTransitionNeedsCorrection(
+    definition,
+    _operationsStatusValue(vehicle, definition),
+    target,
+  ));
+  const approved = needsCorrection || targets.length === 1 || confirm(
     `Set ${definition.label} to ${_operationsStatusValueLabel(definition, target)} for ${targets.length} vehicles?\n\nEach vehicle will receive its own dated history entry.`
   );
   if (!approved) return;
@@ -1166,15 +1340,21 @@ async function _operationsApplyStatus(event) {
   for (const [index, vehicle] of targets.entries()) {
     progress.textContent = `${changed} saved · updating ${index + 1} of ${targets.length}`;
     try {
-      const result = await api("/api/operations/status", {
+      const before = _operationsStatusValue(vehicle, definition);
+      const result = await _operationsSaveWithConflictRecovery("/api/operations/status", {
         vehicle_id: vehicle.vehicle_id,
         workstream: definition.key,
         new_status: target,
         expected_revision: vehicle.revision,
         request_id: _operationsRequestId(),
-        correction_reason: correctionReason,
         effective_date: definition.key === "availability" ? effectiveDate : "",
-      });
+      }, vehicle, [{
+        field: definition.field,
+        label: definition.label,
+        before,
+        after: target,
+        read: current => _operationsStatusValue(current, definition),
+      }]);
       if (!result?.ok) {
         failure = result?.error || "The status could not be saved";
         break;
@@ -1193,15 +1373,16 @@ async function _operationsApplyStatus(event) {
   apply.disabled = false;
   cancel.disabled = false;
   close.disabled = false;
-  _operationsCloseStatusEditor(true);
   if (failure) {
-    toast(`${changed} of ${targets.length} saved. Stopped: ${failure}`, "error");
+    progress.textContent = `${changed} of ${targets.length} saved. ${failure}`;
+    toast(failure, "error");
   } else {
+    _operationsCloseStatusEditor(true);
     toast(autoCompleted
       ? "Delivered saved — project moved to Completed"
       : `${changed} vehicle${changed === 1 ? "" : "s"} updated`, "success");
+    await initOperationsTab({ followVehicleId, anchor });
   }
-  await initOperationsTab({ followVehicleId, anchor });
 }
 
 function _operationsSchedulePatch() {
@@ -1311,12 +1492,24 @@ async function _operationsApplySchedule(event) {
   for (const [index, vehicle] of targets.entries()) {
     progress.textContent = `${changed} saved · updating ${index + 1} of ${targets.length}`;
     try {
-      const result = await api("/api/operations/schedule", {
+      const changes = Object.keys(patch).map(field => ({
+        field,
+        label: ({
+          scheduled_week_of: "Scheduled week",
+          planned_start_date: "Planned start",
+          target_finish_date: "Estimated ready date",
+          must_deliver_override_date: "Must deliver date",
+        })[field] || _operationsLabel(field),
+        before: String(vehicle[field] || ""),
+        after: String(patch[field] || ""),
+        format: value => value ? _operationsDate(value) : "blank",
+      }));
+      const result = await _operationsSaveWithConflictRecovery("/api/operations/schedule", {
         vehicle_id: vehicle.vehicle_id,
         ...patch,
         expected_revision: vehicle.revision,
         request_id: _operationsRequestId(),
-      });
+      }, vehicle, changes);
       if (!result?.ok) {
         failure = result?.error || "The schedule could not be saved";
         break;
@@ -1339,13 +1532,14 @@ async function _operationsApplySchedule(event) {
   apply.disabled = false;
   cancel.disabled = false;
   close.disabled = false;
-  _operationsCloseScheduleEditor(true);
   if (failure) {
-    toast(`${changed} of ${targets.length} saved. Stopped: ${failure}`, "error");
+    progress.textContent = `${changed} of ${targets.length} saved. ${failure}`;
+    toast(failure, "error");
   } else {
+    _operationsCloseScheduleEditor(true);
     toast(`${changed} vehicle${changed === 1 ? "" : "s"} updated`, "success");
+    await initOperationsTab();
   }
-  await initOperationsTab();
 }
 
 function _operationsHistoryEventTitle(event) {
@@ -1527,10 +1721,9 @@ function _operationsDateTime(value) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  $("operations-refresh")?.addEventListener("click", () => initOperationsTab());
-  $("operations-add-builder")?.addEventListener("click", () =>
-    _operationsLoadProjectionPreview({ open: true })
-  );
+  $("operations-refresh")?.addEventListener("click", async () => {
+    if (await initOperationsTab()) toast("Operations refreshed", "success");
+  });
   $("operations-search")?.addEventListener("input", event => {
     _OPERATIONS.search[_OPERATIONS.filter] = event.target.value;
     _operationsRenderRows();
@@ -1550,7 +1743,6 @@ document.addEventListener("DOMContentLoaded", () => {
   $("operations-status-workstream")?.addEventListener("change", _operationsRenderStatusEditor);
   $("operations-status-value")?.addEventListener("change", _operationsUpdateStatusGuidance);
   $("operations-status-date")?.addEventListener("change", _operationsUpdateStatusGuidance);
-  $("operations-status-reason")?.addEventListener("input", _operationsUpdateStatusGuidance);
   $("operations-status-form")?.addEventListener("submit", _operationsApplyStatus);
   $("operations-status-close")?.addEventListener("click", () => _operationsCloseStatusEditor());
   $("operations-status-cancel")?.addEventListener("click", () => _operationsCloseStatusEditor());
@@ -1573,6 +1765,18 @@ document.addEventListener("DOMContentLoaded", () => {
   $("operations-history-modal")?.addEventListener("click", event => {
     if (event.target === $("operations-history-modal")) _operationsCloseHistory();
   });
+  document.addEventListener("click", event => {
+    document.querySelectorAll(".operations-action-menu[open]").forEach(menu => {
+      if (!menu.contains(event.target)) menu.open = false;
+    });
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    const menu = document.querySelector(".operations-action-menu[open]");
+    if (!menu) return;
+    menu.open = false;
+    menu.querySelector("summary")?.focus();
+  });
 });
 
 // One shared acceptance editor for Operations and Calendar.
@@ -1591,17 +1795,26 @@ window.openAcceptanceDateEditor = async function(vehicleId) {
   }
   const qboDate = vehicle.qbo_estimate_accepted_at?.slice(0,10) || '';
   const useQbo = vehicle.acceptance_source === 'qbo' && qboDate && ['accepted','closed'].includes((vehicle.qbo_estimate_status||'').toLowerCase());
-  modal.innerHTML=`<div class="modal"><div class="modal-header"><span id="operations-accepted-date-title">Accepted date</span><button id="operations-accepted-date-close" class="btn btn-secondary" type="button">Close</button></div><p>${_operationsEscAttr(vehicle.agency_name)} · ${_operationsEscAttr(vehicle.unit_number||vehicle.title)}</p><div class="calendar-fields"><label>Date from<select id="operations-accepted-source"><option value="manual">Manual date</option><option value="qbo" ${useQbo?'selected':''} ${qboDate?'':'disabled'}>QuickBooks${qboDate?'':' (date unavailable)'}</option></select></label><label>Accepted on<input id="operations-accepted-date" type="date" value="${_operationsEscAttr(useQbo?qboDate:vehicle.accepted_date||vehicle.accepted_at?.slice(0,10)||'')}" ${useQbo?'readonly':''}></label></div><p class="calendar-help">Updates Operations and Calendar. The Estimate and delivery deadline stay unchanged.</p><div id="operations-accepted-date-message" role="status"></div><div class="modal-actions"><button id="operations-accepted-date-save" class="btn btn-primary" type="button">Save accepted date</button></div></div>`;
+  modal.innerHTML=`<div class="modal"><div class="modal-title"><span id="operations-accepted-date-title">Accepted date</span><button id="operations-accepted-date-close" class="modal-close" type="button" aria-label="Close accepted date editor">×</button></div><p>${_operationsEscAttr(vehicle.agency_name)} · ${_operationsEscAttr(vehicle.unit_number||vehicle.title)}</p><div class="calendar-fields"><label>Date from<select id="operations-accepted-source"><option value="manual">Manual date</option><option value="qbo" ${useQbo?'selected':''} ${qboDate?'':'disabled'}>QuickBooks${qboDate?'':' (date unavailable)'}</option></select></label><label>Accepted on<input id="operations-accepted-date" type="date" value="${_operationsEscAttr(useQbo?qboDate:vehicle.accepted_date||vehicle.accepted_at?.slice(0,10)||'')}" ${useQbo?'readonly':''}></label></div><p class="calendar-help">Updates Operations and Calendar. The Estimate and delivery deadline stay unchanged.</p><div id="operations-accepted-date-message" role="status"></div><div class="modal-actions"><button id="operations-accepted-date-save" class="btn btn-primary" type="button">Save accepted date</button></div></div>`;
   modal.hidden=false;modal.classList.add('open');
   $('operations-accepted-date-close').onclick=()=>{modal.hidden=true;modal.classList.remove('open');};
+  modal.onclick=event=>{if(event.target===modal)$('operations-accepted-date-close').click();};
   $('operations-accepted-source').onchange=e=>{const input=$('operations-accepted-date');input.readOnly=e.target.value==='qbo';if(input.readOnly)input.value=qboDate;};
   $('operations-accepted-date-save').onclick=async()=>{
     const button=$('operations-accepted-date-save');button.disabled=true;
     try {
-      const result=await api('/api/operations/acceptance-date',{vehicle_id:vehicleId,expected_revision:vehicle.revision,
-        acceptance_source:$('operations-accepted-source').value,accepted_date:$('operations-accepted-date').value,request_id:crypto.randomUUID()});
+      const acceptanceSource=$('operations-accepted-source').value;
+      const acceptedDate=$('operations-accepted-date').value;
+      const currentAcceptedDate=String(vehicle.accepted_date||vehicle.accepted_at?.slice(0,10)||'');
+      const result=await _operationsSaveWithConflictRecovery('/api/operations/acceptance-date',{vehicle_id:vehicleId,expected_revision:vehicle.revision,
+        acceptance_source:acceptanceSource,accepted_date:acceptedDate,request_id:_operationsRequestId()},vehicle,[
+          {field:'acceptance_source',label:'Accepted date source',before:String(vehicle.acceptance_source||''),after:acceptanceSource},
+          {field:'accepted_date',label:'Accepted date',before:currentAcceptedDate,after:acceptedDate,
+            read:current=>String(current.accepted_date||current.accepted_at?.slice(0,10)||''),format:value=>value?_operationsDate(value):'blank'},
+        ]);
       if(!result?.ok)throw new Error(result?.error||'Could not save accepted date');
       modal.hidden=true;modal.classList.remove('open');
+      toast('Accepted date saved','success');
       if(!$('tab-operations').hidden)await initOperationsTab();
       if(!$('tab-calendar').hidden){await initCalendarTab();window.refreshCalendarDetails?.(vehicleId);}
     } catch(e){$('operations-accepted-date-message').textContent=e.message;}
