@@ -405,7 +405,11 @@ def flow_tab_load(page, base_url: str) -> None:
     assert page.locator('#calendar-job-pin, #calendar-promised-start, #calendar-promised-ready, #calendar-remaining-hours, #calendar-job-second-team').count() == 0
     assert page.locator('#calendar-detail-overlay').is_visible()
     assert not page.locator('#calendar-include-project').is_checked()
-    page.wait_for_function("document.querySelector('#calendar-job-ready').innerText.startsWith('Build completes')")
+    page.wait_for_function("""() => {
+        const text = document.querySelector('#calendar-job-ready').innerText;
+        return text.startsWith('Starts ·') && text.includes('Build completes ·')
+            && text.includes('schedulable hours/day');
+    }""")
     # An unrelated Operations refresh while the modal is open must not discard
     # the typed date or require closing/reopening the booking.
     from dtm_buildsheet.app.adapters.wiring import get_active_bundle
@@ -457,7 +461,11 @@ def flow_tab_load(page, base_url: str) -> None:
             page.wait_for_selector('#calendar-detail-overlay.open')
             page.locator('#calendar-job-start').fill('2031-01-06')
             page.uncheck('#calendar-include-project')
-            page.wait_for_function("document.querySelector('#calendar-job-ready').innerText.startsWith('Build completes')")
+            page.wait_for_function("""() => {
+                const text = document.querySelector('#calendar-job-ready').innerText;
+                return text.startsWith('Starts ·') && text.includes('Build completes ·')
+                    && text.includes('schedulable hours/day');
+            }""")
             page.get_by_role('button', name='Confirm booking', exact=True).click()
             page.wait_for_selector('#calendar-detail-overlay', state='hidden', timeout=3000)
             rebooked = page.evaluate("async () => await api('/api/calendar')")
@@ -4317,7 +4325,11 @@ def flow_service_project(page, base_url: str) -> None:
     assert page.locator('#calendar-job-kind').input_value() == 'service'
     assert page.locator('#calendar-job-hours').is_visible()
     page.fill('#calendar-job-hours', '3.6')
-    page.wait_for_function("document.querySelector('#calendar-job-ready').innerText.startsWith('Build completes')")
+    page.wait_for_function("""() => {
+        const text = document.querySelector('#calendar-job-ready').innerText;
+        return text.startsWith('Starts ·') && text.includes('Build completes ·')
+            && text.includes('schedulable hours/day');
+    }""")
     page.get_by_role('button', name='Confirm booking', exact=True).click()
     try:
         page.wait_for_selector('#calendar-detail-overlay', state='hidden', timeout=5000)

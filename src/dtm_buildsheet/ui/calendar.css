@@ -60,7 +60,7 @@
 .calendar-insert-line::before, .calendar-insert-line::after { content: ''; position: absolute; left: -3px; width: 9px; height: 3px; background: #d42f36; }
 .calendar-insert-line::before { top: 0; }
 .calendar-insert-line::after { bottom: 0; }
-.calendar-draggable { cursor: grab; touch-action: pan-y; }
+.calendar-draggable { cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
 .calendar-dragging, .calendar-dragging * { cursor: grabbing !important; user-select: none !important; }
 .calendar-drag-ghost { position: fixed; z-index: 3000; max-width: 300px; padding: 12px 16px; border: 1px solid #8fadd3; border-radius: 12px; background: #fff; color: #213c60; box-shadow: 0 8px 28px #162d4933; font-size: 13px; pointer-events: none; }
 .calendar-today-date { background: #e7f0ff; color: #174c92; font-weight: 700; }
@@ -89,6 +89,8 @@
 .calendar-detail .calendar-fields label { min-width: 160px; }
 .calendar-detail .calendar-fields label small { font-size: 11px; }
 .calendar-ready { width: 100%; background: #eef4fc; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #294e7c; }
+.calendar-team-settings.calendar-team-retired { border-color: #d9b36c; background: #fff8e9; }
+.calendar-team-retired legend, .calendar-team-retired [data-team-active-label] { color: #785115; font-weight: 700; }
 .calendar-advanced { width: 100%; font-size: 12px; }
 .calendar-advanced summary, .calendar-history summary { cursor: pointer; color: #536174; padding: 8px 0; }
 .calendar-advanced .calendar-fields { margin: 8px 0; }

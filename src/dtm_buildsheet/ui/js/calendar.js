@@ -1,6 +1,6 @@
 // Calendar owns planning; Operations owns production status and delivery deadlines.
 (() => {
-  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/ui/calendar.css';document.head.append(sheet);
+  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/ui/calendar.css?v='+encodeURIComponent(document.querySelector('.header-version')?.textContent||'dev');document.head.append(sheet);
   const state = {data:null, view:'week', date:new Date(), selected:null, preview:null, edit:null, busy:false, request:0, saving:false, saveId:null, polling:false, teamFilter:'', queueMode:'unscheduled', choices:[], choiceRequest:0, overlapApproval:null};
   const colors = ['blue','purple','teal','orange','rose','slate'];
   const kinds = {checks:'Final checks',strip_build:'Strip + build',build:'Build only',strip:'Strip only',service:'Service',offsite:'Off-site work'};
@@ -142,11 +142,19 @@
   }
   function draggable(node,value){
     node.draggable=false;node.classList.add('calendar-draggable');
-    node.addEventListener('pointerdown',e=>{if(e.button!==0||!canEdit()||state.busy)return;closeCalendarMenu();drag={value,x:e.clientX,y:e.clientY,node,active:false,unitOnly:e.shiftKey,label:node.querySelector('strong')?.textContent||node.textContent};});
+    node.addEventListener('pointerdown',e=>{
+      if(e.button!==0||!canEdit()||state.busy)return;
+      // WebView2 can otherwise hand the pointer to native text selection as
+      // soon as it leaves a button. Capture it so Windows keeps delivering
+      // move/up events for the complete drag, just as WebKit does on macOS.
+      e.preventDefault?.();closeCalendarMenu();
+      try{if(e.pointerId!=null)node.setPointerCapture?.(e.pointerId);}catch(_error){}
+      drag={value,x:e.clientX,y:e.clientY,node,captureNode:node,pointerId:e.pointerId,active:false,unitOnly:e.shiftKey,label:node.querySelector('strong')?.textContent||node.textContent};
+    });
     node.addEventListener('click',e=>{if(Date.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation();}},true);
   }
   document.addEventListener('pointermove',e=>{
-    if(!drag)return;
+    if(!drag||(drag.pointerId!=null&&e.pointerId!=null&&e.pointerId!==drag.pointerId))return;
     drag.unitOnly=e.shiftKey;
     if(!drag.active&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6)return;
     e.preventDefault();
@@ -163,10 +171,12 @@
     showDragPlacement(target,dragPlacement(target,e.clientX));
   },{passive:false});
   function endDrag(cancel=false){
-    if(!drag)return;const current=drag;drag=null;current.ghost?.remove();insertLine.hidden=true;current.target?.classList.remove('calendar-drop-replace','calendar-drop-new');document.body.classList.remove('calendar-dragging');
+    if(!drag)return;const current=drag;drag=null;
+    try{if(current.pointerId!=null&&current.captureNode?.hasPointerCapture?.(current.pointerId))current.captureNode.releasePointerCapture(current.pointerId);}catch(_error){}
+    current.ghost?.remove();insertLine.hidden=true;current.target?.classList.remove('calendar-drop-replace','calendar-drop-new');document.body.classList.remove('calendar-dragging');
     if(current.active){suppressClickUntil=Date.now()+300;if(!cancel&&current.placement)stageDrop(current.value,current.target.dataset.team||state.teamFilter,current.target.dataset.date,current.target.dataset.dropJob,current.placement.edge,current.unitOnly);}
   }
-  document.addEventListener('pointerup',event=>{if(drag)drag.unitOnly=event.shiftKey;endDrag();});document.addEventListener('pointercancel',()=>endDrag(true));window.addEventListener('blur',()=>endDrag(true));
+  document.addEventListener('pointerup',event=>{if(!drag||(drag.pointerId!=null&&event.pointerId!=null&&event.pointerId!==drag.pointerId))return;drag.unitOnly=event.shiftKey;endDrag();});document.addEventListener('pointercancel',event=>{if(drag&&(drag.pointerId==null||event.pointerId==null||event.pointerId===drag.pointerId))endDrag(true);});window.addEventListener('blur',()=>endDrag(true));
   function dropTarget(node,team,date){
     node.dataset.calendarDrop='';node.dataset.team=team;node.dataset.date=date;
   }
@@ -178,9 +188,13 @@
     catch(e){if(seq===state.request)message(e.message);return false;}
   };
   new ResizeObserver(()=>{const main=$('calendar-board').parentElement;if(main.offsetHeight)$('calendar-queue').style.height=window.innerWidth>850?`${main.offsetHeight}px`:'280px';}).observe($('calendar-board').parentElement);
+  const validTeamFilter=(settings,value)=>value&&settings.teams.some(team=>team.id===value&&team.active)?value:'';
   function render() {
     if(!state.data)return;
     const {settings,plan}=state.data;
+    // A retired/missing selection is not present in the rebuilt dropdown. Clear
+    // the backing state too, or the UI says "All teams" while showing no lanes.
+    state.teamFilter=validTeamFilter(settings,state.teamFilter);
     renderQueue();
     $('calendar-team-filter').innerHTML='<option value="">All teams</option>'+settings.teams.filter(t=>t.active).map(t=>`<option value="${text(t.id)}" ${state.teamFilter===t.id?'selected':''}>${text(t.name)}</option>`).join('');
     $('calendar-review').hidden=!canEdit()||(!state.syncFailed&&(state.saving||!state.data.pending_date_count));
@@ -532,7 +546,12 @@
         state.availability={source:result.source_revision,key:bookingInputKey(readEdit(),includeProject()),choices:result.choices};
         for(const option of $('calendar-job-team').options){const choice=result.choices.find(c=>c.team_id===option.value),name=state.data.settings.teams.find(t=>t.id===option.value)?.name||option.value;option.textContent=(choice?.busy?'🔴 ':'')+name+(choice?.busy?' — Busy':'');option.style.color=choice?.busy?'#a52727':'';}
         const selected=result.choices.find(c=>c.team_id===$('calendar-job-team').value);
-        if(selected){$('calendar-job-ready').textContent=`Build completes · ${dateTime(selected.end)} · Ready for delivery · ${dateTime(selected.ready)}`;renderBookingOverview(selected.vehicles);$('calendar-job-error').textContent=selected.blocking_conflicts.join(' · ');}
+        if(selected){
+          const assumptions=selected.assumptions||{},capacity=Number(assumptions.daily_capacity);
+          const basis=Number.isFinite(capacity)?` · ${assumptions.labor_hours} labor hours · ${assumptions.people} ${assumptions.people===1?'person':'people'} · ${capacity} schedulable hours/day`:'';
+          $('calendar-job-ready').textContent=`Starts · ${dateTime(selected.start)} · Build completes · ${dateTime(selected.end)} · Ready for delivery · ${dateTime(selected.ready)}${basis}`;
+          renderBookingOverview(selected.vehicles);$('calendar-job-error').textContent=selected.blocking_conflicts.join(' · ');
+        }
       }catch(e){if(seq===state.choiceRequest&&!$('calendar-detail').hidden){$('calendar-job-ready').textContent='Choose booking details to calculate dates';$('calendar-job-error').textContent=e.message;}}
     }
     function changed(){state.overlapApproval=null;++state.choiceRequest;clearTimeout(availabilityTimer);$('calendar-job-ready').textContent='Calculating booking dates…';availabilityTimer=setTimeout(()=>updateAvailability(),200);}
@@ -640,9 +659,9 @@
       if(preview.conflicts.length)throw new Error(preview.conflicts.join(' · '));
       state.edit=body;
       const queued=await request('/api/calendar/save-background',{...body,preview_token:preview.preview_token,request_id:crypto.randomUUID()});
-      ++state.request;state.data=queued;showSave(queued.save);render();
+      ++state.request;state.data=queued;if(extra.settings)state.teamFilter='';showSave(queued.save);render();
       if(!$('calendar-detail').hidden)closeBubble('detail');
-      if(extra.settings){settingsData=queued;if($('calendar-settings-message'))$('calendar-settings-message').textContent='Settings saved on this device.';}
+      if(extra.settings){settingsData=queued;if($('calendar-settings-message'))$('calendar-settings-message').textContent=settingsSavedMessage(queued);}
       message('Schedule saved.');pollSave();
     }catch(e){
       message(e.message);
@@ -682,8 +701,8 @@
     try{const result=await request('/api/calendar/save-status'),wasSaving=state.saving;
       showSave(result.save);
       if(wasSaving&&!state.saving){
-        if($('calendar-settings-message'))$('calendar-settings-message').textContent=result.save.state==='complete'?'Team settings saved.':result.save.message;
-        if(state.edit?.settings){settingsData=await request('/api/calendar');if(!$('stab-calendar-teams').hidden){renderSettings();$('calendar-settings-message').textContent=result.save.state==='complete'?'Team settings saved.':result.save.message;}}
+        if($('calendar-settings-message'))$('calendar-settings-message').textContent=result.save.state==='complete'?settingsSavedMessage(settingsData||state.data):result.save.message;
+        if(state.edit?.settings){settingsData=await request('/api/calendar');if(!$('stab-calendar-teams').hidden){renderSettings();$('calendar-settings-message').textContent=result.save.state==='complete'?settingsSavedMessage(settingsData):result.save.message;}}
         if(!$('tab-calendar').hidden)await initCalendarTab();
         if(!$('tab-operations').hidden)await initOperationsTab();
       }
@@ -728,6 +747,10 @@
     const host=$('stab-calendar-teams');host.innerHTML='<div class="card">Loading teams…</div>';
     try {settingsData=await request('/api/calendar');renderSettings();}catch(e){host.textContent=e.message;}
   };
+  function settingsSavedMessage(data){
+    const retired=data.settings.teams.filter(team=>!team.active).map(team=>team.name);
+    return retired.length?`Team settings saved. Retired teams are hidden from Calendar and assignment lists: ${retired.join(', ')}.`:'Team settings saved. All teams are shown in Calendar and assignment lists.';
+  }
   function renderSettings(){
     const s=settingsData.settings;
     const selectedFederalHolidays=new Set(federalHolidayIds(s));
@@ -735,8 +758,10 @@
     $('stab-calendar-teams').innerHTML=`<div class="card"><div class="calendar-toolbar"><h2>Teams & Calendar</h2>${btn('+ Add team','calendar-team-add')}${btn('Save settings','calendar-settings-save',true)}</div>
     <div id="calendar-settings-message" role="status"></div><div class="calendar-settings-grid" id="calendar-team-list"></div>
     <div class="calendar-fields calendar-shop-settings"><label>Hours per person per day<input id="calendar-workday" type="number" min="1" max="12" step="0.5" value="${s.hours_per_day}"></label><label>Weekly capacity reserve (%)<input id="calendar-shop-buffer" type="number" min="0" max="50" value="${s.buffer_percent}"></label><label>Final checks (hours)<input id="calendar-check-hours" type="number" min="0" max="40" step="0.5" value="${s.finishing_hours}"></label><fieldset class="calendar-holiday-toggles"><legend>Observed U.S. federal holidays</legend><div>${federalHolidayChoices}</div></fieldset><div class="calendar-date-list" id="calendar-holidays"></div></div><p class="calendar-help">Build and strip defaults are total labor hours per vehicle. The capacity reserve reduces schedulable weekly availability; it does not add hours to a build estimate. Select the observed federal holidays that close the shop, then add any other closed dates below. Team defaults apply to new jobs. Retiring a team keeps its past assignments.</p></div>`;
-    s.teams.forEach(t=>{const row=document.createElement('fieldset');row.className='calendar-team-settings';row.dataset.teamId=t.id;
-      row.innerHTML=`<legend>${text(t.name)}</legend><label>Team name<input data-field="name" maxlength="80" value="${text(t.name)}"></label><label>People<input data-field="people" type="number" min="1" max="12" value="${t.people}"></label><label>Build labor hours / vehicle<input data-field="build_hours" type="number" min="1" max="2000" value="${t.build_hours}"></label><label>Strip labor hours / vehicle<input data-field="strip_hours" type="number" min="0" max="2000" value="${t.strip_hours}"></label><label>Color<select data-field="color">${colors.map(c=>`<option ${c===t.color?'selected':''}>${c}</option>`).join('')}</select></label><label class="calendar-checkbox"><input data-field="active" type="checkbox" ${t.active?'checked':''}>Active team</label><div class="calendar-date-list" data-team-days></div>`;
+    s.teams.forEach(t=>{const row=document.createElement('fieldset');row.className='calendar-team-settings';row.classList.toggle('calendar-team-retired',!t.active);row.dataset.teamId=t.id;
+      row.innerHTML=`<legend>${text(t.name)}${t.active?'':' · Retired'}</legend><label>Team name<input data-field="name" maxlength="80" value="${text(t.name)}"></label><label>People<input data-field="people" type="number" min="1" max="12" value="${t.people}"></label><label>Build labor hours / vehicle<input data-field="build_hours" type="number" min="1" max="2000" value="${t.build_hours}"></label><label>Strip labor hours / vehicle<input data-field="strip_hours" type="number" min="0" max="2000" value="${t.strip_hours}"></label><label>Color<select data-field="color">${colors.map(c=>`<option ${c===t.color?'selected':''}>${c}</option>`).join('')}</select></label><label class="calendar-checkbox"><input data-field="active" type="checkbox" ${t.active?'checked':''}><span data-team-active-label>${t.active?'Shown in Calendar and assignment lists':'Retired · hidden from Calendar and assignment lists'}</span></label><div class="calendar-date-list" data-team-days></div>`;
+      const active=row.querySelector('[data-field="active"]'),activeLabel=row.querySelector('[data-team-active-label]');
+      active.onchange=()=>{row.classList.toggle('calendar-team-retired',!active.checked);activeLabel.textContent=active.checked?'Shown in Calendar and assignment lists':'Retired · hidden from Calendar and assignment lists';};
       $('calendar-team-list').append(row);dateList(row.querySelector('[data-team-days]'),'Team days off',t.days_off);});
     dateList($('calendar-holidays'),'Additional shop closed dates',s.holidays);
     $('calendar-team-add').onclick=()=>{readSettings();s.teams.push({id:'team-'+crypto.randomUUID(),name:'New team',people:2,build_hours:60,strip_hours:6,color:colors[s.teams.length%colors.length],active:true,days_off:[]});renderSettings();};

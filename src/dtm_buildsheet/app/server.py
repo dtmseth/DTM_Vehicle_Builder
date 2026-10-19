@@ -56,6 +56,11 @@ _MIME_TYPES = {
 }
 
 
+def _desktop_ui_url(port: int = PORT) -> str:
+    """Return a release-specific top-level URL to bypass retained WebView caches."""
+    return f"http://localhost:{port}/?v={_APP_VERSION}"
+
+
 class Handler(BaseHTTPRequestHandler):
     paths: AppPaths = AppPaths()
 
@@ -843,7 +848,7 @@ def main(paths: AppPaths | None = None):
         )
 
     server = create_http_server(active_paths)
-    url = f"http://localhost:{PORT}"
+    url = _desktop_ui_url()
     print(f"DTM Vehicle Builder GUI -> {url}")
     print(f"Workspace -> {active_paths.workspace_dir}")
 

@@ -265,9 +265,16 @@ class CalendarService:
             jobs = [j for j in plan['jobs'] if j.get('staged')]
             selected = next(j for j in jobs if j['id'] == edit['id'])
             overlaps = list({j['id']: j for row in jobs for j in row.get('overlaps', [])}.values())
+            daily_capacity = team['people'] * data['settings']['hours_per_day'] * (
+                1 - data['settings']['buffer_percent'] / 100
+            )
             choices.append({'team_id': team['id'], 'busy': bool(overlaps), 'overlaps': overlaps,
                 'blocking_conflicts': list(dict.fromkeys(c for j in jobs for c in j.get('hard_conflicts', []))),
                 'start': selected['start'], 'end': selected['end'], 'ready': selected['ready'], 'warnings': selected['warnings'],
+                'assumptions': {'labor_hours': selected['hours'], 'people': team['people'],
+                    'hours_per_day': data['settings']['hours_per_day'],
+                    'buffer_percent': data['settings']['buffer_percent'],
+                    'daily_capacity': round(daily_capacity, 2)},
                 'vehicles': [{'id': j['id'], 'title': j['title'], 'start': j['start'], 'ready': j['ready']} for j in jobs]})
         return {'ok': True, 'revision': revision, 'source_revision': _fingerprint(records), 'choices': choices}
 

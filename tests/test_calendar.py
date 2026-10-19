@@ -1,6 +1,7 @@
 from copy import deepcopy
 from dataclasses import replace
 from datetime import date, datetime
+from pathlib import Path
 
 import pytest
 
@@ -730,17 +731,34 @@ $('calendar-drop-scope').value='project';$('calendar-drop-team').value='t';$('ca
  let drag=null,suppressClickUntil=0;const insertLine={},canEdit=()=>true,closeCalendarMenu=()=>{},drops=[];
  const stageDrop=(...args)=>drops.push(args);
  eval(source.slice(source.indexOf('  function draggable('),source.indexOf('  function dropTarget(')));
- const card=element();draggable(card,'vehicle:a');
+ const captured=[];const card=element();card.setPointerCapture=id=>captured.push(id);
+ card.hasPointerCapture=id=>captured.includes(id);card.releasePointerCapture=id=>captured.splice(captured.indexOf(id),1);
+ let prevented=0;draggable(card,'vehicle:a');
  for(const shiftKey of [true,false]){
-  card.events.pointerdown({button:0,clientX:10,clientY:20,shiftKey:!shiftKey});
+  card.events.pointerdown({button:0,pointerId:7,clientX:10,clientY:20,shiftKey:!shiftKey,preventDefault(){prevented++;}});
+  assert.deepEqual(captured,[7]);
   drag.active=true;drag.placement={edge:null};drag.target={dataset:{team:'t',date:'2026-09-18'},classList:{remove(){}}};
-  document.events.pointerup({shiftKey});assert.equal(drops.pop()[5],shiftKey);
+  document.events.pointerup({pointerId:7,shiftKey});assert.equal(drops.pop()[5],shiftKey);assert.deepEqual(captured,[]);
  }
+ assert.equal(prevented,2);
 })().catch(error=>{console.error(error);process.exitCode=1;});
 """
     path = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui/js/calendar.js'
     result = subprocess.run([node, '-e', script, str(path)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_ui_assets_are_versioned_across_desktop_updates():
+    root = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui'
+    html = (root / 'index.html').read_text(encoding='utf-8')
+    calendar = (root / 'js/calendar.js').read_text(encoding='utf-8')
+
+    assert 'href="/ui/styles.css?v={{APP_VERSION}}"' in html
+    assert 'src="/ui/js/tabs.js?v={{APP_VERSION}}"' in html
+    assert 'src="/ui/js/operations.js?v={{APP_VERSION}}"' in html
+    assert 'src="/ui/js/calendar.js?v={{APP_VERSION}}"' in html
+    assert "'/ui/calendar.css?v='" in calendar
+    assert 'Retired · hidden from Calendar and assignment lists' in calendar
 
 
 def test_settings_cannot_rename_team_identity_or_delete_history(service):
@@ -1408,6 +1426,43 @@ def test_availability_checks_full_duration_and_does_not_write(service):
     assert not choices[1]['busy']
     assert service.store.read()==before
     with pytest.raises(OperationsAuthorizationError):service.availability(SALES,{'availability':{'id':'v2'}})
+
+
+def test_availability_explains_team_capacity_and_equal_teams_finish_together(service):
+    choices = service.availability(ADMIN, {'availability': {
+        'id': 'v1', 'kind': 'strip_build', 'start_date': '2026-09-15'
+    }})['choices']
+    david = next(choice for choice in choices if choice['team_id'] == 'team-david')
+    josh = next(choice for choice in choices if choice['team_id'] == 'team-josh')
+
+    assert (david['start'], david['end'], david['ready']) == (josh['start'], josh['end'], josh['ready'])
+    assert david['assumptions'] == {
+        'labor_hours': 66.0,
+        'people': 2,
+        'hours_per_day': 8.0,
+        'buffer_percent': 10.0,
+        'daily_capacity': 14.4,
+    }
+
+
+def test_calendar_ui_clears_stale_or_retired_team_filters():
+    import shutil
+    import subprocess
+
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node is needed for isolated UI function checks')
+    script = r"""
+const fs=require('fs'),assert=require('assert'),source=fs.readFileSync(process.argv[1],'utf8');
+eval(source.slice(source.indexOf('  const validTeamFilter='),source.indexOf('  function render()')).replace('const validTeamFilter=','globalThis.validTeamFilter='));
+const settings={teams:[{id:'active',active:true},{id:'retired',active:false}]};
+assert.equal(validTeamFilter(settings,'active'),'active');
+assert.equal(validTeamFilter(settings,'retired'),'');
+assert.equal(validTeamFilter(settings,'missing'),'');
+"""
+    path = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui/js/calendar.js'
+    result = subprocess.run([node, '-e', script, str(path)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
 
 
 def test_overlap_requires_exact_confirmed_ticket_and_preserves_occupied_booking(service):
