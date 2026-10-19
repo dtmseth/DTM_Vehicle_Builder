@@ -16,6 +16,7 @@ from dtm_buildsheet.paths import AppPaths
 TODAY = date(2026, 9, 14)
 ADMIN = OperationsActor('owner', 'Owner', frozenset({'AppAdmin'}))
 SALES = OperationsActor('sales', 'Sales', frozenset({'BuilderEditor'}))
+SHOP = OperationsActor('shop', 'Shop', frozenset({'Shop'}))
 
 
 def vehicle(ident='v1', project='p1', **kw):
@@ -546,8 +547,9 @@ eval(source.slice(source.indexOf('  async function stageDrop('),source.indexOf('
 	 const _operationsEditableWorkstreams=()=>[],_operationsCanEditAcceptanceDate=()=>false,_operationsCanSchedule=()=>false,_operationsCanManageEstimates=()=>false,_operationsStatusTone=()=>'';
  eval(ops.slice(ops.indexOf('function _operationsVehicleMarkup('),ops.indexOf('function _operationsQuickStatusMarkup(')));
  const markup=_operationsVehicleMarkup({vehicle_id:'v',project_state:'completed',shop_status:'complete',shop_completed_at:'2026-09-17',
-   final_finish_status:'delivered',ready_for_delivery_at:'2026-09-18',delivered_date:'2026-09-21',build_team_names:["David's Team"],tray_status:'complete',tray_completed_at:'2026-09-16'});
- for(const text of ["David's Team",'2026-09-17','2026-09-18','2026-09-21','2026-09-16'])assert(markup.includes(text),text);
+   final_finish_status:'delivered',ready_for_delivery_at:'2026-09-18',delivered_date:'2026-09-21',build_team_names:["David's Team"]});
+ for(const text of ["David's Team",'2026-09-17','2026-09-18','2026-09-21'])assert(markup.includes(text),text);
+ assert(!markup.includes('>Tray<'));
  assert(markup.includes('<small>2026-09-17</small>'));assert(markup.includes('<small>2026-09-21</small>'));
  const _operationsCommonValue=()=>'',_operationsProjectMode=()=> 'active',_operationsProjectProgress=()=>null,_operationsProjectSortInfo=()=>({deadline:'9999-12-31'});
  eval(ops.slice(ops.indexOf('function _operationsProjectGroupMarkup('),ops.indexOf('function _operationsBindRowActions(')));
@@ -838,10 +840,10 @@ def test_preview_token_is_bound_to_job_changes(service):
     with pytest.raises(CalendarConflictError):service.save(ADMIN,body)
 
 
-def test_sales_can_read_but_cannot_edit_or_apply_dates(service):
-    assert service.view(SALES)['ok']
+def test_shop_can_read_but_cannot_edit_or_apply_dates(service):
+    assert service.view(SHOP)['ok']
     for method,body in [('preview',{}),('save_settings',{}),('apply_dates',{})]:
-        with pytest.raises(OperationsAuthorizationError):getattr(service,method)(SALES,body)
+        with pytest.raises(OperationsAuthorizationError):getattr(service,method)(SHOP,body)
 
 
 def test_apply_date_keeps_deadline_and_uses_operations_event(service):
@@ -1425,7 +1427,7 @@ def test_availability_checks_full_duration_and_does_not_write(service):
     assert choices[0]['overlaps'][0]['id']=='v1'
     assert not choices[1]['busy']
     assert service.store.read()==before
-    with pytest.raises(OperationsAuthorizationError):service.availability(SALES,{'availability':{'id':'v2'}})
+    with pytest.raises(OperationsAuthorizationError):service.availability(SHOP,{'availability':{'id':'v2'}})
 
 
 def test_availability_explains_team_capacity_and_equal_teams_finish_together(service):

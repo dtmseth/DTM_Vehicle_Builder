@@ -72,7 +72,7 @@ def test_local_identity_provider_returns_stable_user():
     user = provider.signin()
     assert isinstance(user, UserIdentity)
     assert user.provider == "local"
-    assert user.roles == frozenset({"AppAdmin"})
+    assert user.roles == frozenset({"Admin"})
     assert provider.current_user() == user
     provider.signout()  # tolerated, but identity remains for this adapter
     assert provider.is_signed_in() is True

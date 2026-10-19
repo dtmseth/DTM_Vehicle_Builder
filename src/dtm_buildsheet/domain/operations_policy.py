@@ -6,13 +6,18 @@ from typing import Iterable
 
 
 class AppRole(StrEnum):
-    APP_ADMIN = "AppAdmin"
-    BUILDER_EDITOR = "BuilderEditor"
-    OPERATIONS_MANAGER = "OperationsManager"
-    PARTS_EDITOR = "PartsEditor"
-    SHOP_EDITOR = "ShopEditor"
-    PROGRAMMING_QC_EDITOR = "ProgrammingQcEditor"
-    OPERATIONS_VIEWER = "OperationsViewer"
+    ADMIN = "Admin"
+    STAFF = "Staff"
+    SHOP = "Shop"
+
+    # Source-compatible aliases for internal callers while Entra assignments
+    # move to the three public role values above.
+    APP_ADMIN = "Admin"
+    BUILDER_EDITOR = "Staff"
+    OPERATIONS_MANAGER = "Staff"
+    PARTS_EDITOR = "Staff"
+    SHOP_EDITOR = "Shop"
+    PROGRAMMING_QC_EDITOR = "Shop"
 
 
 class Capability(StrEnum):
@@ -36,66 +41,41 @@ class Capability(StrEnum):
     ROLES_INSPECT = "roles.inspect"
 
 
-ALL_CAPABILITIES = frozenset(Capability)
+ALL_CAPABILITIES = frozenset(
+    capability
+    for capability in Capability
+    if capability is not Capability.OPERATIONS_TRAY_UPDATE
+)
+
+
+LEGACY_ROLE_ALIASES: dict[str, AppRole] = {
+    "AppAdmin": AppRole.ADMIN,
+    "BuilderEditor": AppRole.STAFF,
+    "OperationsManager": AppRole.STAFF,
+    "PartsEditor": AppRole.STAFF,
+    "ShopEditor": AppRole.SHOP,
+    "ProgrammingQcEditor": AppRole.SHOP,
+}
+
+
+def normalize_app_role(value: AppRole | str) -> AppRole | None:
+    if isinstance(value, AppRole):
+        return AppRole(value.value)
+    raw = str(value or "").strip()
+    try:
+        return AppRole(raw)
+    except ValueError:
+        return LEGACY_ROLE_ALIASES.get(raw)
 
 
 ROLE_CAPABILITIES: dict[AppRole, frozenset[Capability]] = {
-    AppRole.APP_ADMIN: ALL_CAPABILITIES,
-    AppRole.BUILDER_EDITOR: frozenset({
-        Capability.OPERATIONS_VIEW,
-        Capability.OPERATIONS_AVAILABILITY_UPDATE,
-        Capability.OPERATIONS_PARTS_UPDATE,
-        Capability.OPERATIONS_QBO_OBSERVE,
-        Capability.PROJECTS_VIEW,
-        Capability.PROJECTS_EDIT,
-        Capability.PROJECTS_LIFECYCLE_UPDATE,
-        Capability.ESTIMATES_MANAGE,
-    }),
-    AppRole.OPERATIONS_MANAGER: frozenset({
-        Capability.OPERATIONS_VIEW,
-        Capability.PROJECTS_VIEW,
-        Capability.OPERATIONS_AVAILABILITY_UPDATE,
-        Capability.OPERATIONS_SCHEDULE_UPDATE,
-        Capability.OPERATIONS_PARTS_UPDATE,
-        Capability.OPERATIONS_SHOP_UPDATE,
-        Capability.OPERATIONS_TRAY_UPDATE,
-        Capability.OPERATIONS_PROGRAMMING_QC_UPDATE,
-        Capability.OPERATIONS_FINAL_FINISH_UPDATE,
-        Capability.OPERATIONS_DELIVERY_UPDATE,
-        Capability.OPERATIONS_CORRECT,
-        Capability.OPERATIONS_QBO_OBSERVE,
-        Capability.PROJECTS_LIFECYCLE_UPDATE,
-    }),
-    AppRole.PARTS_EDITOR: frozenset({
-        Capability.OPERATIONS_VIEW,
-        Capability.OPERATIONS_AVAILABILITY_UPDATE,
-        Capability.OPERATIONS_PARTS_UPDATE,
-        Capability.OPERATIONS_SHOP_UPDATE,
-        Capability.OPERATIONS_TRAY_UPDATE,
-        Capability.OPERATIONS_PROGRAMMING_QC_UPDATE,
-        Capability.OPERATIONS_FINAL_FINISH_UPDATE,
-        Capability.OPERATIONS_DELIVERY_UPDATE,
-        Capability.OPERATIONS_CORRECT,
-        Capability.OPERATIONS_QBO_OBSERVE,
-        Capability.PROJECTS_VIEW,
-        Capability.PROJECTS_LIFECYCLE_UPDATE,
-        Capability.ESTIMATES_MANAGE,
-    }),
-    AppRole.SHOP_EDITOR: frozenset({
+    AppRole.ADMIN: ALL_CAPABILITIES,
+    AppRole.STAFF: ALL_CAPABILITIES - frozenset({Capability.SETTINGS_ADVANCED_MANAGE}),
+    AppRole.SHOP: frozenset({
         Capability.OPERATIONS_VIEW,
         Capability.OPERATIONS_SHOP_UPDATE,
-        Capability.OPERATIONS_TRAY_UPDATE,
-        Capability.OPERATIONS_FINAL_FINISH_UPDATE,
-        Capability.PROJECTS_VIEW,
-    }),
-    AppRole.PROGRAMMING_QC_EDITOR: frozenset({
-        Capability.OPERATIONS_VIEW,
         Capability.OPERATIONS_PROGRAMMING_QC_UPDATE,
         Capability.OPERATIONS_FINAL_FINISH_UPDATE,
-        Capability.PROJECTS_VIEW,
-    }),
-    AppRole.OPERATIONS_VIEWER: frozenset({
-        Capability.OPERATIONS_VIEW,
         Capability.PROJECTS_VIEW,
     }),
 }
@@ -104,9 +84,8 @@ ROLE_CAPABILITIES: dict[AppRole, frozenset[Capability]] = {
 def capabilities_for_roles(roles: Iterable[AppRole | str]) -> frozenset[Capability]:
     capabilities: set[Capability] = set()
     for value in roles:
-        try:
-            role = value if isinstance(value, AppRole) else AppRole(str(value))
-        except ValueError:
+        role = normalize_app_role(value)
+        if role is None:
             continue
         capabilities.update(ROLE_CAPABILITIES[role])
     return frozenset(capabilities)

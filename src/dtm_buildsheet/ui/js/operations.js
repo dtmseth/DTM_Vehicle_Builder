@@ -29,14 +29,12 @@ const _OPERATIONS_STATUS_DEFS = [
   },
   {
     key: "availability",
-    label: "Vehicle availability",
+    label: "Vehicle",
     capability: "operations.availability.update",
     field: "vehicle_availability_status",
     values: [
-      ["awaiting_details", "Awaiting details"],
-      ["waiting_on_dealer", "Waiting on dealer"],
-      ["waiting_on_agency", "Waiting on agency"],
-      ["ready_for_pickup", "Ready for pickup"],
+      ["awaiting_details", "Awaiting Details"],
+      ["ready_for_pickup", "At Dealer/Agency"],
       ["at_dtm", "At DTM"],
     ],
   },
@@ -48,13 +46,11 @@ const _OPERATIONS_STATUS_DEFS = [
     values: [
       ["", "Not started"],
       ["ordered", "Ordered"],
-      ["received", "Received"],
       ["parts_ready", "Parts ready"],
     ],
     normal: {
-      "": ["ordered", "received"],
-      ordered: ["received"],
-      received: ["parts_ready"],
+      "": ["ordered"],
+      ordered: ["parts_ready"],
       parts_ready: [],
     },
   },
@@ -65,14 +61,6 @@ const _OPERATIONS_STATUS_DEFS = [
     field: "shop_status",
     values: [["", "Not started"], ["in_progress", "In progress"], ["complete", "Complete"]],
     normal: { "": ["in_progress"], in_progress: ["complete"], complete: [] },
-  },
-  {
-    key: "tray",
-    label: "Tray",
-    capability: "operations.tray.update",
-    field: "tray_status",
-    values: [["not_ready", "Not ready"], ["ready", "Ready"], ["complete", "Complete"]],
-    normal: { not_ready: ["ready"], ready: ["complete"], complete: [] },
   },
   {
     key: "programming_qc",
@@ -107,7 +95,6 @@ const _OPERATIONS_FINISHED_STATUS = {
   availability: new Set(["at_dtm", "delivered"]),
   parts: new Set(["parts_ready"]),
   shop: new Set(["complete"]),
-  tray: new Set(["complete"]),
   programming_qc: new Set(["complete"]),
   final_finish: new Set(["delivered"]),
 };
@@ -117,7 +104,6 @@ const _OPERATIONS_UNSTARTED_STATUS = {
   availability: new Set(["awaiting_details"]),
   parts: new Set(["", "not_started"]),
   shop: new Set(["", "not_started"]),
-  tray: new Set(["not_ready"]),
   programming_qc: new Set(["not_ready"]),
   final_finish: new Set(["not_ready"]),
 };
@@ -459,7 +445,7 @@ function _operationsProjectScheduleMode(project) {
 function _operationsProjectSortInfo(project) {
   const vehicles = project.vehicles || [];
   const arrived = vehicles.length > 0 && vehicles.every(vehicle =>
-    ["received", "parts_ready"].includes(String(vehicle.parts_status || "")) &&
+    String(vehicle.parts_status || "") === "parts_ready" &&
     String(vehicle.vehicle_availability_status || "") === "at_dtm"
   );
   const deadlines = vehicles
@@ -524,7 +510,6 @@ function _operationsProjectProgress(vehicles) {
     return { key: "building", label: "Build Complete" };
   }
   if (any("shop_status", ["in_progress", "complete"]) ||
-      any("tray_status", ["ready", "complete"]) ||
       any("programming_qc_status", ["ready", "complete"]) ||
       any("final_finish_status", ["ready_for_wash_clean_photos", "ready_for_delivery", "delivered"])) {
     return { key: "building", label: "Build in Progress" };
@@ -535,8 +520,8 @@ function _operationsProjectProgress(vehicles) {
   }
 
   const accepted = all("acceptance_status", ["accepted"]);
-  const logisticsStarted = any("parts_status", ["ordered", "received", "parts_ready"]) ||
-    any("vehicle_availability_status", ["waiting_on_dealer", "waiting_on_agency", "ready_for_pickup", "at_dtm", "delivered"]);
+  const logisticsStarted = any("parts_status", ["ordered", "parts_ready"]) ||
+    any("vehicle_availability_status", ["ready_for_pickup", "at_dtm", "delivered"]);
   if (accepted && logisticsStarted) {
     const parts = _operationsCommonValue(vehicles, "parts_status", "not_started") || "not_started";
     const availability = _operationsCommonValue(
@@ -961,11 +946,9 @@ function _operationsVehicleMarkup(vehicle) {
         : "";
   const partsDate = vehicle.parts_status === "parts_ready"
     ? vehicle.parts_ready_at
-    : vehicle.parts_status === "received"
-      ? vehicle.parts_received_at
-      : vehicle.parts_status === "ordered"
-        ? vehicle.parts_ordered_at
-        : "";
+    : vehicle.parts_status === "ordered"
+      ? vehicle.parts_ordered_at
+      : "";
   const shopDate = vehicle.shop_status === "complete"
     ? vehicle.shop_completed_at
     : vehicle.shop_status === "in_progress"
@@ -1013,7 +996,6 @@ function _operationsVehicleMarkup(vehicle) {
       ${_operationsStatus("availability", "Vehicle", vehicle.vehicle_availability_status, availabilityDate)}
       ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("parts") ? _operationsUnavailableStatus("Parts") : _operationsStatus("parts", "Parts", vehicle.parts_status || "not_started", partsDate)}
       ${_operationsStatus("shop", "Build / Shop", vehicle.shop_status || "not_started", shopDate)}
-      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("tray") ? _operationsUnavailableStatus("Tray") : _operationsStatus("tray", "Tray", vehicle.tray_status, vehicle.tray_status === "complete" ? vehicle.tray_completed_at : vehicle.tray_status === "ready" ? vehicle.tray_ready_at : "")}
       ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("programming_qc") ? _operationsUnavailableStatus("Programming & QC") : _operationsStatus("programming_qc", "Programming & QC", vehicle.programming_qc_status, vehicle.programming_qc_status === "complete" ? vehicle.programming_qc_completed_at : vehicle.programming_qc_status === "ready" ? vehicle.programming_qc_ready_at : "")}
       ${_operationsStatus("final_finish", "Final Finish", vehicle.final_finish_status, vehicle.final_finish_status === "delivered" ? vehicle.delivered_date : vehicle.final_finish_status === "ready_for_delivery" ? vehicle.ready_for_delivery_at : vehicle.final_finish_status === "ready_for_wash_clean_photos" ? vehicle.final_finish_ready_at : "", vehicle.final_finish_status === "delivered" && vehicle.ready_for_delivery_at ? [{ label: "Ready", date: vehicle.ready_for_delivery_at }] : [])}
     </div>
@@ -1050,7 +1032,7 @@ function _operationsUnavailableStatus(label) {
 }
 
 function _operationsQuickStatusMarkup(vehicles, scope, id, mode = "") {
-  return `<div class="operations-quick-statuses">${_operationsEditableWorkstreams().filter(definition=>vehicles.every(v=>!["parts","tray","programming_qc"].includes(definition.key)||!v.applicable_workstreams||v.applicable_workstreams.includes(definition.key))).map(definition => {
+  return `<div class="operations-quick-statuses">${_operationsEditableWorkstreams().filter(definition=>vehicles.every(v=>!["parts","programming_qc"].includes(definition.key)||!v.applicable_workstreams||v.applicable_workstreams.includes(definition.key))).map(definition => {
     const current = _operationsCommonValue(vehicles, definition.field);
     const buttons = definition.values.map(([value, label]) => {
       const active = current === value;
@@ -1265,7 +1247,7 @@ function _operationsUpdateStatusGuidance() {
 }
 
 function _operationsOpenStatusEditor(vehicles, scopeLabel, selection = null) {
-  const editable = _operationsEditableWorkstreams().filter(definition=>(vehicles||[]).every(v=>!["parts","tray","programming_qc"].includes(definition.key)||!v.applicable_workstreams||v.applicable_workstreams.includes(definition.key)));
+  const editable = _operationsEditableWorkstreams().filter(definition=>(vehicles||[]).every(v=>!["parts","programming_qc"].includes(definition.key)||!v.applicable_workstreams||v.applicable_workstreams.includes(definition.key)));
   if (!vehicles?.length || !editable.length) {
     toast("Your role cannot update Operations statuses", "error");
     return;
@@ -1680,9 +1662,9 @@ function _operationsLabel(value) {
     inactive: "Inactive",
     completed: "Completed",
     awaiting_details: "Awaiting details",
-    waiting_on_dealer: "Waiting on dealer",
-    waiting_on_agency: "Waiting on agency",
-    ready_for_pickup: "Ready for pickup",
+    waiting_on_dealer: "At Dealer/Agency",
+    waiting_on_agency: "At Dealer/Agency",
+    ready_for_pickup: "At Dealer/Agency",
     at_dtm: "At DTM",
     delivered: "Delivered",
     not_started: "Not started",

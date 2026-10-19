@@ -218,7 +218,6 @@ function _ptProjectProgress(project, vehicles = _ptProjectOperations(project)) {
     return { key: "building", label: "Build Complete" };
   }
   if (any("shop_status", ["in_progress", "complete"]) ||
-      any("tray_status", ["ready", "complete"]) ||
       any("programming_qc_status", ["ready", "complete"]) ||
       any("final_finish_status", ["ready_for_wash_clean_photos", "ready_for_delivery", "delivered"])) {
     return { key: "building", label: "Build in Progress" };
@@ -229,8 +228,8 @@ function _ptProjectProgress(project, vehicles = _ptProjectOperations(project)) {
   }
 
   const accepted = all("acceptance_status", ["accepted"]);
-  const logisticsStarted = any("parts_status", ["ordered", "received", "parts_ready"]) ||
-    any("vehicle_availability_status", ["waiting_on_dealer", "waiting_on_agency", "ready_for_pickup", "at_dtm", "delivered"]);
+  const logisticsStarted = any("parts_status", ["ordered", "parts_ready"]) ||
+    any("vehicle_availability_status", ["ready_for_pickup", "at_dtm", "delivered"]);
   if (accepted && logisticsStarted) {
     const common = (field, fallback) => {
       const values = new Set(vehicles.map(vehicle => String(vehicle[field] || fallback)));
@@ -240,12 +239,11 @@ function _ptProjectProgress(project, vehicles = _ptProjectOperations(project)) {
       mixed: "Mixed",
       not_started: "Not started",
       ordered: "Ordered",
-      received: "Received",
       parts_ready: "Parts ready",
       awaiting_details: "Awaiting details",
-      waiting_on_dealer: "Waiting on dealer",
-      waiting_on_agency: "Waiting on agency",
-      ready_for_pickup: "Ready for pickup",
+      waiting_on_dealer: "At Dealer/Agency",
+      waiting_on_agency: "At Dealer/Agency",
+      ready_for_pickup: "At Dealer/Agency",
       at_dtm: "At DTM",
       delivered: "Delivered",
     };

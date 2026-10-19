@@ -60,7 +60,7 @@ def test_request_capability_map_separates_read_edit_lifecycle_and_admin():
 
 
 def test_shop_can_read_builder_data_but_cannot_mutate_projects(monkeypatch):
-    _set_role(monkeypatch, "ShopEditor")
+    _set_role(monkeypatch, "Shop")
 
     assert authorize_request("GET", "/api/projects").allowed is True
     assert authorize_request("POST", "/api/build/show-folder").allowed is True
@@ -70,8 +70,8 @@ def test_shop_can_read_builder_data_but_cannot_mutate_projects(monkeypatch):
     assert authorize_request("POST", "/api/quickbooks/estimates/bind").allowed is False
 
 
-def test_builder_can_edit_projects_estimates_vehicle_availability_and_parts(monkeypatch):
-    _set_role(monkeypatch, "BuilderEditor")
+def test_staff_can_edit_everything_except_advanced_settings(monkeypatch):
+    _set_role(monkeypatch, "Staff")
 
     assert authorize_request("POST", "/api/project/save").allowed is True
     assert authorize_request("POST", "/api/project/p1/lifecycle").allowed is True
@@ -79,18 +79,18 @@ def test_builder_can_edit_projects_estimates_vehicle_availability_and_parts(monk
     assert authorize_request("POST", "/api/catalog/save").allowed is False
 
 
-def test_parts_editor_can_connect_quickbooks_and_manage_estimate_connections(monkeypatch):
-    _set_role(monkeypatch, "PartsEditor")
+def test_staff_can_connect_quickbooks_but_not_change_advanced_qb_settings(monkeypatch):
+    _set_role(monkeypatch, "Staff")
 
     assert authorize_request("GET", "/api/quickbooks/auth-url").allowed is True
     assert authorize_request("POST", "/api/quickbooks/estimates/search").allowed is True
     assert authorize_request("POST", "/api/quickbooks/estimates/bind").allowed is True
-    assert authorize_request("POST", "/api/project/save").allowed is False
+    assert authorize_request("POST", "/api/project/save").allowed is True
     assert authorize_request("POST", "/api/quickbooks/link-item").allowed is False
 
 
-def test_app_admin_retains_advanced_mutation_access(monkeypatch):
-    _set_role(monkeypatch, "AppAdmin")
+def test_admin_retains_advanced_mutation_access(monkeypatch):
+    _set_role(monkeypatch, "Admin")
 
     assert authorize_request("POST", "/api/catalog/save").allowed is True
     assert authorize_request("DELETE", "/api/agency/a1").allowed is True

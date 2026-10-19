@@ -148,19 +148,26 @@ def _vehicle_summary(record: VehicleOperations) -> dict:
         "commitment_start_date": commitment_start,
         "must_deliver_override_date": record.must_deliver_override_date,
         "must_deliver_by_date": effective_deadline,
-        "vehicle_availability_status": record.vehicle_availability_status.value,
+        "vehicle_availability_status": (
+            "ready_for_pickup"
+            if record.vehicle_availability_status.value in {
+                "waiting_on_dealer", "waiting_on_agency", "ready_for_pickup"
+            }
+            else record.vehicle_availability_status.value
+        ),
         "vehicle_available_date": record.vehicle_available_date,
         "vehicle_at_dtm_date": record.vehicle_at_dtm_date,
-        # Keep legacy history readable, but do not expose the retired
-        # partially-received workflow as a selectable/current UI state.
-        "parts_status": "ordered" if record.parts_status == "partially_received" else record.parts_status,
+        # Keep legacy history readable, but do not expose either retired
+        # receiving workflow as a selectable/current UI state.
+        "parts_status": (
+            "ordered"
+            if record.parts_status in {"partially_received", "received"}
+            else record.parts_status
+        ),
         "parts_ordered_at": record.parts_ordered_at,
         "parts_received_at": record.parts_received_at,
         "parts_ready_at": record.parts_ready_at,
         "shop_status": record.shop_status,
-        "tray_status": record.tray_status.value,
-        "tray_ready_at": record.tray_ready_at,
-        "tray_completed_at": record.tray_completed_at,
         "programming_qc_status": record.programming_qc_status.value,
         "programming_qc_ready_at": record.programming_qc_ready_at,
         "programming_qc_completed_at": record.programming_qc_completed_at,

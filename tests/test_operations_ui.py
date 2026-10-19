@@ -202,7 +202,7 @@ vm.runInContext(`
    vehicle_id:'v1',project_id:'p1',vehicle_label:'Unit 21',unit_number:'21',vin:'VIN123',
    project_type:'build',project_state:'active',acceptance_status:'accepted',schedule_bucket:'scheduled',
    vehicle_availability_status:'at_dtm',parts_status:'parts_ready',shop_status:'in_progress',
-   tray_status:'not_ready',programming_qc_status:'ready',final_finish_status:'not_ready',
+   programming_qc_status:'ready',final_finish_status:'not_ready',
    applicable_workstreams:['parts','programming_qc'],qbo_estimate_id:'44',qbo_estimate_number:'1004',
    accepted_date:'2026-09-01',vehicle_at_dtm_date:'2026-09-12',parts_ready_at:'2026-09-15',
    shop_started_at:'2026-09-16',planned_start_date:'2026-09-16',target_finish_date:'2026-10-01',
@@ -218,7 +218,7 @@ assert.match(markup,/operations-vehicle-kicker[^>]*>Vehicle/);
 assert.match(markup,/Workflow status/);
 assert.doesNotMatch(markup,/Key dates &amp; records/);
 assert.match(markup,/operations-status-tone-complete/);
-assert.match(markup,/operations-status-tone-unavailable/);
+assert.doesNotMatch(markup,/>Tray</);
 assert.match(markup,/operations-pill-quote[^>]*[^]*Quote 1004/);
 assert.match(markup,/operations-pill-quote[^>]*data-operations-estimate-vehicle="v1"/);
 assert.match(markup,/operations-pill-accepted[^>]*data-operations-accepted-date="v1"/);

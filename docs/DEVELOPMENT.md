@@ -29,7 +29,7 @@ Port conflict on launch → old instance still running: `lsof -ti :7655 | xargs 
 ```bash
 .venv/bin/python -m pytest tests/test_<target>.py --maxfail=1  # iterative work: one relevant file
 .venv/bin/python tools/verify.py changed --skip-smoke  # explicit owner pre-commit request only
-.venv/bin/python tools/verify.py release       # pre-release checks only
+.venv/bin/python tools/verify.py release       # Python-only pre-release checks
 ```
 
 Tests auto-redirect workspace to temp dirs. `PYTEST_CURRENT_TEST` guards prevent real cloud
@@ -44,8 +44,9 @@ Reserve `tools/verify.py changed` for an explicit owner request for pre-commit v
 pass `--skip-smoke`. It selects from all staged/unstaged changes against `HEAD` plus untracked
 files; staging alone does not narrow that selection. A baseline commit preserves current work
 while resetting the diff for subsequent edits. The bare command also runs selected browser flows.
-Full browser runs and the `release` profile are strictly pre-release checks. GitHub CI keeps
-the complete suite and coverage floor as the authoritative always-on safety net.
+The `release` profile is Python-only and must never launch browser smoke tests. Run browser flows
+only as a separate check when the owner explicitly requests them. GitHub CI keeps the complete
+suite and coverage floor as the authoritative always-on safety net.
 
 This policy is mandatory for automated coding sessions. The repository-root `AGENTS.md` contains
 the canonical session instructions so a fresh agent receives them before making changes.

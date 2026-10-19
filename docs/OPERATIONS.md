@@ -33,8 +33,9 @@ item ID is an adapter detail and must never become the cross-system vehicle iden
 
 ### Authorization and mutation boundary
 
-- Entra roles come from validated ID-token claims for the existing public-client app. Stable
-  role Values are permanent; never rename or repurpose issued Values. Role assignment adds
+- Entra roles come from validated ID-token claims for the existing public-client app. The current
+  role Values are `Admin`, `Staff`, and `Shop`. Legacy Values are accepted only as migration aliases
+  while assignments move to those three roles. Role assignment adds
   no client secret or application permission. Multiple roles grant the union of capabilities.
 - Every backend mutation checks its capability. UI visibility is not authorization. Unknown
   roles, failed resolution, and unverified sessions grant no mutation authority. Cached roles
@@ -45,7 +46,7 @@ item ID is an adapter detail and must never become the cross-system vehicle iden
   access from editing outside DTM. Builder project/draft libraries remain separately permissioned.
   Stronger isolation requires list permissions or a trusted service.
 - Desktop events retain the authenticated Entra object ID and display name. A shared shop
-  account has only `ShopEditor`; optional `PerformedByName` is attribution, never authentication.
+  account has only `Shop`; optional `PerformedByName` is attribution, never authentication.
   Phone v1 derives the actor from immutable SharePoint Created By, writes its display name,
   and leaves the object ID blank until a trusted lookup is implemented.
 - Mutations carry a stable request ID and expected revision/ETag. Create the pending event
@@ -53,7 +54,7 @@ item ID is an adapter detail and must never become the cross-system vehicle iden
   afterward. Stale revisions conflict, retries are idempotent, and corrections create new events.
   Ordinary history reads never repair pending events; recovery belongs to an authorized writer.
 - The phone processor runs with trigger concurrency one, permits only normal forward Shop,
-  Tray, Programming & QC, and Final Finish actions on active, accepted vehicles, and owns all
+  Programming & QC, and Final Finish actions on active, accepted vehicles, and owns all
   result fields. It validates schema/status, treats identical states as unchanged, and rejects
   corrections/skips. It must not report success before an applied/unchanged result. Terminal
   failure handling and interrupted-write recovery still need pilot validation before enabling it.
@@ -130,11 +131,11 @@ never creates a new operations row.
 accepted project is represented in both Started and Active views; each view contains only its
 unaccepted or accepted vehicle rows, respectively.
 
-#### Vehicle availability
+#### Vehicle
 
 | Internal name | Type | Required | Indexed | Meaning |
 |---|---|---:|---:|---|
-| `VehicleAvailabilityStatus` | Choice | yes | yes | `awaiting_details`, `waiting_on_dealer`, `waiting_on_agency`, `ready_for_pickup`, `at_dtm`; legacy `delivered` remains accepted for existing history |
+| `VehicleAvailabilityStatus` | Choice | yes | yes | UI: Awaiting Details, At Dealer/Agency, At DTM. Older stored values are normalized for display; legacy `delivered` remains accepted for existing history |
 | `VehicleAvailabilityStatusChanged` | Date/time | no | no | Audit time of latest availability-status change (stored in UTC) |
 | `VehicleAvailableDate` | Date only | no | yes | Business-effective date vehicle became available to DTM |
 | `VehicleAtDtmDate` | Date only | no | no | Business date vehicle physically arrived at DTM |
@@ -172,7 +173,7 @@ palletization/staging, or other internal work was delayed unless a user explicit
 
 | Internal name | Type | Required | Indexed | Meaning |
 |---|---|---:|---:|---|
-| `PartsStatus` | Choice | no | yes | blank, `ordered`, `partially_received`, `received`, `parts_ready` |
+| `PartsStatus` | Choice | no | yes | UI: blank, `ordered`, `parts_ready`; legacy intermediate values remain readable but cannot be selected |
 | `PartsStatusChangedAtUtc` | Date/time | no | no | Current status entry time |
 | `PartsOrderedAtUtc` | Date/time | no | no | Current-cycle ordering milestone |
 | `PartsPartiallyReceivedAtUtc` | Date/time | no | no | Current-cycle milestone |
@@ -188,7 +189,10 @@ palletization/staging, or other internal work was delayed unless a user explicit
 | `ShopStartedAtUtc` | Date/time | no | no | Current-cycle start |
 | `ShopCompletedAtUtc` | Date/time | no | no | Current-cycle completion |
 
-#### Tray
+#### Retired Tray storage
+
+Tray is no longer a displayed or editable workstream. These existing columns remain in the
+SharePoint schema only to preserve historical data and avoid a destructive production migration.
 
 | Internal name | Type | Required | Indexed | Meaning |
 |---|---|---:|---:|---|
@@ -351,9 +355,8 @@ records a standard audit reason automatically when the user does not supply one.
 
 | Workstream | Initial | Normal next values |
 |---|---|---|
-| Parts | blank | blank -> ordered, partially_received, or received; ordered -> partially_received or received; partially_received -> received; received -> parts_ready |
+| Parts | blank | blank -> ordered; ordered -> parts_ready |
 | Shop | blank | blank -> in_progress; in_progress -> complete |
-| Tray | not_ready | not_ready -> ready; ready -> complete |
 | Programming & QC | not_ready | not_ready -> ready; ready -> complete |
 | Final Finish | not_ready | not_ready -> ready_for_wash_clean_photos; ready_for_wash_clean_photos -> ready_for_delivery; ready_for_delivery -> delivered |
 
@@ -372,13 +375,9 @@ time never substitutes for acceptance. Business-date fields use ISO `YYYY-MM-DD`
 
 | App-role value | Intended user | Default workspace |
 |---|---|---|
-| `AppAdmin` | Application owner/administrator | All workspaces |
-| `BuilderEditor` | Sales/build designer/estimator | Projects / Builder |
-| `OperationsManager` | Production coordinator or trusted workflow corrector | Operations overview |
-| `PartsEditor` | Parts manager and QuickBooks estimate-connection users | Operations overview |
-| `ShopEditor` | Shop technicians/build staff | Shop queue |
-| `ProgrammingQcEditor` | Programming and QC staff | Programming & QC queue |
-| `OperationsViewer` | Read-only management/office user | Operations overview |
+| `Admin` | Application owner/administrator | All workspaces |
+| `Staff` | Office, sales, parts, scheduling, and production staff | Projects / Builder |
+| `Shop` | Shop, programming, QC, and final-finish staff | Operations overview |
 
 Role names never contain employee names. Assignment is administered in Entra, not in a local JSON
 file. If the tenant has licensing for group-based enterprise-app assignment, security groups may be
@@ -393,7 +392,6 @@ assigned to app roles. Otherwise the small user population can receive direct us
 | `operations.schedule.update` | Change scheduled week, planned start, or target finish |
 | `operations.parts.update` | Change Parts status |
 | `operations.shop.update` | Start/complete Build / Shop |
-| `operations.tray.update` | Change Tray status |
 | `operations.programming_qc.update` | Change Programming & QC status |
 | `operations.final_finish.update` | Change Final Finish status |
 | `operations.delivery.update` | Record or correct physical delivery |
@@ -411,13 +409,10 @@ assigned to app roles. Otherwise the small user population can receive direct us
 
 | Role | Capabilities |
 |---|---|
-| `AppAdmin` | all capabilities |
-| `BuilderEditor` | `projects.view`, `projects.edit`, `projects.lifecycle.update`, `estimates.manage`, `operations.view`, `operations.availability.update`, `operations.parts.update`, `operations.qbo.observe` |
-| `OperationsManager` | `projects.view`; all `operations.*`, including scheduling, delivery, and correction; `projects.lifecycle.update` |
-| `PartsEditor` | `projects.view`, `projects.lifecycle.update`, `estimates.manage`, `operations.view`, every Operations status-update capability, `operations.correct`, `operations.qbo.observe` |
-| `ShopEditor` | `projects.view`, `operations.view`, `operations.shop.update`, `operations.tray.update`, `operations.final_finish.update` |
-| `ProgrammingQcEditor` | `projects.view`, `operations.view`, `operations.programming_qc.update`, `operations.final_finish.update` |
-| `OperationsViewer` | `projects.view`, `operations.view` |
+| `Admin` | every active capability, including both Settings workspaces |
+| `Staff` | every active capability except `settings.advanced.manage` |
+| `Shop` | `projects.view`, `operations.view`, `operations.shop.update`, `operations.programming_qc.update`, `operations.final_finish.update`; Calendar is view-only and Settings is hidden |
 
-Final Finish is editable by both Shop and Programming & QC because wash/clean/photos may cross team
-ownership.
+The legacy values `AppAdmin`, `BuilderEditor`, `OperationsManager`, `PartsEditor`, `ShopEditor`, and
+`ProgrammingQcEditor` temporarily resolve to these three personas during the Entra migration.
+`OperationsViewer` is intentionally not recognized.

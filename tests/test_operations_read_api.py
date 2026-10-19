@@ -116,12 +116,12 @@ def _reset_bundle():
 
 def test_access_session_maps_known_roles_and_ignores_unknown_values():
     session = describe_access_session(
-        bundle=_bundle(user=_user("PartsEditor", "FutureRole")),
+        bundle=_bundle(user=_user("Staff", "FutureRole")),
         cloud_enabled=True,
     )
 
     assert session["authenticated"] is True
-    assert session["roles"] == ["PartsEditor"]
+    assert session["roles"] == ["Staff"]
     assert "operations.view" in session["capabilities"]
     assert "operations.parts.update" in session["capabilities"]
     assert "operations.shop.update" in session["capabilities"]
@@ -130,12 +130,12 @@ def test_access_session_maps_known_roles_and_ignores_unknown_values():
     assert "operations.qbo.observe" in session["capabilities"]
     assert "projects.lifecycle.update" in session["capabilities"]
     assert "projects.view" in session["capabilities"]
-    assert session["default_workspace"] == "operations"
+    assert session["default_workspace"] == "projects"
 
 
 def test_access_session_fails_closed_for_cloud_fallback_identity():
     session = describe_access_session(
-        bundle=_bundle(user=_user("AppAdmin", provider="local")),
+        bundle=_bundle(user=_user("Admin", provider="local")),
         cloud_enabled=True,
     )
 
@@ -151,13 +151,13 @@ def test_cloud_off_local_identity_is_admin_for_development():
     )
 
     assert session["authenticated"] is True
-    assert session["roles"] == ["AppAdmin"]
+    assert session["roles"] == ["Admin"]
     assert "operations.view" in session["capabilities"]
 
 
 def test_m365_identity_uses_only_known_validated_role_claims(monkeypatch):
     class _Msal:
-        roles = frozenset({"ShopEditor", "UnknownFutureRole"})
+        roles = frozenset({"Shop", "UnknownFutureRole"})
 
         def acquire_token(self, **kwargs):
             del kwargs
@@ -185,10 +185,10 @@ def test_m365_identity_uses_only_known_validated_role_claims(monkeypatch):
     provider = M365IdentityProvider(msal)
 
     user = provider.signin()
-    assert user.roles == frozenset({"ShopEditor"})
+    assert user.roles == frozenset({"Shop"})
 
-    msal.roles = frozenset({"OperationsViewer"})
-    assert provider.current_user().roles == frozenset({"OperationsViewer"})
+    msal.roles = frozenset({"Staff"})
+    assert provider.current_user().roles == frozenset({"Staff"})
 
 
 def test_actor_requires_authenticated_session():
@@ -196,12 +196,12 @@ def test_actor_requires_authenticated_session():
     actor = actor_from_access_session({
         "authenticated": True,
         "user": {"user_id": "u1", "display_name": "Person"},
-        "roles": ["OperationsViewer"],
+        "roles": ["Shop"],
     })
     assert actor == OperationsActor(
         user_id="u1",
         display_name="Person",
-        roles=frozenset({"OperationsViewer"}),
+        roles=frozenset({"Shop"}),
     )
 
 
@@ -315,7 +315,7 @@ def test_read_service_returns_complete_browser_safe_history_newest_first():
     service.change_status(
         vehicle_id="vehicle-1",
         workstream="parts",
-        new_status="received",
+        new_status="ordered",
         actor=actor,
         request_id="status-request",
         source_client=OperationsSource.BUILDER_DESKTOP,
@@ -330,14 +330,14 @@ def test_read_service_returns_complete_browser_safe_history_newest_first():
         "record_created",
     ]
     assert payload["events"][0]["previous_value"] == ""
-    assert payload["events"][0]["new_value"] == "received"
+    assert payload["events"][0]["new_value"] == "ordered"
     assert payload["events"][0]["actor_display_name"] == "Test User"
     assert "actor_id" not in payload["events"][0]
     assert "request_id" not in payload["events"][0]
 
 
 def test_operations_routes_gate_the_list_server_side(monkeypatch, tmp_path):
-    bundle = _bundle(user=_user("OperationsViewer"))
+    bundle = _bundle(user=_user("Shop"))
     set_active_bundle(bundle)
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
     paths = AppPaths(workspace_dir=tmp_path)
@@ -346,7 +346,8 @@ def test_operations_routes_gate_the_list_server_side(monkeypatch, tmp_path):
         route_operations, "GET", "/api/operations/session", {}, paths,
     )
     assert (status, handled) == (200, True)
-    assert session["capabilities"] == ["operations.view", "projects.view"]
+    assert "operations.view" in session["capabilities"]
+    assert "projects.view" in session["capabilities"]
 
     status, payload, handled = call_route(
         route_operations, "GET", "/api/operations/vehicles", {}, paths,
@@ -376,7 +377,7 @@ def test_operations_vehicle_route_hides_builder_inactive_project_even_when_proje
     _seed_operations_vehicle(repository)
     project = _builder_project()
     project.project_status = "inactive"
-    set_active_bundle(_bundle(user=_user("OperationsViewer"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Shop"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
     monkeypatch.setattr(
         "dtm_buildsheet.app.routes.operations.list_projects",
@@ -400,7 +401,7 @@ def test_operations_history_route_is_viewer_accessible_and_read_only(monkeypatch
     repository = InMemoryOperationsRepository()
     _seed_operations_vehicle(repository)
     bundle = replace(
-        _bundle(user=_user("OperationsViewer"), operations=repository),
+        _bundle(user=_user("Shop"), operations=repository),
         operations_writer=None,
     )
     set_active_bundle(bundle)
@@ -431,7 +432,7 @@ def test_operations_history_route_rejects_missing_or_unknown_vehicle(
     expected_status,
 ):
     repository = InMemoryOperationsRepository()
-    set_active_bundle(_bundle(user=_user("OperationsViewer"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Shop"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
 
     status, payload, handled = call_route(
@@ -467,7 +468,7 @@ def test_projection_preview_route_maps_builder_vehicles_without_writing(
     tmp_path,
 ):
     repository = InMemoryOperationsRepository()
-    set_active_bundle(_bundle(user=_user("AppAdmin"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Admin"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
     project = _builder_project()
     monkeypatch.setattr(
@@ -493,7 +494,7 @@ def test_projection_preview_route_maps_builder_vehicles_without_writing(
 
 
 def test_projection_preview_route_requires_project_edit_capability(monkeypatch, tmp_path):
-    set_active_bundle(_bundle(user=_user("OperationsViewer")))
+    set_active_bundle(_bundle(user=_user("Shop")))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
 
     status, payload, handled = call_route(
@@ -513,7 +514,7 @@ def test_projection_pilot_creates_exactly_one_confirmed_builder_vehicle(
     tmp_path,
 ):
     repository = InMemoryOperationsRepository()
-    set_active_bundle(_bundle(user=_user("AppAdmin"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Admin"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
     monkeypatch.setattr(
         "dtm_buildsheet.app.routes.operations.list_projects",
@@ -570,7 +571,7 @@ def test_projection_pilot_rejects_missing_confirmation_and_existing_row(
     tmp_path,
 ):
     repository = InMemoryOperationsRepository()
-    set_active_bundle(_bundle(user=_user("AppAdmin"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Admin"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
     monkeypatch.setattr(
         "dtm_buildsheet.app.routes.operations.list_projects",
@@ -619,7 +620,7 @@ def test_projection_pilot_rejects_missing_confirmation_and_existing_row(
 
 def test_projection_pilot_requires_project_edit_capability(monkeypatch, tmp_path):
     repository = InMemoryOperationsRepository()
-    set_active_bundle(_bundle(user=_user("OperationsViewer"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Shop"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
     monkeypatch.setattr(
         "dtm_buildsheet.app.routes.operations.list_projects",
@@ -662,7 +663,7 @@ def _seed_operations_vehicle(repository: InMemoryOperationsRepository) -> None:
 def test_status_route_updates_one_vehicle_with_revision_and_history(monkeypatch, tmp_path):
     repository = InMemoryOperationsRepository()
     _seed_operations_vehicle(repository)
-    set_active_bundle(_bundle(user=_user("AppAdmin"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Admin"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
 
     status, payload, handled = call_route(
@@ -672,7 +673,7 @@ def test_status_route_updates_one_vehicle_with_revision_and_history(monkeypatch,
         {
             "vehicle_id": "vehicle-1",
             "workstream": "parts",
-            "new_status": "received",
+            "new_status": "ordered",
             "expected_revision": 0,
             "request_id": "status-request-1",
         },
@@ -684,20 +685,20 @@ def test_status_route_updates_one_vehicle_with_revision_and_history(monkeypatch,
         "ok": True,
         "vehicle_id": "vehicle-1",
         "workstream": "parts",
-        "status": "received",
+        "status": "ordered",
         "revision": 1,
         "changed": True,
         "unchanged": False,
         "duplicate": False,
     }
-    assert repository.get_vehicle("vehicle-1").parts_status == "received"
+    assert repository.get_vehicle("vehicle-1").parts_status == "ordered"
     assert len(repository.list_events("vehicle-1")) == 2
 
 
 def test_status_route_dispatches_acceptance_and_availability(monkeypatch, tmp_path):
     repository = InMemoryOperationsRepository()
     _seed_operations_vehicle(repository)
-    set_active_bundle(_bundle(user=_user("AppAdmin"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Admin"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
     paths = AppPaths(workspace_dir=tmp_path)
 
@@ -756,7 +757,7 @@ def test_schedule_route_updates_an_accepted_vehicle(monkeypatch, tmp_path):
         source_client=OperationsSource.BUILDER_DESKTOP,
         expected_revision=0,
     )
-    set_active_bundle(_bundle(user=_user("AppAdmin"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Admin"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
 
     status, payload, handled = call_route(
@@ -795,7 +796,7 @@ def test_schedule_route_allows_partial_pre_acceptance_edit_and_enforces_capabili
         "expected_revision": 0,
         "request_id": "schedule-request",
     }
-    set_active_bundle(_bundle(user=_user("AppAdmin"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Admin"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
 
     status, payload, handled = call_route(
@@ -804,7 +805,7 @@ def test_schedule_route_allows_partial_pre_acceptance_edit_and_enforces_capabili
     assert (status, handled) == (200, True)
     assert payload["scheduled_week_of"] == "2026-09-07"
 
-    set_active_bundle(_bundle(user=_user("OperationsViewer"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Shop"), operations=repository))
     body = {
         "vehicle_id": "vehicle-1",
         "target_finish_date": "2026-09-18",
@@ -821,7 +822,7 @@ def test_schedule_route_allows_partial_pre_acceptance_edit_and_enforces_capabili
 def test_status_route_rejects_stale_revision_and_unauthorized_role(monkeypatch, tmp_path):
     repository = InMemoryOperationsRepository()
     _seed_operations_vehicle(repository)
-    set_active_bundle(_bundle(user=_user("AppAdmin"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Admin"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
     paths = AppPaths(workspace_dir=tmp_path)
     body = {
@@ -840,7 +841,7 @@ def test_status_route_rejects_stale_revision_and_unauthorized_role(monkeypatch, 
     assert "entries were not discarded" in payload["error"]
     assert repository.get_vehicle("vehicle-1").revision == 0
 
-    set_active_bundle(_bundle(user=_user("OperationsViewer"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Shop"), operations=repository))
     body["expected_revision"] = 0
     body["request_id"] = "unauthorized-request"
     status, payload, handled = call_route(
@@ -855,7 +856,7 @@ def test_status_route_rejects_stale_revision_and_unauthorized_role(monkeypatch, 
 def test_status_route_rejects_invalid_workstream(monkeypatch, tmp_path, workstream):
     repository = InMemoryOperationsRepository()
     _seed_operations_vehicle(repository)
-    set_active_bundle(_bundle(user=_user("AppAdmin"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Admin"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
 
     status, payload, handled = call_route(
@@ -878,7 +879,7 @@ def test_status_route_rejects_invalid_workstream(monkeypatch, tmp_path, workstre
 
 
 def test_operations_unknown_post_route_is_not_handled(monkeypatch, tmp_path):
-    set_active_bundle(_bundle(user=_user("AppAdmin")))
+    set_active_bundle(_bundle(user=_user("Admin")))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
 
     status, payload, handled = call_route(
@@ -923,7 +924,7 @@ def test_final_finish_delivering_every_vehicle_moves_project_and_operations_to_c
             request_id=f"seed-{vehicle_id}",
             source_client=OperationsSource.BUILDER_DESKTOP,
         )
-    set_active_bundle(_bundle(user=_user("AppAdmin"), operations=repository))
+    set_active_bundle(_bundle(user=_user("Admin"), operations=repository))
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
 
     for index, vehicle_id in enumerate(("vehicle-1", "vehicle-2"), start=1):

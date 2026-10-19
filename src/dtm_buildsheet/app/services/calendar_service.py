@@ -10,7 +10,7 @@ import json
 from ...config.schemas import validate_config_payload
 from ...domain.calendar_planning import ZONE, acceptance_day, calculate_opening, number, plan_calendar, shop_closed_dates, valid_day, validate_settings, work_segments, _scheduled_job, _team, _hours, _work_start
 from ...domain.operations_policy import Capability, has_capability
-from ...domain.operations_models import AcceptanceStatus, ProjectState
+from ...domain.operations_models import AcceptanceStatus, ProjectState, VehicleAvailabilityStatus
 from ...inputs.project_entry import list_projects
 from ..adapters.calendar_store import CalendarConflictError, CalendarStore
 from .operations_projection_service import current_operations_records
@@ -51,12 +51,18 @@ class CalendarService:
         records = current_operations_records(
             self.bundle.operations.list_vehicles(), projects,
         )
-        return [
-            replace(record, parts_status="ordered")
-            if record.parts_status == "partially_received"
-            else record
-            for record in records
-        ]
+        normalized = []
+        for record in records:
+            changes = {}
+            if record.parts_status in {"partially_received", "received"}:
+                changes["parts_status"] = "ordered"
+            if record.vehicle_availability_status in {
+                VehicleAvailabilityStatus.WAITING_ON_DEALER,
+                VehicleAvailabilityStatus.WAITING_ON_AGENCY,
+            }:
+                changes["vehicle_availability_status"] = VehicleAvailabilityStatus.READY_FOR_PICKUP
+            normalized.append(replace(record, **changes) if changes else record)
+        return normalized
 
     def with_current_builder_data(self, records):
         """Refresh cached Calendar rows from the same projects the viewer uses."""

@@ -66,7 +66,6 @@ _STATUS_RESPONSE_ATTR = {
     OperationsWorkstream.AVAILABILITY: "vehicle_availability_status",
     OperationsWorkstream.PARTS: "parts_status",
     OperationsWorkstream.SHOP: "shop_status",
-    OperationsWorkstream.TRAY: "tray_status",
     OperationsWorkstream.PROGRAMMING_QC: "programming_qc_status",
     OperationsWorkstream.FINAL_FINISH: "final_finish_status",
 }
@@ -98,7 +97,7 @@ def _change_status(writer, actor, body: dict, paths=None):
     if workstream not in _STATUS_RESPONSE_ATTR:
         raise OperationsValidationError(f"{workstream.value} is not an editable status")
 
-    if paths is not None and workstream.value in {'parts', 'tray', 'programming_qc'}:
+    if paths is not None and workstream.value in {'parts', 'programming_qc'}:
         from ...domain.project_types import with_project_work, applicable_workstreams
         record = writer.get_vehicle(str(body.get('vehicle_id') or ''))
         if record is not None:

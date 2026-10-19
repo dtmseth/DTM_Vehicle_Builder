@@ -5,7 +5,7 @@ from dataclasses import replace
 
 import requests
 
-from ....domain.operations_policy import AppRole
+from ....domain.operations_policy import normalize_app_role
 from ..interfaces import IdentityProvider, UserIdentity
 from .config import GRAPH_ENDPOINT
 from .msal_client import CloudAuthError, MsalClient
@@ -131,5 +131,8 @@ class M365IdentityProvider(IdentityProvider):
     def _app_roles(self) -> frozenset[str]:
         get_roles = getattr(self._msal, "get_app_roles", None)
         claimed = get_roles() if callable(get_roles) else frozenset()
-        known = {role.value for role in AppRole}
-        return frozenset(str(role) for role in claimed if str(role) in known)
+        return frozenset(
+            normalized.value
+            for role in claimed
+            if (normalized := normalize_app_role(role)) is not None
+        )

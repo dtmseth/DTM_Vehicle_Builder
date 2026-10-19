@@ -9,7 +9,7 @@ from uuid import UUID
 
 import jwt
 
-from ...domain.operations_policy import AppRole
+from ...domain.operations_policy import normalize_app_role
 from ..adapters.interfaces import IdentityProvider, UserIdentity
 from .metadata import Conflict, MetadataStore
 
@@ -66,7 +66,11 @@ class EntraTokens:
             assigned = claims.get("roles", [])
             if not isinstance(assigned, list) or any(not isinstance(x, str) for x in assigned):
                 raise ValueError("Invalid roles")
-            roles = frozenset(assigned) & frozenset(role.value for role in AppRole)
+            roles = frozenset(
+                normalized.value
+                for role in assigned
+                if (normalized := normalize_app_role(role)) is not None
+            )
             if not roles:
                 raise Denied(403, "role_assignment_required")
             return Principal(self.tenant, UserIdentity(

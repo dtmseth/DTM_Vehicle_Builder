@@ -615,18 +615,18 @@ not been rerun.
   classification instead of temporarily moving all durable-active work to Started. Bay tracking and
   project/vehicle team assignments are documented as post-scheduling-pilot additions using durable
   neutral IDs and later optional Entra linkage.
-- **v3.7.0 — role and scheduling gates:** every recognized operational role can
-  read Builder project context. Sales (`BuilderEditor`) can edit Projects, Estimates, Acceptance,
-  Vehicle Availability, and Parts but cannot schedule or change downstream production. Shop can
-  edit only Build / Shop, Tray, and Final Finish. The browser hides disallowed controls and the
+- **Current role and scheduling gates:** Entra access is consolidated to `Admin`, `Staff`, and
+  `Shop`. Admin has all access; Staff has all access except Advanced Settings; Shop has no Settings,
+  a view-only Calendar, and can edit only Build / Shop, Programming & QC, and Final Finish while
+  viewing the other statuses. The browser hides disallowed controls and the
   local server rejects direct legacy Builder mutations that bypass the UI. Shop can inspect draft
   equipment and build notes in a read-only view. Active Operations now has All / Unscheduled /
   Scheduled subfilters; Scheduled is ordered by Scheduled Week.
 - **Local verification policy (updated 2026-09-15):** iterative work runs only one relevant
   pytest file with `--maxfail=1`. Never autonomously run browser smoke tests during normal editing
   or small feature additions. `tools/verify.py changed --skip-smoke` requires an explicit owner
-  request for pre-commit verification. Full browser runs and `tools/verify.py release` are strictly
-  pre-release checks. Root `AGENTS.md` supersedes older verification guidance in plans and handoffs;
+  request for pre-commit verification. `tools/verify.py release` is Python-only and browser smoke
+  is never part of a release check. Root `AGENTS.md` supersedes older verification guidance in plans and handoffs;
   CI continues to run the full suite and coverage floor on every PR and main push.
 - **v3.7.0 — default work queue:** Projects and Operations now open on Active.
   The Operations read boundary also excludes projects whose authoritative Builder lifecycle is

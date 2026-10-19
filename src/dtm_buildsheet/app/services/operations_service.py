@@ -23,7 +23,6 @@ from ...domain.operations_models import (
     ProgrammingQcStatus,
     ProjectState,
     ShopStatus,
-    TrayStatus,
     VehicleAvailabilityStatus,
     VehicleOperations,
     calculate_commitment_dates,
@@ -72,13 +71,11 @@ _BUILDER_PROJECTION_FIELDS = (
 _STATUS_ATTR = {
     OperationsWorkstream.PARTS: "parts_status",
     OperationsWorkstream.SHOP: "shop_status",
-    OperationsWorkstream.TRAY: "tray_status",
     OperationsWorkstream.PROGRAMMING_QC: "programming_qc_status",
     OperationsWorkstream.FINAL_FINISH: "final_finish_status",
 }
 
 _STATUS_ENUM = {
-    OperationsWorkstream.TRAY: TrayStatus,
     OperationsWorkstream.PROGRAMMING_QC: ProgrammingQcStatus,
     OperationsWorkstream.FINAL_FINISH: FinalFinishStatus,
 }
@@ -86,7 +83,6 @@ _STATUS_ENUM = {
 _STATUS_CHANGED_ATTR = {
     OperationsWorkstream.PARTS: "parts_status_changed_at",
     OperationsWorkstream.SHOP: "shop_status_changed_at",
-    OperationsWorkstream.TRAY: "tray_status_changed_at",
     OperationsWorkstream.PROGRAMMING_QC: "programming_qc_status_changed_at",
     OperationsWorkstream.FINAL_FINISH: "final_finish_status_changed_at",
 }
@@ -94,7 +90,6 @@ _STATUS_CHANGED_ATTR = {
 _STREAM_CAPABILITY = {
     OperationsWorkstream.PARTS: Capability.OPERATIONS_PARTS_UPDATE,
     OperationsWorkstream.SHOP: Capability.OPERATIONS_SHOP_UPDATE,
-    OperationsWorkstream.TRAY: Capability.OPERATIONS_TRAY_UPDATE,
     OperationsWorkstream.PROGRAMMING_QC: Capability.OPERATIONS_PROGRAMMING_QC_UPDATE,
     OperationsWorkstream.FINAL_FINISH: Capability.OPERATIONS_FINAL_FINISH_UPDATE,
 }
@@ -108,11 +103,6 @@ _STATE_ORDER = {
         PartsStatus.PARTS_READY.value,
     ],
     OperationsWorkstream.SHOP: ["", ShopStatus.IN_PROGRESS.value, ShopStatus.COMPLETE.value],
-    OperationsWorkstream.TRAY: [
-        TrayStatus.NOT_READY.value,
-        TrayStatus.READY.value,
-        TrayStatus.COMPLETE.value,
-    ],
     OperationsWorkstream.PROGRAMMING_QC: [
         ProgrammingQcStatus.NOT_READY.value,
         ProgrammingQcStatus.READY.value,
@@ -128,16 +118,10 @@ _STATE_ORDER = {
 
 _NORMAL_NEXT = {
     OperationsWorkstream.PARTS: {
-        "": {
-            PartsStatus.ORDERED.value,
-            PartsStatus.PARTIALLY_RECEIVED.value,
-            PartsStatus.RECEIVED.value,
-        },
-        PartsStatus.ORDERED.value: {
-            PartsStatus.PARTIALLY_RECEIVED.value,
-            PartsStatus.RECEIVED.value,
-        },
-        PartsStatus.PARTIALLY_RECEIVED.value: {PartsStatus.RECEIVED.value},
+        "": {PartsStatus.ORDERED.value},
+        PartsStatus.ORDERED.value: {PartsStatus.PARTS_READY.value},
+        # Existing rows may still contain these retired intermediate values.
+        PartsStatus.PARTIALLY_RECEIVED.value: {PartsStatus.PARTS_READY.value},
         PartsStatus.RECEIVED.value: {PartsStatus.PARTS_READY.value},
         PartsStatus.PARTS_READY.value: set(),
     },
@@ -145,11 +129,6 @@ _NORMAL_NEXT = {
         "": {ShopStatus.IN_PROGRESS.value},
         ShopStatus.IN_PROGRESS.value: {ShopStatus.COMPLETE.value},
         ShopStatus.COMPLETE.value: set(),
-    },
-    OperationsWorkstream.TRAY: {
-        TrayStatus.NOT_READY.value: {TrayStatus.READY.value},
-        TrayStatus.READY.value: {TrayStatus.COMPLETE.value},
-        TrayStatus.COMPLETE.value: set(),
     },
     OperationsWorkstream.PROGRAMMING_QC: {
         ProgrammingQcStatus.NOT_READY.value: {ProgrammingQcStatus.READY.value},
@@ -180,10 +159,6 @@ _MILESTONE_ATTR = {
     OperationsWorkstream.SHOP: {
         ShopStatus.IN_PROGRESS.value: "shop_started_at",
         ShopStatus.COMPLETE.value: "shop_completed_at",
-    },
-    OperationsWorkstream.TRAY: {
-        TrayStatus.READY.value: "tray_ready_at",
-        TrayStatus.COMPLETE.value: "tray_completed_at",
     },
     OperationsWorkstream.PROGRAMMING_QC: {
         ProgrammingQcStatus.READY.value: "programming_qc_ready_at",
@@ -480,6 +455,11 @@ class OperationsService:
         status_attr = _STATUS_ATTR[stream]
         previous = _status_string(getattr(current, status_attr))
         target = _status_string(new_status)
+        if stream == OperationsWorkstream.PARTS and target in {
+            PartsStatus.PARTIALLY_RECEIVED.value,
+            PartsStatus.RECEIVED.value,
+        }:
+            raise OperationsValidationError(f"Invalid parts status: {target}")
         if target not in _STATE_ORDER[stream]:
             raise OperationsValidationError(f"Invalid {stream.value} status: {target or '(blank)'}")
         if target == previous:
@@ -549,15 +529,22 @@ class OperationsService:
             )
         except ValueError as exc:
             raise OperationsValidationError(
-                f"Invalid vehicle availability status: {new_status}"
+                f"Invalid vehicle status: {new_status}"
             ) from exc
         previous = current.vehicle_availability_status
+        if target not in {
+            VehicleAvailabilityStatus.AWAITING_DETAILS,
+            VehicleAvailabilityStatus.READY_FOR_PICKUP,
+            VehicleAvailabilityStatus.AT_DTM,
+            VehicleAvailabilityStatus.DELIVERED,
+        }:
+            raise OperationsValidationError(f"Invalid vehicle status: {new_status}")
         if (
             target == VehicleAvailabilityStatus.DELIVERED
             and previous != VehicleAvailabilityStatus.DELIVERED
         ):
             raise OperationsValidationError(
-                "Delivered is a Final Finish status; Vehicle Availability ends at At DTM"
+                "Delivered is a Final Finish status; Vehicle ends at At DTM"
             )
         available_states = {
             VehicleAvailabilityStatus.READY_FOR_PICKUP,

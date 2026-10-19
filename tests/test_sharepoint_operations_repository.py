@@ -272,8 +272,8 @@ class TestRepositoryContract:
         with pytest.raises(OperationsConflictError, match="Expected revision 0"):
             service.change_status(
                 vehicle_id="vehicle-1",
-                workstream="tray",
-                new_status="ready",
+                workstream="shop",
+                new_status="complete",
                 actor=_actor(AppRole.SHOP_EDITOR),
                 request_id="stale",
                 source_client="builder_desktop",

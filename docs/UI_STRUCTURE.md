@@ -60,14 +60,14 @@ set of the same buttons handles individual vehicle exceptions. The sequence stop
 failure and refreshes current data. The browser offers only workstreams allowed by the session
 capabilities; the route and service independently enforce authorization, legal forward transitions,
 revision concurrency, and correction-note requirements. Optional effective dates are available for
-Ready for Pickup and At DTM; Final Finish Delivered stamps the delivery date automatically. All
+At Dealer/Agency and At DTM; Final Finish Delivered stamps the delivery date automatically. All
 status changes receive automatic actor and entry timestamps.
 Unstarted/not-ready cells remain white, intermediate states are light yellow, and each workstream's
-finished state is green: At DTM completes Vehicle Availability, while Delivered completes Final
+finished state is green: At DTM completes Vehicle, while Delivered completes Final
 Finish. Inactive records retain history in SharePoint but have no Operations filter or visible row
 until the Builder project is reactivated. Marking every project vehicle Final Finish Delivered
 automatically moves the Builder project and its Operations rows to Completed.
-Every vehicle also exposes **View history**, including for read-only Operations viewers. The history
+Every vehicle also exposes **View history**. The history
 route returns newest-first applied events with friendly values, actor/time, optional performed-by
 name, business-effective date, correction note, and revision. Event IDs remain available as stable
 UI keys, while actor object IDs and idempotency request IDs are not sent to the browser.

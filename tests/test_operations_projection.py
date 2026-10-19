@@ -151,9 +151,9 @@ def test_projection_upsert_preserves_operations_fields_and_records_exact_changes
     service.change_status(
         vehicle_id="vehicle-1",
         workstream="parts",
-        new_status="received",
+        new_status="parts_ready",
         actor=_actor(AppRole.PARTS_EDITOR),
-        request_id="parts-received",
+        request_id="parts-ready",
         source_client=OperationsSource.BUILDER_DESKTOP,
     )
 
@@ -169,7 +169,7 @@ def test_projection_upsert_preserves_operations_fields_and_records_exact_changes
     assert created.record.revision == 0
     assert refreshed.record.revision == 2
     assert refreshed.record.unit_number == "22"
-    assert refreshed.record.parts_status == "received"
+    assert refreshed.record.parts_status == "parts_ready"
     assert refreshed.event is not None
     assert refreshed.event.event_type == OperationsEventType.PROJECTION_REFRESHED
     assert '"unit_number":"21"' in refreshed.event.previous_value
@@ -226,7 +226,7 @@ def test_reviewed_project_merge_can_rebind_vehicle_without_losing_status_history
     service.change_status(
         vehicle_id="vehicle-1",
         workstream="parts",
-        new_status="received",
+        new_status="parts_ready",
         actor=_actor(AppRole.PARTS_EDITOR),
         request_id="parts-before-merge",
         source_client="builder_desktop",
@@ -245,7 +245,7 @@ def test_reviewed_project_merge_can_rebind_vehicle_without_losing_status_history
     )
 
     assert rebound.record.project_id == "completed-project"
-    assert rebound.record.parts_status == "received"
+    assert rebound.record.parts_status == "parts_ready"
     assert rebound.event.project_id == "completed-project"
     assert len(repository.list_events("vehicle-1")) == 3
 
@@ -305,7 +305,7 @@ def test_preview_requires_builder_authority_and_duplicate_ids_fail_closed():
     with pytest.raises(OperationsAuthorizationError, match="projects.edit"):
         OperationsProjectionPreviewService(repository).preview(
             [_project()],
-            _actor(AppRole.OPERATIONS_VIEWER),
+            _actor(AppRole.SHOP),
         )
 
     with pytest.raises(OperationsValidationError, match="Duplicate"):

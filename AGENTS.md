@@ -14,7 +14,7 @@ pip (inside `.venv`): `pip install -e ".[dev,hosted]"` (hosted extra is needed f
 .venv/bin/python -m dtm_buildsheet.generator_cli book.xlsx  # CLI
 .venv/bin/python -m pytest tests/test_<target>.py --maxfail=1  # one relevant file
 .venv/bin/python tools/verify.py changed --skip-smoke  # only on explicit pre-commit request
-.venv/bin/python tools/verify.py release       # pre-release checks only
+.venv/bin/python tools/verify.py release       # Python-only pre-release checks
 bash packaging/build_macos.sh                  # package Mac app
 ```
 
@@ -30,8 +30,8 @@ This applies to every future agent/session working in this repository:
 - Reserve `tools/verify.py changed` for an explicit owner request for a verification pass
   before committing. Use `--skip-smoke` for that pass; the bare command also launches browser
   flows. A request to commit alone does not authorize this verification pass.
-- Reserve full browser runs and `tools/verify.py release` strictly for pre-release checks.
-  A merge checkpoint, meaningful edit batch, or cross-cutting change is not an exception.
+- `tools/verify.py release` is Python-only. Never include browser smoke tests in a release check.
+  Run browser flows only when the owner explicitly requests a separate browser-specific check.
 - Do not run full pytest, coverage, or multiple test files during the normal inner loop.
 - Do not stream individual passing-test names or browser-flow JSON into the conversation. Successful
   verification should be reported as compact counts/summaries; show detailed output only for the

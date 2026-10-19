@@ -78,27 +78,30 @@ def _service():
 
 
 class TestOperationsPolicy:
+    def test_only_three_current_entra_role_values_are_exposed(self):
+        assert [role.value for role in AppRole] == ["Admin", "Staff", "Shop"]
+
     def test_unknown_roles_are_denied(self):
         assert capabilities_for_roles(["MadeUpRole"]) == frozenset()
         assert has_capability(["MadeUpRole"], Capability.OPERATIONS_VIEW) is False
 
-    def test_multiple_roles_union_capabilities(self):
-        capabilities = capabilities_for_roles([
-            AppRole.SHOP_EDITOR,
-            AppRole.PROGRAMMING_QC_EDITOR,
-        ])
+    def test_shop_can_update_build_and_every_later_visible_status(self):
+        capabilities = capabilities_for_roles([AppRole.SHOP])
         assert Capability.OPERATIONS_SHOP_UPDATE in capabilities
         assert Capability.OPERATIONS_PROGRAMMING_QC_UPDATE in capabilities
+        assert Capability.OPERATIONS_FINAL_FINISH_UPDATE in capabilities
         assert Capability.OPERATIONS_PARTS_UPDATE not in capabilities
+        assert Capability.OPERATIONS_SCHEDULE_UPDATE not in capabilities
+        assert Capability.SETTINGS_GENERAL_MANAGE not in capabilities
+        assert Capability.SETTINGS_ADVANCED_MANAGE not in capabilities
 
-    def test_parts_manager_can_update_every_operations_status_and_complete_projects(self):
-        capabilities = capabilities_for_roles([AppRole.PARTS_EDITOR])
+    def test_staff_has_every_active_capability_except_advanced_settings(self):
+        capabilities = capabilities_for_roles([AppRole.STAFF])
 
         assert {
             Capability.OPERATIONS_AVAILABILITY_UPDATE,
             Capability.OPERATIONS_PARTS_UPDATE,
             Capability.OPERATIONS_SHOP_UPDATE,
-            Capability.OPERATIONS_TRAY_UPDATE,
             Capability.OPERATIONS_PROGRAMMING_QC_UPDATE,
             Capability.OPERATIONS_FINAL_FINISH_UPDATE,
             Capability.OPERATIONS_DELIVERY_UPDATE,
@@ -106,10 +109,19 @@ class TestOperationsPolicy:
             Capability.OPERATIONS_QBO_OBSERVE,
             Capability.PROJECTS_LIFECYCLE_UPDATE,
             Capability.ESTIMATES_MANAGE,
+            Capability.SETTINGS_GENERAL_MANAGE,
         } <= capabilities
+        assert Capability.SETTINGS_ADVANCED_MANAGE not in capabilities
+        assert Capability.OPERATIONS_TRAY_UPDATE not in capabilities
 
     def test_admin_has_every_known_capability(self):
-        assert capabilities_for_roles([AppRole.APP_ADMIN]) == ALL_CAPABILITIES
+        assert capabilities_for_roles([AppRole.ADMIN]) == ALL_CAPABILITIES
+
+    def test_old_role_values_migrate_to_the_three_current_personas(self):
+        assert capabilities_for_roles(["AppAdmin"]) == capabilities_for_roles(["Admin"])
+        assert capabilities_for_roles(["BuilderEditor"]) == capabilities_for_roles(["Staff"])
+        assert capabilities_for_roles(["ShopEditor"]) == capabilities_for_roles(["Shop"])
+        assert capabilities_for_roles(["OperationsViewer"]) == frozenset()
 
 
 class TestOperationsCodec:
@@ -242,16 +254,8 @@ class TestOperationsTransitions:
             "created", "in_progress", "complete",
         ]
 
-    def test_workstreams_overlap_without_cross_stream_dependency(self):
+    def test_programming_can_start_without_shop_cross_stream_dependency(self):
         service, _, _ = _service()
-        tray = service.change_status(
-            vehicle_id="vehicle-1",
-            workstream="tray",
-            new_status="ready",
-            actor=_actor(AppRole.SHOP_EDITOR),
-            request_id="tray-ready",
-            source_client="builder_desktop",
-        )
         programming = service.change_status(
             vehicle_id="vehicle-1",
             workstream="programming_qc",
@@ -261,11 +265,10 @@ class TestOperationsTransitions:
             source_client="builder_desktop",
         )
 
-        assert tray.record.shop_status == ""
         assert programming.record.shop_status == ""
         assert programming.record.programming_qc_ready_at == NOW_ISO
 
-    def test_parts_ordered_is_a_dated_normal_milestone(self):
+    def test_parts_ordered_then_ready_are_the_only_normal_milestones(self):
         service, _, _ = _service()
         ordered = service.change_status(
             vehicle_id="vehicle-1",
@@ -275,35 +278,30 @@ class TestOperationsTransitions:
             request_id="parts-ordered",
             source_client="builder_desktop",
         )
-        partial = service.change_status(
+        ready = service.change_status(
             vehicle_id="vehicle-1",
             workstream="parts",
-            new_status="partially_received",
+            new_status="parts_ready",
             actor=_actor(AppRole.PARTS_EDITOR),
-            request_id="parts-partial",
+            request_id="parts-ready",
             source_client="builder_desktop",
             expected_revision=ordered.record.revision,
         )
 
         assert ordered.record.parts_status == "ordered"
         assert ordered.record.parts_ordered_at == NOW_ISO
-        assert partial.record.parts_ordered_at == NOW_ISO
-        assert partial.record.parts_partially_received_at == NOW_ISO
+        assert ready.record.parts_ordered_at == NOW_ISO
+        assert ready.record.parts_ready_at == NOW_ISO
 
-    def test_parts_can_receive_one_complete_shipment_without_partial_state(self):
+    @pytest.mark.parametrize("retired", ["partially_received", "received"])
+    def test_retired_parts_statuses_cannot_be_selected(self, retired):
         service, _, _ = _service()
-        result = service.change_status(
-            vehicle_id="vehicle-1",
-            workstream="parts",
-            new_status="received",
-            actor=_actor(AppRole.PARTS_EDITOR),
-            request_id="parts-received",
-            source_client="builder_desktop",
-        )
-
-        assert result.record.parts_status == "received"
-        assert result.record.parts_received_at == NOW_ISO
-        assert result.record.parts_partially_received_at == ""
+        with pytest.raises(OperationsValidationError, match="Invalid parts status"):
+            service.change_status(
+                vehicle_id="vehicle-1", workstream="parts", new_status=retired,
+                actor=_actor(AppRole.STAFF), request_id=f"parts-{retired}",
+                source_client="builder_desktop",
+            )
 
     def test_parts_ready_implies_received_when_earlier_step_was_skipped(self):
         service, _, _ = _service()
@@ -330,19 +328,19 @@ class TestOperationsTransitions:
             request_id="vehicle-available",
             source_client="builder_desktop",
         )
-        received = service.change_status(
+        ready = service.change_status(
             vehicle_id="vehicle-1",
             workstream="parts",
-            new_status="received",
-            actor=_actor(AppRole.PARTS_EDITOR),
-            request_id="parts-received",
+            new_status="parts_ready",
+            actor=_actor(AppRole.ADMIN),
+            request_id="parts-ready",
             source_client="builder_desktop",
         )
 
         assert available.record.vehicle_available_date == "2026-08-31"
         assert repository.list_events("vehicle-1")[1].effective_date == "2026-08-31"
-        assert received.record.commitment_start_date == "2026-09-03"
-        assert received.record.must_deliver_by_date == "2026-11-02"
+        assert ready.record.commitment_start_date == "2026-09-03"
+        assert ready.record.must_deliver_by_date == "2026-11-02"
 
     def test_delivered_availability_requires_audited_correction_to_reopen(self):
         """Legacy availability=delivered records remain correctable and readable."""
@@ -351,13 +349,6 @@ class TestOperationsTransitions:
         legacy.vehicle_availability_status = VehicleAvailabilityStatus.DELIVERED
         legacy.delivered_date = "2026-09-02"
         repository._records["vehicle-1"] = legacy  # noqa: SLF001 - legacy fixture
-
-        with pytest.raises(OperationsAuthorizationError, match="operations.correct"):
-            service.change_vehicle_availability(
-                vehicle_id="vehicle-1", new_status="at_dtm",
-                actor=_actor(AppRole.BUILDER_EDITOR), request_id="reopen-denied",
-                source_client="builder_desktop", correction_reason="Wrong vehicle",
-            )
 
         reopened = service.change_vehicle_availability(
             vehicle_id="vehicle-1", new_status="at_dtm",
@@ -468,29 +459,14 @@ class TestOperationsTransitions:
             "Confirmed out-of-order status change"
         )
 
-    def test_authorized_regression_clears_current_cycle_date_but_keeps_history(self):
-        service, repository, _ = _service()
-        service.change_status(
-            vehicle_id="vehicle-1", workstream="tray", new_status="ready",
-            actor=_actor(AppRole.SHOP_EDITOR), request_id="tray-ready",
-            source_client="builder_desktop",
-        )
-        service.change_status(
-            vehicle_id="vehicle-1", workstream="tray", new_status="complete",
-            actor=_actor(AppRole.SHOP_EDITOR), request_id="tray-complete",
-            source_client="builder_desktop",
-        )
-        corrected = service.change_status(
-            vehicle_id="vehicle-1", workstream="tray", new_status="ready",
-            actor=_actor(AppRole.OPERATIONS_MANAGER), request_id="tray-correction",
-            source_client="builder_desktop", correction_reason="Completed by mistake",
-        )
-
-        assert corrected.record.tray_status.value == "ready"
-        assert corrected.record.tray_completed_at == ""
-        events = repository.list_events("vehicle-1")
-        assert events[-2].new_value == "complete"
-        assert events[-1].reason == "Completed by mistake"
+    def test_tray_is_not_an_editable_status_workstream(self):
+        service, _, _ = _service()
+        with pytest.raises(OperationsValidationError, match="tray is not a status workstream"):
+            service.change_status(
+                vehicle_id="vehicle-1", workstream="tray", new_status="ready",
+                actor=_actor(AppRole.ADMIN), request_id="tray-retired",
+                source_client="builder_desktop",
+            )
 
     def test_duplicate_request_is_idempotent(self):
         service, repository, _ = _service()
@@ -520,7 +496,7 @@ class TestOperationsTransitions:
 
         with pytest.raises(OperationsConflictError, match="Expected revision 0"):
             service.change_status(
-                vehicle_id="vehicle-1", workstream="tray", new_status="ready",
+                vehicle_id="vehicle-1", workstream="shop", new_status="complete",
                 actor=_actor(AppRole.SHOP_EDITOR), request_id="stale",
                 source_client="builder_desktop", expected_revision=0,
             )
@@ -529,7 +505,7 @@ class TestOperationsTransitions:
         service, _, _ = _service()
         with pytest.raises(OperationsAuthorizationError, match="parts.update"):
             service.change_status(
-                vehicle_id="vehicle-1", workstream="parts", new_status="received",
+                vehicle_id="vehicle-1", workstream="parts", new_status="ordered",
                 actor=_actor(AppRole.SHOP_EDITOR), request_id="wrong-role",
                 source_client="builder_desktop",
             )
@@ -537,7 +513,7 @@ class TestOperationsTransitions:
     def test_same_status_is_noop_without_event(self):
         service, repository, _ = _service()
         result = service.change_status(
-            vehicle_id="vehicle-1", workstream="tray", new_status="not_ready",
+            vehicle_id="vehicle-1", workstream="shop", new_status="",
             actor=_actor(AppRole.SHOP_EDITOR), request_id="same-state",
             source_client="builder_desktop",
         )
@@ -576,17 +552,9 @@ class TestAcceptance:
             source_client="builder_desktop",
         )
 
-        with pytest.raises(OperationsAuthorizationError, match="operations.correct"):
-            service.change_acceptance(
-                vehicle_id="vehicle-1", new_status="not_accepted",
-                acceptance_source="manual", actor=_actor(AppRole.BUILDER_EDITOR),
-                request_id="reverse-denied", source_client="builder_desktop",
-                correction_reason="Customer rescinded acceptance",
-            )
-
         corrected = service.change_acceptance(
             vehicle_id="vehicle-1", new_status="not_accepted",
-            acceptance_source="manual", actor=_actor(AppRole.APP_ADMIN),
+            acceptance_source="manual", actor=_actor(AppRole.STAFF),
             request_id="reverse", source_client="builder_desktop",
             correction_reason="Acceptance was attached to the wrong unit",
         )

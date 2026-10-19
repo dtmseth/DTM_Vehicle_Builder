@@ -311,12 +311,12 @@ def flow_tab_load(page, base_url: str) -> None:
     page.locator(
         '[data-operations-status-scope="project"]'
         '[data-operations-status-workstream="parts"]'
-        '[data-operations-status-value="received"]'
+        '[data-operations-status-value="parts_ready"]'
     ).click()
     page.wait_for_selector(
         '[data-operations-status-scope="project"]'
         '[data-operations-status-workstream="parts"]'
-        '[data-operations-status-value="received"].active'
+        '[data-operations-status-value="parts_ready"].active'
     )
     page.locator(
         '[data-operations-status-scope="project"]'
@@ -333,7 +333,7 @@ def flow_tab_load(page, base_url: str) -> None:
     assert page.locator("#operations-schedule-all-count").inner_text() == "1"
     assert page.locator("#operations-schedule-unscheduled-count").inner_text() == "1"
     assert page.locator("#operations-schedule-scheduled-count").inner_text() == "0"
-    assert "PARTS: RECEIVED · VEHICLE: AWAITING DETAILS" in page.locator(
+    assert "PARTS: PARTS READY · VEHICLE: AWAITING DETAILS" in page.locator(
         ".operations-project-group > summary"
     ).inner_text().upper()
 
@@ -343,7 +343,7 @@ def flow_tab_load(page, base_url: str) -> None:
     page.fill("#proj-list-search", "Operations Preview PD")
     project_row = page.locator(".proj-row-clickable").filter(has_text="Operations Preview PD")
     assert project_row.count() == 1
-    assert "PARTS: RECEIVED · VEHICLE: AWAITING DETAILS" in project_row.locator(
+    assert "PARTS: PARTS READY · VEHICLE: AWAITING DETAILS" in project_row.locator(
         ".proj-progress-badge"
     ).inner_text().upper()
     assert project_row.locator(".proj-progress-badge").evaluate(
@@ -559,7 +559,7 @@ def flow_tab_load(page, base_url: str) -> None:
     page.wait_for_selector(".operations-timeline-event")
     history_text = page.locator("#operations-history-body").inner_text().upper()
     assert "PARTS CHANGED" in history_text
-    assert "RECEIVED" in history_text
+    assert "PARTS READY" in history_text
     assert "SCHEDULE CHANGED" in history_text
     assert "JAN 6, 2031" in history_text
     assert "MAR 15, 2031" in history_text
@@ -567,11 +567,6 @@ def flow_tab_load(page, base_url: str) -> None:
     page.locator("#operations-history-done").click()
     page.wait_for_selector("#operations-history-modal", state="hidden")
 
-    page.locator(
-        '[data-operations-status-scope="project"]'
-        '[data-operations-status-workstream="parts"]'
-        '[data-operations-status-value="parts_ready"]'
-    ).click()
     page.wait_for_function("""document.querySelector('.operations-status-grid .operations-status:nth-child(2)')
       ?.classList.contains('operations-status-tone-complete')""")
     page.locator(
@@ -758,15 +753,15 @@ def flow_tab_load(page, base_url: str) -> None:
     saved_calendar = page.evaluate("async () => await api('/api/calendar')")
     assert not any(job["id"] == custom["id"] for job in saved_calendar["plan"]["jobs"])
 
-    # Workspace gating: Shop can read Projects and edit only its Operations
-    # workstreams; Builder/Sales can edit Projects, Estimates, availability,
-    # and Parts, but cannot schedule or update downstream production.
+    # Workspace gating: Shop can read Projects, view Calendar, and edit only
+    # Build / Shop and the later Operations workstreams. Staff can access
+    # everything except Advanced Settings.
     page.evaluate("""() => { const session = {
       authenticated: true, default_workspace: 'operations',
       operations_ready: true, operations_write_ready: true,
-      roles: ['ShopEditor'], capabilities: [
-        'operations.view', 'operations.shop.update', 'operations.tray.update',
-        'operations.final_finish.update', 'projects.view'
+      roles: ['Shop'], capabilities: [
+        'operations.view', 'operations.shop.update',
+        'operations.programming_qc.update', 'operations.final_finish.update', 'projects.view'
       ]
     }; _OPERATIONS.session = session; applyAppAccessSession(session); }""")
     assert page.locator("#projects-header-tab").is_visible()
@@ -788,7 +783,7 @@ def flow_tab_load(page, base_url: str) -> None:
     page.click("#pbe-save-return")
     page.wait_for_selector("#proj-detail-view:not([hidden])")
     shop_streams = page.evaluate("() => _operationsEditableWorkstreams().map(item => item.key)")
-    assert shop_streams == ["shop", "tray", "final_finish"]
+    assert shop_streams == ["shop", "programming_qc", "final_finish"]
     assert page.locator('#calendar-header-tab').is_visible()
     page.evaluate("openCalendarVehicle('operations-preview-vehicle')")
     page.wait_for_selector('#calendar-detail:not([hidden])')
@@ -805,24 +800,28 @@ def flow_tab_load(page, base_url: str) -> None:
     page.evaluate("""() => { const session = {
       authenticated: true, default_workspace: 'projects',
       operations_ready: true, operations_write_ready: true,
-      roles: ['BuilderEditor'], capabilities: [
-        'operations.view', 'operations.availability.update', 'operations.parts.update',
-        'operations.qbo.observe', 'projects.view', 'projects.edit',
-        'projects.lifecycle.update', 'estimates.manage'
+      roles: ['Staff'], capabilities: [
+        'operations.view', 'operations.availability.update', 'operations.schedule.update',
+        'operations.parts.update', 'operations.shop.update',
+        'operations.programming_qc.update', 'operations.final_finish.update',
+        'operations.delivery.update', 'operations.correct', 'operations.qbo.observe',
+        'projects.view', 'projects.edit', 'projects.lifecycle.update',
+        'estimates.manage', 'settings.general.manage', 'roles.inspect'
       ]
     }; _OPERATIONS.session = session; applyAppAccessSession(session); }""")
     assert page.locator("#btn-new-project").get_attribute("hidden") is None
     assert page.locator("#general-settings-header-tab").is_visible()
-    assert page.locator("#general-settings-header-tab").inner_text() == "💵 QuickBooks"
+    assert page.locator("#general-settings-header-tab").inner_text() == "⚙️ General Settings"
+    assert page.locator("#advanced-settings-header-tab").is_hidden()
     page.click("#general-settings-header-tab")
     visible_general_stabs = page.locator("#stab-bar-general .stab:visible")
-    assert visible_general_stabs.count() == 1
-    assert visible_general_stabs.first.get_attribute("data-stab") == "quickbooks"
+    assert visible_general_stabs.count() > 1
+    assert page.locator('#stab-bar-general .stab[data-stab="projects-defaults"]').is_visible()
     assert page.locator("#qb-pricing-panel").is_hidden()
     assert page.locator("#qb-creds-card").is_hidden()
-    builder_streams = page.evaluate("() => _operationsEditableWorkstreams().map(item => item.key)")
-    assert builder_streams == ["acceptance", "availability", "parts"]
-    assert page.evaluate("() => _operationsCanSchedule()") is False
+    staff_streams = page.evaluate("() => _operationsEditableWorkstreams().map(item => item.key)")
+    assert staff_streams == ["acceptance", "availability", "parts", "shop", "programming_qc", "final_finish"]
+    assert page.evaluate("() => _operationsCanSchedule()") is True
 
     # Let any in-flight fetches finish so their errors (if any) are captured.
     page.wait_for_load_state("networkidle")

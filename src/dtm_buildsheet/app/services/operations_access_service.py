@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from ...domain.operations_models import OperationsActor
-from ...domain.operations_policy import AppRole, Capability, capabilities_for_roles
+from ...domain.operations_policy import Capability, capabilities_for_roles, normalize_app_role
 from ..adapters.wiring import AdapterBundle, get_active_bundle
 
 
@@ -16,7 +16,7 @@ def describe_access_session(
     """Return a browser-safe description of the current app authorization.
 
     Production operations access trusts only an M365 identity. Cloud-off
-    development uses the synthetic local AppAdmin identity so UI and route
+    development uses the synthetic local Admin identity so UI and route
     behavior can be exercised without SharePoint. Unknown Entra role values
     are discarded and therefore grant no capability.
     """
@@ -50,8 +50,11 @@ def describe_access_session(
             reason="identity_unavailable",
         )
 
-    known_values = {role.value for role in AppRole}
-    roles = frozenset(role for role in user.roles if role in known_values)
+    roles = frozenset(
+        normalized.value
+        for role in user.roles
+        if (normalized := normalize_app_role(role)) is not None
+    )
     capabilities = capabilities_for_roles(roles)
     default_workspace = (
         "projects"

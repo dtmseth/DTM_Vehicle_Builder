@@ -52,16 +52,16 @@ def with_project_work(record, project):
 
 
 def applicable_workstreams(record):
-    streams = {'parts', 'shop', 'tray', 'programming_qc', 'final_finish'}
+    streams = {'parts', 'shop', 'programming_qc', 'final_finish'}
     if record.project_type != 'build':
-        for stream in ('parts', 'tray', 'programming_qc'):
+        for stream in ('parts', 'programming_qc'):
             if not record.service_details.get('requires_' + stream, stream == 'parts'):
                 streams.discard(stream)
     return streams
 
 
 def physical_readiness(record):
-    parts = record.parts_status in ('received', 'parts_ready') or 'parts' not in applicable_workstreams(record)
+    parts = record.parts_status == 'parts_ready' or 'parts' not in applicable_workstreams(record)
     vehicle = record.vehicle_availability_status == 'at_dtm' or (
         record.project_type == 'offsite' and record.vehicle_availability_status == 'ready_for_pickup')
     return parts, vehicle

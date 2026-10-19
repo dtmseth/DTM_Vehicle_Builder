@@ -192,23 +192,24 @@ def _run_changed(*, skip_smoke: bool) -> bool:
     return ok
 
 
-def _run_release(*, skip_smoke: bool) -> bool:
-    ok = _run(
+def _run_release() -> bool:
+    return _run(
         "release pytest",
         [sys.executable, "-m", "pytest", "--maxfail=1"],
     )
-    if ok and not skip_smoke:
-        ok = _run("release browser smoke", [sys.executable, "tools/ui_smoke/run_smoke.py"])
-    return ok
 
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=("changed", "release"), nargs="?", default="changed")
-    parser.add_argument("--skip-smoke", action="store_true", help="skip browser flows")
+    parser.add_argument(
+        "--skip-smoke",
+        action="store_true",
+        help="skip browser flows for the changed profile; release is always Python-only",
+    )
     args = parser.parse_args(argv)
     passed = (
-        _run_release(skip_smoke=args.skip_smoke)
+        _run_release()
         if args.profile == "release"
         else _run_changed(skip_smoke=args.skip_smoke)
     )
