@@ -634,6 +634,8 @@ project controls and each configured vehicle opening its embedded build editor:
   changing QBO. **Connect existing estimate** is separate from the guarded **Update connected
   estimate** write action.
   Project actions use **Export / update all PDFs** plus batch QuickBooks options.
+  Inside the build editor, **Build Actions** also exposes the guarded **Reset Build** action; it uses
+  the same confirmation dialog as the manifest-header button and resets the draft to blank.
 - **Build reference photos and project media**: the Project Overview shows one selectable **Project Media** gallery
   with assigned/unassigned states and notes, while the unit-group header and builder notes area open
   a thumbnail-card gallery with tags, inline note editing, multi-select removal, and a multi-select

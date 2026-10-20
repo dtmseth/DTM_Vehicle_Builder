@@ -3,12 +3,12 @@
     "groups": [
       {
         "label": "Forward of Cage",
-        "product_count": 9,
+        "product_count": 20,
         "zone_id": "forward_of_cage"
       },
       {
         "label": "Front",
-        "product_count": 26,
+        "product_count": 39,
         "zone_id": "front"
       },
       {
@@ -18,22 +18,22 @@
       },
       {
         "label": "Rear",
-        "product_count": 13,
+        "product_count": 19,
         "zone_id": "rear"
       },
       {
         "label": "Rear Storage Area",
-        "product_count": 11,
+        "product_count": 14,
         "zone_id": "rear_storage_area"
       },
       {
         "label": "Roof",
-        "product_count": 14,
+        "product_count": 25,
         "zone_id": "roof"
       },
       {
         "label": "Side",
-        "product_count": 4,
+        "product_count": 13,
         "zone_id": "side"
       }
     ]

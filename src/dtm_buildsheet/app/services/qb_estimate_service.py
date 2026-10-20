@@ -459,7 +459,12 @@ def resolve_build_lines(paths: AppPaths, draft) -> tuple[list[dict], list[dict]]
                         "reason": reason,
                     })
                     continue
-                resolved = _apply_quote_override(resolved, picker_config)
+                component_config = dict(picker_config)
+                if component.get("quote_unit_price_override") is not None:
+                    component_config["quote_unit_price_override"] = component[
+                        "quote_unit_price_override"
+                    ]
+                resolved = _apply_quote_override(resolved, component_config)
                 qty = _component_quantity(component)
                 lines.append({
                     **resolved,

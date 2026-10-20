@@ -23,7 +23,11 @@ src/dtm_buildsheet/resources/presets/*.json
 dist/
 build/
 output/
+outputs/
 tmp/
+
+# Local review/export artifacts and SharePoint settings snapshots.
+Settings/
 
 # Local media/databases: ignore new files without removing tracked assets or disk files.
 *.png

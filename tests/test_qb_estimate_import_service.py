@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -224,8 +225,74 @@ def test_preview_classifies_catalog_accessory_guided_headers_charges_and_memo(pa
     assert by_id["6"]["classification"] == "guided_system"
     assert by_id["6"]["guided_kinds"] == ["tracer"]
     assert by_id["7"]["classification"] == "custom"
+    assert by_id["7"]["catalog_suggestions"] == []
     assert result["memo_reuse_suggestions"][0]["part_number"] == "IONBKT"
     assert result["memo_reuse_suggestions"][0]["also_quoted"] is True
+
+
+def test_custom_qbo_line_suggests_close_active_connected_catalog_part(paths, monkeypatch):
+    estimate = {
+        "Id": "900-close-custom",
+        "Line": [
+            _sales(
+                "custom-close", "misc", "MISC PART",
+                "EMPS2ST53 — SoundOff Signal mPower stud-mount light", price=149,
+            ),
+            _sales(
+                "custom-normalized", "misc", "MISC PART",
+                "ION T RB — Whelen ION warning light", price=125,
+            ),
+        ],
+    }
+    project_id = _setup(paths, monkeypatch, estimate)
+    parts_doc = json.loads((paths.workspace_config_dir / "parts_db.json").read_text("utf-8"))
+    parts_doc["manufacturers"]["soundoff"] = {"label": "SoundOff Signal"}
+    parts_doc["products"]["soundoff_mpower"] = {
+        "manufacturer_id": "soundoff",
+        "model": "mPower 3-inch Stud Mount",
+        "description": "Stud-mount perimeter warning light",
+        "fits_part_types": ["warning_light"],
+        "part_numbers": [{
+            "part_number": "EMPS2STS3",
+            "qb_item_id": "901",
+            "qb_unit_price": 149,
+        }],
+    }
+    # An exact-looking catalog row without a real QBO connection must never be
+    # offered as the replacement for a historical custom line.
+    parts_doc["products"]["unlinked_typo"] = {
+        "manufacturer_id": "soundoff",
+        "model": "Unlinked placeholder",
+        "fits_part_types": ["warning_light"],
+        "part_numbers": [{"part_number": "EMPS2ST53"}],
+    }
+    (paths.workspace_config_dir / "parts_db.json").write_text(json.dumps(parts_doc), "utf-8")
+    parts_db_service.reset_for_testing()
+
+    result = importer.preview_estimate_import(
+        paths, project_id=project_id, individual_id="vehicle-1",
+    )
+
+    by_id = {line["line_id"]: line for line in result["lines"]}
+    close = by_id["custom-close"]
+    assert close["classification"] == "custom"
+    assert close["suggested_sku"] == "EMPS2ST53"
+    assert [item["part_number"] for item in close["catalog_suggestions"]] == ["EMPS2STS3"]
+    assert close["catalog_suggestions"][0]["qb_item_id"] == "901"
+    assert close["catalog_suggestions"][0]["price"] == 149
+    assert close["catalog_suggestions"][0]["match_score"] >= 84
+    assert close["catalog_suggestions"][0]["match_reason"] == "SKU is a close match"
+
+    normalized = by_id["custom-normalized"]["catalog_suggestions"][0]
+    assert normalized["part_number"] == "ION-T-RB"
+    assert normalized["match_score"] == 100
+    assert normalized["match_reason"] == "SKU matches after ignoring punctuation and spacing"
+
+    review_ui = (
+        Path(__file__).parents[1] / "src/dtm_buildsheet/ui/js/projects/detail_builds.js"
+    ).read_text(encoding="utf-8")
+    assert '["Part price", partPrice]' in review_ui
+    assert "_ptMoney2(suggestion.price)" in review_ui
 
 
 def test_description_only_pending_marker_remains_actionable(paths, monkeypatch):

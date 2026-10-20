@@ -652,6 +652,7 @@ const document={createElement:element,addEventListener(){}},window={addEventList
 const openJob=id=>opened.push(['unit',id]),openProject=id=>opened.push(['project',id]);
 let editable=false,choice=true;const removed=[];
 const bookingSpan=()=>({start:0,end:1}),canEdit=()=>editable,label=x=>x,dateTime=x=>x,kinds={build:'Build'},text=x=>x;
+const draggable=()=>{},dropTarget=()=>{};
 const askCalendar=async()=>choice,removeBooking=async(...args)=>removed.push(args);
 eval(source.slice(source.indexOf('  function statusEntries('),source.indexOf('  const bookingWarnings=')));
 eval(source.slice(source.indexOf('  function openScheduledBuild('),source.indexOf('  function renderWeek(')));
@@ -730,12 +731,14 @@ $('calendar-drop-scope').value='project';$('calendar-drop-team').value='t';$('ca
  assert.equal($('calendar-job-error').textContent,'Capacity conflict');await $('calendar-drop-form').onsubmit({preventDefault(){}});assert.equal(saves.length,0);
  // Shift is sampled at release too, so it can be pressed during a drag.
  const document={events:{},body:{classList:{remove(){}}},addEventListener(name,fn){this.events[name]=fn;}},window={addEventListener(){}};
- let drag=null,suppressClickUntil=0;const insertLine={},canEdit=()=>true,closeCalendarMenu=()=>{},drops=[];
+ let drag=null,suppressClickUntil=0,editable=true;const insertLine={},canEdit=()=>editable,closeCalendarMenu=()=>{},drops=[],denials=[];
+ const appPermissionDenied=action=>{denials.push(action);return `You don't have permission to ${action}. Contact an administrator.`;};
+ const message=value=>denials.push(value);
  const stageDrop=(...args)=>drops.push(args);
  eval(source.slice(source.indexOf('  function draggable('),source.indexOf('  function dropTarget(')));
  const captured=[];const card=element();card.setPointerCapture=id=>captured.push(id);
  card.hasPointerCapture=id=>captured.includes(id);card.releasePointerCapture=id=>captured.splice(captured.indexOf(id),1);
- let prevented=0;draggable(card,'vehicle:a');
+ let prevented=0;draggable(card,'vehicle:a','reschedule this booking');
  for(const shiftKey of [true,false]){
   card.events.pointerdown({button:0,pointerId:7,clientX:10,clientY:20,shiftKey:!shiftKey,preventDefault(){prevented++;}});
   assert.deepEqual(captured,[7]);
@@ -743,6 +746,9 @@ $('calendar-drop-scope').value='project';$('calendar-drop-team').value='t';$('ca
   document.events.pointerup({pointerId:7,shiftKey});assert.equal(drops.pop()[5],shiftKey);assert.deepEqual(captured,[]);
  }
  assert.equal(prevented,2);
+ editable=false;card.events.pointerdown({button:0,pointerId:8,clientX:10,clientY:20,shiftKey:false,preventDefault(){prevented++;}});
+ assert.deepEqual(denials,['reschedule this booking',"You don't have permission to reschedule this booking. Contact an administrator."]);
+ assert.equal(drag,null);assert.equal(prevented,2);
 })().catch(error=>{console.error(error);process.exitCode=1;});
 """
     path = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui/js/calendar.js'
@@ -761,6 +767,8 @@ def test_ui_assets_are_versioned_across_desktop_updates():
     assert 'src="/ui/js/calendar.js?v={{APP_VERSION}}"' in html
     assert "'/ui/calendar.css?v='" in calendar
     assert 'Retired · hidden from Calendar and assignment lists' in calendar
+    tabs = (root / 'js/tabs.js').read_text(encoding='utf-8')
+    assert "You don't have permission to ${String(action || \"perform this action\").trim()}. Contact an administrator." in tabs
 
 
 def test_settings_cannot_rename_team_identity_or_delete_history(service):

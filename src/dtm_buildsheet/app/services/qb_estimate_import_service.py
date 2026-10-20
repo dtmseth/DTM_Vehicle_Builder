@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 import re
 from collections import defaultdict
+from difflib import SequenceMatcher
 
 from ...domain.supply import supply_state
 from ...inputs import project_entry
@@ -68,6 +69,13 @@ _NON_PART_ITEM_NAMES = re.compile(
     r"delivery|travel|convenience fee|credit card fee)$",
     re.IGNORECASE,
 )
+_CUSTOM_SKU_PREFIX = re.compile(r"^(?:sku|part(?:\s+number)?|item)\s*[:#]\s*", re.IGNORECASE)
+_CUSTOM_SKU_SPLIT = re.compile(r"\s+(?:\N{EM DASH}|\N{EN DASH}|-)\s+")
+_IDENTITY_TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/#-]{2,}")
+_MATCH_WORD = re.compile(r"[a-z0-9]+")
+_MATCH_STOP_WORDS = {
+    "and", "for", "from", "kit", "new", "part", "the", "with",
+}
 
 
 def _text(value: object) -> str:
@@ -117,6 +125,7 @@ def _catalog_indexes(doc: dict, paths: AppPaths) -> dict:
 
     by_qb_item_id: dict[str, list[dict]] = defaultdict(list)
     by_sku: dict[str, dict] = {}
+    catalog_skus: list[dict] = []
     for product_id, product in products.items():
         if not isinstance(product, dict):
             continue
@@ -169,6 +178,17 @@ def _catalog_indexes(doc: dict, paths: AppPaths) -> dict:
             if not isinstance(sku, dict):
                 continue
             part_number = str(sku.get("part_number") or "").strip()
+            price = (
+                sku.get("qb_unit_price")
+                if sku.get("qb_unit_price") is not None
+                else sku.get("price_usd")
+            )
+            if price is None:
+                price = (
+                    product.get("qb_unit_price")
+                    if product.get("qb_unit_price") is not None
+                    else product.get("price_usd")
+                )
             accessory_category = str(product.get("accessory_category") or "").strip()
             if not accessory_category:
                 accessory_category = next((
@@ -184,6 +204,7 @@ def _catalog_indexes(doc: dict, paths: AppPaths) -> dict:
                 "manufacturer": manufacturer,
                 "part_number": part_number,
                 "friendly_name": str(sku.get("friendly_name") or "").strip(),
+                "price": _number(price),
                 "color": str(sku.get("color") or "").strip(),
                 "secondary_color": str(sku.get("secondary_color") or "").strip(),
                 "tertiary_color": str(sku.get("tertiary_color") or "").strip(),
@@ -218,19 +239,134 @@ def _catalog_indexes(doc: dict, paths: AppPaths) -> dict:
                     product.get("fixed_location")
                     or _IMPORT_FIXED_LOCATIONS.get(primary_part_type_id, "")
                 ).strip(),
+                "qb_item_id": str(
+                    sku.get("qb_item_id") or product.get("qb_item_id") or ""
+                ).strip(),
+                "qb_inactive": bool(sku.get("qb_inactive") or product.get("qb_inactive")),
             }
-            qb_item_id = str(sku.get("qb_item_id") or product.get("qb_item_id") or "").strip()
+            qb_item_id = match["qb_item_id"]
             if qb_item_id:
                 by_qb_item_id[qb_item_id].append(match)
             if part_number:
                 by_sku.setdefault(part_number.casefold(), match)
+                catalog_skus.append(match)
 
     return {
         "products": products,
         "part_types": part_types,
         "by_qb_item_id": by_qb_item_id,
         "by_sku": by_sku,
+        "catalog_skus": catalog_skus,
     }
+
+
+def _normalized_identity(value: object) -> str:
+    """Normalize a part identity while ignoring punctuation and spacing drift."""
+    return re.sub(r"[^a-z0-9]+", "", str(value or "").casefold())
+
+
+def _custom_line_sku_hint(row: dict) -> str:
+    """Recover the SKU embedded in a Builder-authored QBO MISC PART description."""
+    description = str(row.get("description") or "").strip()
+    if not description:
+        return ""
+    first = _CUSTOM_SKU_SPLIT.split(description, maxsplit=1)[0].strip()
+    first = _CUSTOM_SKU_PREFIX.sub("", first).strip(" :#")
+    if not first or len(first) > 80 or len(first.split()) > 4:
+        return ""
+    return first
+
+
+def _match_words(value: object) -> set[str]:
+    return {
+        word for word in _MATCH_WORD.findall(str(value or "").casefold())
+        if len(word) >= 3 and word not in _MATCH_STOP_WORDS
+    }
+
+
+def _custom_catalog_suggestions(row: dict, indexes: dict, *, limit: int = 3) -> list[dict]:
+    """Suggest active, QB-linked catalog SKUs for an old custom Estimate line.
+
+    Suggestions are deliberately advisory. Exact punctuation-insensitive SKU
+    evidence wins; fuzzy SKU and description evidence must clear conservative
+    thresholds so near variants are shown for review rather than auto-linked.
+    """
+    description = str(row.get("description") or "").strip()
+    sku_hint = _custom_line_sku_hint(row)
+    description_identity = _normalized_identity(description)
+    hint_identity = _normalized_identity(sku_hint)
+    identity_tokens = {
+        _normalized_identity(token)
+        for token in _IDENTITY_TOKEN.findall(description)
+        if len(_normalized_identity(token)) >= 4
+    }
+    query_words = _match_words(_CUSTOM_SKU_SPLIT.sub(" ", description))
+    ranked: list[tuple[float, str, dict]] = []
+
+    for match in indexes.get("catalog_skus") or []:
+        if not match.get("qb_item_id") or match.get("qb_inactive"):
+            continue
+        part_number = str(match.get("part_number") or "").strip()
+        part_identity = _normalized_identity(part_number)
+        if len(part_identity) < 3:
+            continue
+
+        score = 0.0
+        reason = ""
+        if hint_identity and hint_identity == part_identity:
+            score, reason = 1.0, "SKU matches after ignoring punctuation and spacing"
+        elif part_identity in identity_tokens:
+            score, reason = 0.99, "Catalog SKU appears in the custom description"
+        elif len(part_identity) >= 5 and part_identity in description_identity:
+            score, reason = 0.97, "Catalog SKU appears in the custom description"
+        else:
+            comparisons = [value for value in {hint_identity, *identity_tokens} if len(value) >= 5]
+            sku_ratio = max(
+                (SequenceMatcher(None, value, part_identity).ratio() for value in comparisons),
+                default=0.0,
+            )
+            length_gap = min((abs(len(value) - len(part_identity)) for value in comparisons), default=999)
+            if sku_ratio >= 0.84 and length_gap <= max(2, round(len(part_identity) * 0.15)):
+                score = min(0.95, sku_ratio)
+                reason = "SKU is a close match"
+
+        candidate_text = " ".join(str(match.get(key) or "") for key in (
+            "manufacturer", "model", "friendly_name", "description",
+        ))
+        candidate_words = _match_words(candidate_text)
+        overlap = query_words.intersection(candidate_words)
+        if len(overlap) >= 2:
+            union = query_words.union(candidate_words)
+            word_score = len(overlap) / len(union) if union else 0.0
+            phrase_score = SequenceMatcher(
+                None,
+                " ".join(sorted(query_words)),
+                " ".join(sorted(candidate_words)),
+            ).ratio()
+            description_score = 0.65 + (0.2 * max(word_score, phrase_score))
+            if description_score >= 0.78 and description_score > score:
+                score = min(0.89, description_score)
+                reason = "Description closely matches this catalog part"
+
+        if score >= 0.78:
+            ranked.append((score, part_number.casefold(), {
+                **match,
+                "match_score": round(score * 100),
+                "match_reason": reason,
+            }))
+
+    ranked.sort(key=lambda item: (-item[0], item[1]))
+    seen: set[tuple[str, str]] = set()
+    suggestions = []
+    for _score, _part_number, suggestion in ranked:
+        key = (suggestion["product_id"], suggestion["part_number"].casefold())
+        if key in seen:
+            continue
+        seen.add(key)
+        suggestions.append(suggestion)
+        if len(suggestions) >= limit:
+            break
+    return suggestions
 
 
 def _line_values(raw: dict, index: int) -> dict:
@@ -583,7 +719,13 @@ def preview_estimate_import(
             continue
         matches = indexes["by_qb_item_id"].get(row["item_id"], [])
         if row["item_name"].casefold() == "misc part":
-            classified.append({**row, "classification": "custom", "ignored": False})
+            classified.append({
+                **row,
+                "classification": "custom",
+                "ignored": False,
+                "suggested_sku": _custom_line_sku_hint(row),
+                "catalog_suggestions": _custom_catalog_suggestions(row, indexes),
+            })
             continue
         if not matches:
             classified.append({**row, "classification": "unknown_item", "ignored": False})

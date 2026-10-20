@@ -16,6 +16,42 @@ from dtm_buildsheet.config_loader import load_configs
 from dtm_buildsheet.paths import ensure_workspace
 
 
+def test_build_actions_include_reset_and_clear_qb_import_label():
+    ui_root = Path(__file__).parents[1] / "src" / "dtm_buildsheet" / "ui"
+    html = (ui_root / "index.html").read_text(encoding="utf-8")
+    build_editor = (ui_root / "js" / "projects" / "build_editor.js").read_text(
+        encoding="utf-8"
+    )
+    build_detail = (ui_root / "js" / "projects" / "detail_builds.js").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'id="pbe-review-estimate-top" hidden>Import Parts From QB</button>' in html
+    assert 'id="pbe-reset-build-top"' in html
+    assert '$("pbe-reset-build-top")?.addEventListener("click"' in build_editor
+    assert "_pbeCloseBuildActionsMenu();\n    _pbeOpenResetBuild();" in build_editor
+    assert 'controls.title?.textContent === "Import Parts From QB"' in build_detail
+    assert '>Import Parts From QB</button>' in build_detail
+    assert "Review Estimate Parts" not in html
+    assert "Review estimate parts" not in build_detail
+
+
+def test_qb_import_suggestions_use_independent_rows_and_stable_backdrop():
+    ui_root = Path(__file__).parents[1] / "src" / "dtm_buildsheet" / "ui"
+    build_detail = (ui_root / "js" / "projects" / "detail_builds.js").read_text(
+        encoding="utf-8"
+    )
+    styles = (ui_root / "styles.css").read_text(encoding="utf-8")
+
+    assert 'class="qb-import-catalog-options"' in build_detail
+    assert 'class="qb-import-catalog-option"' in build_detail
+    assert ".qb-import-catalog-option {" in styles
+    assert "grid-template-columns: max-content 1fr" not in styles
+    assert "#qb-est-modal::before" in styles
+    assert "position: fixed" in styles
+    assert "#qb-est-modal > .modal { position: relative; z-index: 1; }" in styles
+
+
 def test_reference_photo_ui_uses_project_media_and_group_assignments():
     ui_root = Path(__file__).parents[1] / "src" / "dtm_buildsheet" / "ui"
     script = (ui_root / "js" / "projects" / "reference_photos.js").read_text(encoding="utf-8")

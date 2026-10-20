@@ -68,6 +68,12 @@ function appHasCapability(capability) {
   return (window.DTM_ACCESS_SESSION?.capabilities || []).includes(capability);
 }
 
+function appPermissionDenied(action) {
+  const detail = `You don't have permission to ${String(action || "perform this action").trim()}. Contact an administrator.`;
+  toast(detail, "error");
+  return detail;
+}
+
 function _appCanOpenHeader(tab) {
   if (tab === "projects") return appHasCapability("projects.view");
   if (tab === "calendar") return appHasCapability("operations.view");

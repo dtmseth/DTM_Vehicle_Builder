@@ -82,24 +82,25 @@ MANUFACTURER_PREFIX_ALIASES = {
 }
 
 VEHICLE_TEXT_PATTERNS = [
-    ("PIU", re.compile(r"POLICE INTERCEPTOR UTILITY|\bFORD UTILITY\b|\bFORD PIU\b|\bFORD EXPLORER\b", re.I)),
-    ("TAHOE", re.compile(r"\bTAHOE\b", re.I)),
-    ("DURANGO", re.compile(r"\bDURANGO\b", re.I)),
-    ("F-150", re.compile(r"\bF[- ]?150\b|\bF150\b", re.I)),
-    ("SUPER-DUTY", re.compile(r"\bF[- ]?(250|350|450|550)\b|SUPER[ -]?DUTY", re.I)),
-    ("EXPEDITION", re.compile(r"\bEXPEDITION\b", re.I)),
-    ("RAM-1500", re.compile(r"\bRAM 1500\b", re.I)),
-    ("CHEVY-1500", re.compile(r"\bSILVERADO 1500\b|\bCHEV(Y|ROLET)? TRUCK 1500\b", re.I)),
+    ("PIU", {"PIU", "FORD POLICE INTERCEPTOR UTILITY", "FORD EXPLORER"}, re.compile(r"POLICE INTERCEPTOR UTILITY|\bFORD UTILITY\b|\bFORD PIU\b|\bFORD EXPLORER\b", re.I)),
+    ("TAHOE", {"TAHOE", "CHEVROLET TAHOE"}, re.compile(r"\bTAHOE\b", re.I)),
+    ("DURANGO", {"DURANGO", "DODGE DURANGO"}, re.compile(r"\bDURANGO\b", re.I)),
+    ("F-150", {"F-150", "FORD F-150"}, re.compile(r"\bF[- ]?150\b|\bF150\b", re.I)),
+    ("SUPER-DUTY", {"SUPER-DUTY", "FORD", "FORD F-250", "FORD F-350", "FORD F-450", "FORD F-550"}, re.compile(r"\bF[- ]?(250|350|450|550)\b|SUPER[ -]?DUTY", re.I)),
+    ("EXPEDITION", {"EXPEDITION", "FORD EXPEDITION"}, re.compile(r"\bEXPEDITION\b", re.I)),
+    ("RAM-1500", {"RAM-1500", "RAM 1500"}, re.compile(r"\bRAM 1500\b", re.I)),
+    ("CHEVY-1500", {"CHEVY-1500", "CHEVROLET 1500", "CHEVROLET SILVERADO", "CHEVROLET SILVERADO 1500"}, re.compile(r"\bSILVERADO 1500\b|\bCHEV(Y|ROLET)? TRUCK 1500\b", re.I)),
     (
         "SILVERADO-HD",
+        {"SILVERADO-HD", "CHEVROLET SILVERADO", "CHEVROLET SILVERADO 2500", "CHEVROLET SILVERADO 3500"},
         re.compile(r"\bSILVERADO (2500|3500)\b|\bCHEV(Y|ROLET)? TRUCK (2500|3500)\b", re.I),
     ),
-    ("SUBURBAN", re.compile(r"\bSUBURBAN\b", re.I)),
-    ("YUKON", re.compile(r"\bYUKON\b", re.I)),
-    ("MACH-E", re.compile(r"\bMACH[- ]?E\b", re.I)),
-    ("MUSTANG", re.compile(r"\bMUSTANG\b", re.I)),
-    ("RAM-HD", re.compile(r"\bRAM (2500|3500)\b", re.I)),
-    ("TRAVERSE", re.compile(r"\bTRAVERSE\b", re.I)),
+    ("SUBURBAN", {"SUBURBAN", "CHEVROLET SUBURBAN"}, re.compile(r"\bSUBURBAN\b", re.I)),
+    ("YUKON", {"YUKON", "GMC YUKON"}, re.compile(r"\bYUKON\b", re.I)),
+    ("MACH-E", {"MACH-E", "FORD MUSTANG MACH-E"}, re.compile(r"\bMACH[- ]?E\b", re.I)),
+    ("MUSTANG", {"MUSTANG", "FORD MUSTANG"}, re.compile(r"\bMUSTANG\b", re.I)),
+    ("RAM-HD", {"RAM-HD", "RAM 2500", "RAM 3500", "RAM 4500", "RAM 5500"}, re.compile(r"\bRAM (2500|3500)\b", re.I)),
+    ("TRAVERSE", {"TRAVERSE", "CHEVROLET TRAVERSE"}, re.compile(r"\bTRAVERSE\b", re.I)),
 ]
 
 
@@ -181,15 +182,25 @@ def test_clear_vehicle_fit_text_has_vehicle_tags(tmp_path):
                 )
                 if value
             )
-            expected = [tag for tag, pattern in VEHICLE_TEXT_PATTERNS if pattern.search(text)]
-            if "MACH-E" in expected and "MUSTANG" in expected:
-                expected.remove("MUSTANG")
+            expected = [
+                (label, accepted_tags)
+                for label, accepted_tags, pattern in VEHICLE_TEXT_PATTERNS
+                if pattern.search(text)
+            ]
+            if any(label == "MACH-E" for label, _accepted in expected):
+                expected = [item for item in expected if item[0] != "MUSTANG"]
             if not expected:
                 continue
             vehicle_tags = set(sku.get("vehicle_tags") or [])
-            missing = [tag for tag in expected if tag not in vehicle_tags]
+            missing = [
+                label for label, accepted_tags in expected
+                if vehicle_tags.isdisjoint(accepted_tags)
+            ]
             if missing or vehicle_tags == {"any"}:
-                offenders.append(f"{product_id}/{sku.get('part_number')}: missing {missing or expected}")
+                expected_labels = [label for label, _accepted in expected]
+                offenders.append(
+                    f"{product_id}/{sku.get('part_number')}: missing {missing or expected_labels}"
+                )
 
     assert offenders == []
 

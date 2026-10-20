@@ -1678,7 +1678,8 @@
                 <button type="button" id="pbe-load-preset-top">Load Preset</button>
                 <button type="button" id="pbe-create-preset-top" style="display:none">Save as New Preset</button>
                 <button type="button" id="pbe-apply-group-top" style="display:none">Apply to Entire Unit Group</button>
-                <button type="button" id="pbe-review-estimate-top" hidden>Review Estimate Parts</button>
+                <button type="button" id="pbe-review-estimate-top" hidden>Import Parts From QB</button>
+                <button type="button" id="pbe-reset-build-top" class="pbe-build-action-danger">Reset Build</button>
               </div>
             </details>
             <span class="pv-spinner spinner" id="pv-spinner" style="display:none;border-color:rgba(30,39,97,.25);border-top-color:var(--navy)"></span>
@@ -2575,6 +2576,7 @@
       <span id="picker-title">Add Part</span>
       <button class="modal-close" onclick="pickerClose()" title="Close">✕</button>
     </div>
+    <div id="picker-qb-source" class="picker-qb-source" hidden></div>
     <div class="picker-tabs">
       <button class="picker-tab active" id="picker-tab-btn-part" data-tab="part">1 · Part</button>
       <button class="picker-tab" id="picker-tab-btn-location" data-tab="location">2 · Details</button>

@@ -375,7 +375,7 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   reruns every vehicle's validation, moves the linked vehicle to **Ready**, and leaves the next
   setup action available. The price-refresh notice is a toast, and any unexpected review-modal
   rendering failure is surfaced instead of silently stopping.
-  A vehicle with a connected existing Estimate also exposes **Review estimate parts**. The review
+  A vehicle with a connected existing Estimate also exposes **Import Parts From QB**. The review
   classifies linked catalog SKUs, accessories, guided systems, one-off `MISC PART` lines,
   pending/unknown items, and ignored description/charge lines, then reconciles orderable SKUs and
   quantities against the current manifest. On a blank build the user resolves locations,
@@ -386,10 +386,29 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   decision. The reviewer can stage any number of decisions, leave and reopen the review without
   losing the in-memory session, and apply the selected changes together. Exact catalog choices use
   the normal Part Picker with quoted quantity, SKU colors/lens, New supply status, and quoted unit
-  price prefilled. Accessory lines can target compatible parents already on the manifest or staged
-  earlier in the same import. A fixture-backed product uses its catalog fixture location and stages
+  price prefilled. The operator can explicitly group compatible color/configuration variants from
+  separate QB lines into one physical placement, or split one quoted quantity into several manual
+  placements; an incomplete split can be saved for later but cannot be applied. Group choices and
+  the Part Picker's persistent QB-source banner retain each original QB description for placement
+  context. Compatible accessory groups remain available as suggested child parts, including quoted
+  accessory descriptions when the accessory is another QB line. Accessory lines can target
+  compatible parents already on the manifest or staged earlier in the same import. A fixture-backed
+  product uses its catalog fixture location and stages
   immediately when it has no unanswered configuration or accessory questions. Imported rows retain
   the QBO Estimate and line IDs so later reviews recognize them.
+  A suggested catalog match for an older `MISC PART` line is a separate review decision: selecting
+  it changes the card immediately to a tagged connected part but does not open the Part Picker.
+  Placement, grouping, and quantity splitting can then be completed when the operator is ready, or
+  the conversion can be reverted to a custom entry. Combo suggestions include compatible catalog
+  matches from still-custom QB lines and likewise record the combination before asking for a shared
+  placement. Converted and combined cards rerender from the parsed review data without repeating the
+  QB lookup. Grouped light colors initialize as Uniform or standard Split solo/duo whenever those
+  modes reproduce the quote exactly, falling back to per-head Custom only for irregular mixtures.
+  Both the initial Estimate parse and short conversion/combo updates display progress indicators.
+  Leave-out/include-again decisions also rerender locally with an inline progress state instead of
+  repeating the QB preview request. Suggested MISC conversions expose expandable catalog details so
+  the operator can inspect the full description, current part price, and configuration before
+  choosing a match.
   (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (52),
   `tests/test_qb_estimate_import_service.py` (8), `tests/test_estimate_charges_service.py` (4),
   and `tests/test_customer_pricing_service.py`.

@@ -517,9 +517,40 @@ Leaving it clear preserves the fast custom-entry import. Selecting it collects t
 opens the same Part Picker light/placement flow before the line is staged. The resulting draft row
 keeps the normal Estimate provenance used by later reviews.
 
+Catalog light lines in the review also provide two explicit placement tools. **Group with another
+QB line** combines compatible variants of the same product (for example red/white and blue/white
+mirror lights) into one Part Picker placement without merging their quote provenance or prices.
+The combo choices also inspect conservative catalog matches on still-custom QB lines; choosing such
+a combo converts that matched custom line while preserving its original description. Combining is
+a review decision only and does not immediately open the picker. The combined card remains pending
+until the operator chooses its shared placement, and the lines can be separated again.
+**Split quantity across locations** stages one chosen quantity and location at a time for a QB line
+used in more than one physical place. Neither behavior is automatic, and an incomplete split cannot
+be applied. Every group choice shows the original QB description, and the picker keeps all source
+QB line details in a banner above its tabs so location decisions retain their quote context.
+Compatible catalog accessories continue to appear under the parent line; when an accessory is also
+quoted, its original QB description is shown with that suggestion.
+
+When grouped quoted lights open in the picker, their exact SKU colors are reduced to the simplest
+equivalent configuration: one shared setup becomes **Uniform**, balanced red/secondary and
+blue/secondary heads become the standard **Split** solo/duo setup, and only irregular mixtures use
+full per-head **Custom** configuration. Explicit per-head SKU choices are retained in every mode.
+
 - An exact SKU match in `parts_db.json` is detected case-insensitively. The picker offers to open
   the catalog SKU's normal setup/placement flow; the operator can explicitly keep a distinct custom
   line only when that is intentional.
+- During QuickBooks Estimate import, an older `MISC PART` line also recovers the SKU embedded in its
+  description and checks it against active, QBO-linked catalog SKUs. Punctuation-insensitive and
+  conservative close matches are presented as explicit suggestions and are never auto-linked.
+  Choosing one immediately converts the review card into a normal connected catalog part without
+  forcing the operator into placement. The converted card is tagged, retains the original QB
+  description, supports the same group and split-across-location tools as other catalog lines, and
+  can be changed back to a custom entry. Suggested lines are excluded from bulk custom-part import
+  until the operator chooses the connected part or deliberately keeps the custom entry. Conversion
+  rerenders from the already-parsed review data instead of repeating the QB lookup; the button shows
+  a progress spinner during that short local update. Every suggestion also provides an expandable
+  catalog-details panel with manufacturer, model, friendly name, full description, current part
+  price, color/lens configuration, part type, and the reason/score behind the match.
 - Recent custom entries are retained locally in `workspace/custom_parts.json` for fast re-entry.
   This convenience history is not inventory, is not a settings change, and is not cloud-synced;
   the authoritative quote data remains with the shared draft.

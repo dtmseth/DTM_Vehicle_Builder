@@ -349,6 +349,41 @@ def test_resolve_uses_concrete_component_skus_for_picker_parent(paths):
     ]
 
 
+def test_resolve_preserves_each_grouped_qb_component_price(paths):
+    _write_parts_db(paths, {"mirror-light": {
+        "manufacturer_id": "m", "model": "mpower",
+        "part_numbers": [
+            {"part_number": "EMPS2STS3RBW", "qb_item_id": "red", "qb_unit_price": 150.0},
+            {"part_number": "EMPS2STS3BBW", "qb_item_id": "blue", "qb_unit_price": 155.0},
+        ],
+    }})
+    draft = new_draft(parts=[DraftPart(
+        name="Mirror Lights",
+        part_number="mpower",
+        quantity=2,
+        picker_config={"quote_unit_price_override": 999.0},
+        components=[
+            {
+                "part_number": "EMPS2STS3RBW", "quantity": 1,
+                "quote_unit_price_override": 112.25,
+            },
+            {
+                "part_number": "EMPS2STS3BBW", "quantity": 1,
+                "quote_unit_price_override": 113.75,
+            },
+        ],
+    )])
+
+    lines, problems = est.resolve_build_lines(paths, draft)
+
+    assert problems == []
+    assert sorted((line["part_number"], line["unit_price"], line["amount"])
+                  for line in lines) == [
+        ("EMPS2STS3BBW", 113.75, 113.75),
+        ("EMPS2STS3RBW", 112.25, 112.25),
+    ]
+
+
 def test_resolve_reports_component_sku_when_component_is_unlinked(paths):
     _write_parts_db(paths, {"bumper": {
         "manufacturer_id": "m", "model": "PB450L",
@@ -547,6 +582,38 @@ def test_part_picker_offers_reference_only_custom_camera_workflow():
     assert 'if (choices.referenceOnly || choices.supplyType' in source
     assert 'do not create QuickBooks lines' in source
     assert '"watchguard_m500", _CUSTOM_CAMERA_PRODUCT_ID' in source
+
+
+def test_qb_import_ui_offers_manual_group_split_and_source_context():
+    from pathlib import Path
+
+    root = Path(__file__).parents[1] / "src/dtm_buildsheet/ui"
+    picker = (root / "js/part_picker.js").read_text(encoding="utf-8")
+    review = (root / "js/projects/detail_builds.js").read_text(encoding="utf-8")
+    markup = (root / "index.html").read_text(encoding="utf-8")
+
+    assert 'id="picker-qb-source"' in markup
+    assert "QB source${rows.length === 1 ? \"\" : \" lines grouped for this placement\"}" in picker
+    assert 'row.description || "No QB description"' in picker
+    assert 'data-qb-group-place' in review
+    assert 'candidate.description || "No QB description"' in review
+    assert 'data-qb-split-start' in review
+    assert 'data-qb-split-place' in review
+    assert "Finish assigning all locations" in review
+    assert "catalogConversions: new Map()" in review
+    assert 'converted_from_custom: true' in review
+    assert 'data-qb-conversion-undo' in review
+    assert "is now a connected part; choose its placement when ready" in review
+    assert "candidate.catalog_suggestions || []" in review
+    assert 'data-qb-group-undo' in review
+    assert "resultOverride: result" in review
+    assert "Parsing QB Estimate…" in review
+    assert "const standardSplit" in picker
+    assert 'config.mode = sameColors ? "uniform" : standardSplit ? "split" : "custom"' in picker
+    assert "function _ptQbCatalogSuggestionDetails" in review
+    assert "View part details" in review
+    assert "Catalog description" in review
+    assert 'restoring ? "Restoring…" : "Leaving out…"' in review
 
 
 def test_resolve_skips_console_parts_included_with_kit(paths):

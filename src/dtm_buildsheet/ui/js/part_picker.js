@@ -86,6 +86,20 @@ function _pickerImportProvenance() {
   };
 }
 
+function _pickerRenderQbSource() {
+  const banner = $("picker-qb-source");
+  if (!banner) return;
+  const rows = _pickerState.importSource?.quoteLines || [];
+  banner.hidden = !rows.length;
+  banner.innerHTML = rows.length ? `<strong>QB source${rows.length === 1 ? "" : " lines grouped for this placement"}</strong>
+    <div class="picker-qb-source-list">${rows.map(row => {
+      const price = row.unit_price == null ? "" : _pickerMoney(row.unit_price);
+      const identity = [row.part_number || row.item_name, `Qty ${row.quantity || 1}`, price]
+        .filter(Boolean).join(" · ");
+      return `<div class="picker-qb-source-row"><b>${esc(identity)}</b><span>${esc(row.description || "No QB description")}</span></div>`;
+    }).join("")}</div>` : "";
+}
+
 // Estimate review uses the normal picker, but records draft mutations until
 // the reviewer presses the modal's final Import/Apply button.
 async function _pickerDraftApi(path, body) {
@@ -103,7 +117,10 @@ async function _pickerDraftApi(path, body) {
     payload.picker_config = { ...(payload.picker_config || {}), qb_import: provenance };
     const hasPrice = _pickerState.importSource?.unit_price != null;
     const price = Number(_pickerState.importSource?.unit_price);
-    if (hasPrice && Number.isFinite(price) && price >= 0) payload.picker_config.quote_unit_price_override = price;
+    if ((_pickerState.importSource?.quoteLines || []).length <= 1
+        && hasPrice && Number.isFinite(price) && price >= 0) {
+      payload.picker_config.quote_unit_price_override = price;
+    }
     session.stagedParents.set(String(_pickerState.importSource?.line_id || ""), {
       line_id: payload.line_id,
       name: payload.name || _pickerState.importSource?.accessoryModel || "Staged part",
@@ -368,6 +385,7 @@ function pickerClose({ returnToEstimateReview = true } = {}) {
   _pickerState.consoleSetup = _pickerNewConsoleSetup();
   _pickerState.westin = _pickerNewWestinState();
   _pickerState.importSource = null;
+  _pickerRenderQbSource();
   _pickerRenderTracer(); _pickerRenderInnerEdge(); _pickerRenderOuterEdge(); _pickerRenderLightbar(); _pickerRenderRadio();
   const acc = $("picker-accessories"); if (acc) { acc.hidden = true; acc.innerHTML = ""; }
   const panel = $("picker-panel");
@@ -636,7 +654,19 @@ window.pickerOpenCustomEstimateLine = async function (source) {
       item_id: String(source?.item_id || ""),
       description: String(source?.description || ""),
       amount: source?.amount == null ? null : Number(source.amount),
+      quantity: Math.max(1, Number(values.quantity) || 1),
+      unit_price: values.unitPrice == null ? null : Number(values.unitPrice),
       relatedLineIds: [],
+      quoteLines: [{
+        line_id: String(source?.line_id || ""),
+        item_id: String(source?.item_id || ""),
+        item_name: String(values.sku || "Custom QB line"),
+        part_number: String(values.sku || ""),
+        description: String(source?.description || values.description || ""),
+        quantity: Math.max(1, Number(values.quantity) || 1),
+        unit_price: values.unitPrice == null ? null : Number(values.unitPrice),
+        amount: source?.amount == null ? null : Number(source.amount),
+      }],
       stageSessionId: String(source?.stage_session_id || ""),
       returnToImport: source?.return_to_import?.project_id && source?.return_to_import?.individual_id ? {
         projectId: String(source.return_to_import.project_id),
@@ -798,13 +828,30 @@ window.pickerOpenEstimateLine = async function (source) {
     toast("This Estimate line is not mapped to an exact catalog SKU", "error");
     return;
   }
+  const groupedSources = Array.isArray(source.grouped_estimate_lines)
+    ? source.grouped_estimate_lines.filter(row => row?.catalog_match?.product_id === match.product_id)
+    : [];
+  const quoteSources = [source, ...groupedSources];
+  const quoteLines = quoteSources.map(row => ({
+    line_id: String(row.line_id || ""),
+    item_id: String(row.item_id || ""),
+    item_name: String(row.item_name || ""),
+    part_number: String(row.catalog_match?.part_number || ""),
+    description: String(row.description || ""),
+    quantity: Math.max(1, Number(row.quantity) || 1),
+    unit_price: row.unit_price == null ? null : Number(row.unit_price),
+    amount: row.amount == null ? null : Number(row.amount),
+    catalog_match: row.catalog_match,
+  }));
+  const groupedLineIds = groupedSources.map(row => String(row.line_id || "")).filter(Boolean);
+  const totalQuantity = quoteLines.reduce((sum, row) => sum + row.quantity, 0);
   _pickerResetState();
   _pickerState.importSource = {
     estimate_id: String(source.estimate_id || ""),
     estimate_number: String(source.estimate_number || ""),
     line_id: String(source.line_id || ""),
     item_id: String(source.item_id || ""),
-    quantity: Math.max(1, Number(source.quantity) || 1),
+    quantity: totalQuantity,
     unit_price: source.unit_price == null ? null : Number(source.unit_price),
     amount: source.amount == null ? null : Number(source.amount),
     description: String(source.description || ""),
@@ -812,7 +859,10 @@ window.pickerOpenEstimateLine = async function (source) {
       ? source.guided_estimate_components : [],
     relatedLineIds: (source.guided_estimate_components || [])
       .map(component => String(component?.line_id || ""))
-      .filter(lineId => lineId && lineId !== String(source.line_id || "")),
+      .filter(lineId => lineId && lineId !== String(source.line_id || ""))
+      .concat(groupedLineIds),
+    quoteLines,
+    partialPlacement: source.partial_placement || null,
     productId: String(match.product_id || ""),
     stageSessionId: String(source.stage_session_id || ""),
     accessoryModel: String(match.model || match.part_number || "Accessory"),
@@ -884,18 +934,43 @@ window.pickerOpenEstimateLine = async function (source) {
     _pickerState.sel = {
       product_id: product.product_id, model: product.model, mfr: product.manufacturer_label,
     };
-    const colors = [sku.color, sku.secondary_color, sku.tertiary_color]
-      .filter(Boolean).map(color => String(color).toLowerCase());
-    if (colors.length) {
+    const quotedHeads = quoteLines.flatMap(row => {
+      const rowSku = product.skus.find(item => item.part_number === row.part_number);
+      if (!rowSku) return [];
+      const colors = [rowSku.color, rowSku.secondary_color, rowSku.tertiary_color]
+        .filter(Boolean).map(color => String(color).toLowerCase());
+      return Array.from({ length: row.quantity }, () => ({
+        colors, partNumber: rowSku.part_number,
+      }));
+    });
+    const colors = quotedHeads[0]?.colors || [];
+    if (colors.length && quotedHeads.length === quantity) {
       const config = _pickerState.config;
-      config.colorsPerHead = colors.length === 1 ? "single" : colors.length === 2 ? "duo" : "trio";
-      config.mode = "uniform";
-      config.uniform = colors;
-      config.splitSecondary = [];
-      config.custom = [];
+      const colorKey = values => [...values].sort().join("|");
+      const sameColors = quotedHeads.every(head => colorKey(head.colors) === colorKey(colors));
+      const redHeads = quotedHeads.filter(head => head.colors.includes("red") && !head.colors.includes("blue"));
+      const blueHeads = quotedHeads.filter(head => head.colors.includes("blue") && !head.colors.includes("red"));
+      const redSecondary = redHeads[0]?.colors.filter(color => color !== "red") || [];
+      const blueSecondary = blueHeads[0]?.colors.filter(color => color !== "blue") || [];
+      const standardSplit = quantity % 2 === 0
+        && redHeads.length === quantity / 2 && blueHeads.length === quantity / 2
+        && redSecondary.length <= 1
+        && colorKey(redSecondary) === colorKey(blueSecondary)
+        && redHeads.every(head => colorKey(head.colors.filter(color => color !== "red")) === colorKey(redSecondary))
+        && blueHeads.every(head => colorKey(head.colors.filter(color => color !== "blue")) === colorKey(blueSecondary));
+      const configuredHeads = standardSplit ? [...redHeads, ...blueHeads] : quotedHeads;
+      const slotCount = Math.max(...configuredHeads.map(head => head.colors.length));
+      config.colorsPerHead = slotCount === 1 ? "single" : slotCount === 2 ? "duo" : "trio";
+      config.mode = sameColors ? "uniform" : standardSplit ? "split" : "custom";
+      config.uniform = sameColors ? [...colors] : standardSplit
+        ? ["red", ...redSecondary] : [...colors];
+      config.splitSecondary = standardSplit ? [...redSecondary] : [];
+      config.custom = sameColors || standardSplit
+        ? [] : configuredHeads.map(head => [...head.colors]);
       config._noColor = false;
+      _pickerNormalizeConfig(product);
       _pickerState.skuChoices = Object.fromEntries(
-        Array.from({ length: quantity }, (_, index) => [`head_${index}`, sku.part_number])
+        configuredHeads.map((head, index) => [`head_${index}`, head.partNumber])
       );
     }
   } else {
@@ -1476,6 +1551,7 @@ function _skuCompatible(s, veh) {
 
 function _pickerOpenPanel(title) {
   const t = $("picker-title"); if (t) t.textContent = title;
+  _pickerRenderQbSource();
   const panel = $("picker-panel");
   if (panel) panel.classList.add("open");
   if (!_pickerState._footerWired) {
@@ -7833,6 +7909,7 @@ async function _pickerFinalize(draftId, addAndContinue) {
       window.PT_stageQbEstimateLineResolved(
         stagedImport,
         String(_pickerState.importSource?.line_id || ""),
+        _pickerState.importSource?.partialPlacement || null,
       );
     }
     pickerClose({ returnToEstimateReview: false });
@@ -7916,6 +7993,43 @@ function _pickerSequencedName(pattern, base) {
     return pattern.replace("{n}", String(max + 1));
   }
   return pattern || base || "Part";
+}
+
+function _pickerImportComponentDetails(components) {
+  const source = _pickerState.importSource;
+  const quoteLines = source?.quoteLines || [];
+  if (quoteLines.length <= 1) return components;
+  return (components || []).map(component => {
+    const matchingQuotes = quoteLines.filter(row =>
+      String(row.part_number || "").toLowerCase()
+        === String(component.part_number || "").toLowerCase()
+    );
+    const quote = matchingQuotes[0];
+    if (!quote) return component;
+    const relatedLineIds = quoteLines
+      .map(row => row.line_id).filter(lineId => lineId && lineId !== quote.line_id);
+    const pricedQuotes = matchingQuotes.filter(row => Number.isFinite(row.unit_price));
+    const pricedQuantity = pricedQuotes.reduce((sum, row) => sum + row.quantity, 0);
+    const weightedUnitPrice = pricedQuantity
+      ? pricedQuotes.reduce((sum, row) => sum + row.unit_price * row.quantity, 0) / pricedQuantity
+      : null;
+    return {
+      ...component,
+      ...(weightedUnitPrice == null ? {} : { quote_unit_price_override: weightedUnitPrice }),
+      picker_config: {
+        ...(component.picker_config || {}),
+        qb_import: {
+          estimate_id: source.estimate_id,
+          estimate_number: source.estimate_number,
+          line_id: quote.line_id,
+          item_id: quote.item_id,
+          description: quote.description,
+          amount: quote.amount,
+          related_line_ids: relatedLineIds,
+        },
+      },
+    };
+  });
 }
 
 // The draft service merges a second matching single speaker into the existing
@@ -8087,7 +8201,8 @@ async function _pickerDoAdd(addAndContinue) {
     };
     // The linked Estimate is the source of truth for this imported line. Keep
     // its reviewed price even when the current Parts DB retail price differs.
-    if (hasImportedUnitPrice && Number.isFinite(importedUnitPrice) && importedUnitPrice >= 0) {
+    if ((_pickerState.importSource.quoteLines || []).length <= 1
+        && hasImportedUnitPrice && Number.isFinite(importedUnitPrice) && importedUnitPrice >= 0) {
       pickerConfig.quote_unit_price_override = importedUnitPrice;
     }
   }
@@ -8274,7 +8389,7 @@ async function _pickerDoAdd(addAndContinue) {
         ...supplyPayload,
         quantity,
         location,
-        components: [...grouped.values()],
+        components: _pickerImportComponentDetails([...grouped.values()]),
         comment: String(_pickerState.locationAllocation.comments?.[location] || "").trim(),
         picker_config: pickerConfig,
         ...(partTypeId ? { part_type: partTypeId } : {}),
@@ -8311,11 +8426,11 @@ async function _pickerDoAdd(addAndContinue) {
         ...supplyPayload,
         comment: _pickerState.comment || "",
         ...(detailNote ? { notes: detailNote } : {}),
-        components: [
+        components: _pickerImportComponentDetails([
           ...(row.components || []),
           ...(detailComponent ? [detailComponent] : []),
           ...(sirenDualToneComponent ? [sirenDualToneComponent] : []),
-        ],
+        ]),
         picker_config: pickerConfig,
         ...(partTypeId ? { part_type: partTypeId } : {}),
       };

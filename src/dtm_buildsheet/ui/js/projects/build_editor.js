@@ -656,6 +656,11 @@ function _ptBindBuildEditor() {
     }
   });
 
+  $("pbe-reset-build-top")?.addEventListener("click", () => {
+    _pbeCloseBuildActionsMenu();
+    _pbeOpenResetBuild();
+  });
+
   $("pbe-load-preset-close")?.addEventListener("click", _pbeCloseLoadPreset);
   $("pbe-load-preset-cancel")?.addEventListener("click", _pbeCloseLoadPreset);
   $("pbe-load-preset-search")?.addEventListener("input", _pbeRenderLoadPresetOptions);

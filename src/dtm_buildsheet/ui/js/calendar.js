@@ -140,10 +140,14 @@
     if(drag.value==='vehicle:'+left.dataset.dropJob)return {target:right,placement:{kind:'insert',edge:'before',lineX}};
     return {target:left,placement:{kind:'insert',edge:'after',lineX}};
   }
-  function draggable(node,value){
-    node.draggable=false;node.classList.add('calendar-draggable');
+  function draggable(node,value,action){
+    node.draggable=false;if(canEdit())node.classList.add('calendar-draggable');
     node.addEventListener('pointerdown',e=>{
-      if(e.button!==0||!canEdit()||state.busy)return;
+      if(e.button!==0||state.busy)return;
+      if(!canEdit()){
+        message(appPermissionDenied(action));
+        return;
+      }
       // WebView2 can otherwise hand the pointer to native text selection as
       // soon as it leaves a button. Capture it so Windows keeps delivering
       // move/up events for the complete drag, just as WebKit does on macOS.
@@ -228,14 +232,14 @@
       group.addEventListener('toggle',()=>{if(group.isConnected){if(group.open)expandedProjects.add(project);else expandedProjects.delete(project);}});
       const ready=jobs.filter(j=>!j.blocked?.length).length,scheduled=jobs.filter(j=>!j.unscheduled).length;
       const heading=document.createElement('summary');heading.innerHTML=`<strong>${text(jobs[0].agency_name||jobs[0].title)}</strong><span>${jobs.length} unit${jobs.length===1?'':'s'} · Accepted ${label(jobs[0].accepted_date)}</span>${projectStatusBadges(jobs)}<small>${ready} ready${scheduled?' · '+scheduled+' scheduled':''} · Expand for individual units</small>`;group.append(heading);
-      if(canEdit()&&jobs.some(j=>j.unscheduled))draggable(heading,'project:'+project);
+      if(jobs.some(j=>j.unscheduled))draggable(heading,'project:'+project,'schedule this project');
       const projectButton=document.createElement('button');projectButton.type='button';projectButton.className='btn btn-secondary btn-sm calendar-project-open';projectButton.textContent='View whole project';projectButton.onpointerdown=e=>e.stopPropagation();projectButton.onclick=e=>{e.preventDefault();e.stopPropagation();openProject(project);};heading.append(projectButton);
       jobs.forEach(j=>{const button=document.createElement('button');button.type='button';button.className='btn btn-secondary btn-sm calendar-queue-vehicle';
         button.innerHTML=`<strong>${text(vehicleName(j))}</strong>${statusBadges(j)}<small>Accepted ${label(j.accepted_date)}${j.unscheduled?'':' · Scheduled '+label(j.start)}</small>`;
         button.classList.toggle('calendar-queue-scheduled',!j.unscheduled);
         button.dataset.vehicleId=j.id;button.onclick=()=>openJob(j.id);
         if(!j.unscheduled)button.title='Already scheduled · Click to view booking';
-        if(canEdit()&&j.unscheduled)draggable(button,'vehicle:'+j.id);group.append(button);});
+        if(j.unscheduled)draggable(button,'vehicle:'+j.id,'schedule this vehicle');group.append(button);});
       host.append(group);
     });
     host.scrollTop=scrollTop;
@@ -343,9 +347,12 @@
     const vin=String(job.vin||'').trim(),vinEnding=!job.custom&&vin.length>=6?vin.slice(-6).toUpperCase():'';
     if(vinEnding){const suffix=document.createElement('span');suffix.className='calendar-vin-ending';suffix.textContent=vinEnding;suffix.title='VIN ending '+vinEnding;top.append(suffix);}
     if(!job.custom){const count=document.createElement('span');count.className='calendar-build-count';count.textContent=`${job.build_number}/${job.build_count}`;top.append(count);}b.append(top);
-    if(canEdit()&&!job.historical&&job.shop_status!=='complete'&&job.kind!=='checks'){
-      draggable(b,'vehicle:'+job.id);dropTarget(b,job.team_id,job.start.slice(0,10));b.dataset.dropJob=job.id;
-      b.dataset.dropHint='Drag to move the whole project. Hold Shift to move only this unit. Red line: insert. Highlighted booking: swap. Open space: new booking.';
+    if(!job.historical&&job.shop_status!=='complete'&&job.kind!=='checks'){
+      draggable(b,'vehicle:'+job.id,'reschedule this booking');
+      if(canEdit()){
+        dropTarget(b,job.team_id,job.start.slice(0,10));b.dataset.dropJob=job.id;
+        b.dataset.dropHint='Drag to move the whole project. Hold Shift to move only this unit. Red line: insert. Highlighted booking: swap. Open space: new booking.';
+      }
     }
     const milestone=job.kind==='checks'?'':job.final_finish_status==='delivered'?`Delivered${job.delivered_date?' · '+label(job.delivered_date):''}`:job.final_finish_status==='ready_for_delivery'?`Ready for delivery${job.ready_for_delivery_at?' · '+label(job.ready_for_delivery_at):''}`:job.shop_status==='complete'?`Build completed${job.shop_completed_at?' · '+label(job.shop_completed_at):''}`:'';
     if(part){const sub=document.createElement('small');sub.textContent=milestone||`${kinds[job.kind]} · ${job.hours} labor hours · Build ends ${label(job.end)} · Ready ${label(job.ready)}${job.deadline?' · Deadline '+label(job.deadline):''}`;b.append(sub);}
