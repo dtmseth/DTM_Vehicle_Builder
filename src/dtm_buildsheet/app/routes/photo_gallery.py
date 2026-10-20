@@ -7,12 +7,14 @@ from ...paths import AppPaths
 from ..services.photo_gallery_service import (
     get_gallery_media,
     get_thumbnail_cache_status,
+    open_gallery_item,
     start_thumbnail_cache_prepare,
 )
 from .http import send_json
 
 
 _PHOTO_ROUTE = re.compile(r"^/api/photo-gallery/([a-f0-9]{32})/(thumbnail|content)$")
+_OPEN_ROUTE = re.compile(r"^/api/photo-gallery/([a-f0-9]{32})/open$")
 
 
 def route_photo_gallery(
@@ -26,6 +28,10 @@ def route_photo_gallery(
         return True
     if method == "POST" and path == "/api/photo-gallery/cache-prepare":
         send_json(handler, start_thumbnail_cache_prepare(paths))
+        return True
+    open_match = _OPEN_ROUTE.fullmatch(path)
+    if method == "POST" and open_match is not None:
+        send_json(handler, open_gallery_item(open_match.group(1)))
         return True
     match = _PHOTO_ROUTE.fullmatch(path)
     if method != "GET" or match is None:

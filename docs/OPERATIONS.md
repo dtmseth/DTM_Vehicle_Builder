@@ -400,6 +400,8 @@ assigned to app roles. Otherwise the small user population can receive direct us
 | `projects.view` | Read Builder projects, vehicle details, build summaries, PDFs, folders, and photos |
 | `projects.edit` | Create/edit Builder projects and vehicle facts |
 | `projects.lifecycle.update` | Move projects Active/Inactive/Completed |
+| `project_media.upload` | Upload project reference photos, videos, and files to Company Files |
+| `completed_media.upload` | Upload completed-build photos, videos, and technician files to exact Shop vehicle folders |
 | `estimates.manage` | Link/create/update QBO Estimates with safeguards |
 | `settings.general.manage` | General settings administration |
 | `settings.advanced.manage` | Advanced catalog/layout administration |
@@ -411,7 +413,7 @@ assigned to app roles. Otherwise the small user population can receive direct us
 |---|---|
 | `Admin` | every active capability, including both Settings workspaces |
 | `Staff` | every active capability except `settings.advanced.manage` |
-| `Shop` | `projects.view`, `operations.view`, `operations.shop.update`, `operations.programming_qc.update`, `operations.final_finish.update`; Calendar is view-only and Settings is hidden |
+| `Shop` | `projects.view`, `completed_media.upload`, `operations.view`, `operations.shop.update`, `operations.programming_qc.update`, `operations.final_finish.update`; Calendar is view-only and Settings is hidden |
 
 The legacy values `AppAdmin`, `BuilderEditor`, `OperationsManager`, `PartsEditor`, `ShopEditor`, and
 `ProgrammingQcEditor` temporarily resolve to these three personas during the Entra migration.

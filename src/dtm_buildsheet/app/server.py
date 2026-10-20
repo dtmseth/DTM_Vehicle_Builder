@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import secrets
 import socket
 import threading
 import time
@@ -32,6 +33,7 @@ from .routes import projects as project_routes
 from .routes import quickbooks as quickbooks_routes
 from .routes import templates as template_routes
 from .routes import updates as update_routes
+from .routes import uploads as upload_routes
 from .routes import validation as validation_routes
 from .routes import vehicle_catalog as vehicle_catalog_routes
 from .services.template_service import pick_folder as _pick_folder
@@ -63,6 +65,7 @@ def _desktop_ui_url(port: int = PORT) -> str:
 
 class Handler(BaseHTTPRequestHandler):
     paths: AppPaths = AppPaths()
+    upload_token: str = ""
 
     def log_message(self, fmt, *args):
         pass
@@ -110,6 +113,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith("/api/photo-gallery/"):
             if not photo_gallery_routes.route_photo_gallery(self, "GET", path, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/uploads/"):
+            if not upload_routes.route_uploads(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
         elif path == "/api/sales-reps" or path == "/api/sales-reps/search":
             if not sales_rep_routes.route_sales_reps(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
@@ -146,11 +152,19 @@ class Handler(BaseHTTPRequestHandler):
     # ── POST ──────────────────────────────────────────────────────────────────
 
     def do_POST(self):
-        body = self._read_json()
         path = urlparse(self.path).path
 
         if not self._request_allowed("POST", path):
             return
+
+        # Upload bodies are streamed directly to durable staging. Reading them
+        # through _read_json would materialize large videos in memory.
+        if path.startswith("/api/uploads/") and path.endswith("/content"):
+            if not upload_routes.route_upload_content(self, path, self.paths):
+                self._send(404, b"Not found", "text/plain")
+            return
+
+        body = self._read_json()
 
         if path == "/parse":
             self._api(generation_routes.post_parse(body, self.paths))
@@ -195,6 +209,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith("/api/photo-gallery/"):
             if not photo_gallery_routes.route_photo_gallery(self, "POST", path, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/uploads/"):
+            if not upload_routes.route_uploads(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
         elif path == "/api/sales-rep/save":
             if not sales_rep_routes.route_sales_reps(self, "POST", path, body, self.paths):
@@ -253,6 +270,7 @@ class Handler(BaseHTTPRequestHandler):
             else f"<h1>UI file not found: {_UI_FILE}</h1>"
         )
         html = html.replace("{{APP_VERSION}}", _APP_VERSION)
+        html = html.replace("{{UPLOAD_TOKEN}}", self.upload_token)
         self._send(200, html.encode("utf-8"), "text/html; charset=utf-8", cache_control="no-store")
 
     def _serve_static(self, rel_path: str):
@@ -329,6 +347,7 @@ def create_http_server(paths: AppPaths, *, host: str = "127.0.0.1",
         pass
 
     BoundHandler.paths = paths
+    BoundHandler.upload_token = secrets.token_urlsafe(32)
     return _ReuseHTTPServer((host, port), BoundHandler)
 
 
@@ -806,6 +825,12 @@ def main(paths: AppPaths | None = None):
 
     Handler.paths = active_paths
 
+    from .services.upload_service import (
+        acknowledge_completed_uploads,
+        has_active_uploads,
+        shutdown_upload_manager,
+        start_upload_manager,
+    )
     # Warm per-record collection caches at startup so the one-shot legacy
     # migration (Phase 1) fires immediately on launch rather than on first
     # user interaction with the agency/sales-rep services.
@@ -848,22 +873,60 @@ def main(paths: AppPaths | None = None):
         )
 
     server = create_http_server(active_paths)
+    # A completion badge is session-level information. Jobs remain in the
+    # manager history, but a badge from a previous app run should not linger.
+    acknowledge_completed_uploads(active_paths)
+    start_upload_manager(active_paths)
     url = _desktop_ui_url()
     print(f"DTM Vehicle Builder GUI -> {url}")
     print(f"Workspace -> {active_paths.workspace_dir}")
 
     try:
         import webview
+
+        class _DesktopUploadApi:
+            def __init__(self):
+                self.window = None
+                self.allow_close = threading.Event()
+
+            def close_anyway(self):
+                self.allow_close.set()
+                shutdown_upload_manager(active_paths)
+                acknowledge_completed_uploads(active_paths)
+                if self.window is not None:
+                    self.window.destroy()
+                return True
+
+        desktop_api = _DesktopUploadApi()
         threading.Thread(target=server.serve_forever, daemon=True).start()
         _wait_for_server_ready(PORT)
         window = webview.create_window(
-            "DTM Vehicle Builder", url, width=1280, height=800, min_size=(900, 600)
+            "DTM Vehicle Builder", url, width=1280, height=800, min_size=(900, 600),
+            js_api=desktop_api,
         )
+        desktop_api.window = window
+
+        def _guard_active_uploads():
+            if desktop_api.allow_close.is_set() or not has_active_uploads(active_paths):
+                return True
+            try:
+                window.run_js(
+                    "window.DTMUploads && window.DTMUploads.requestCloseFromNative()"
+                )
+            except Exception:
+                logging.getLogger(__name__).exception(
+                    "Could not show the active-upload close warning"
+                )
+            return False
+
+        window.events.closing += _guard_active_uploads
         try:
             webview.start()
         finally:
             from .services.photo_gallery_service import shutdown_photo_gallery_workers
 
+            shutdown_upload_manager(active_paths)
+            acknowledge_completed_uploads(active_paths)
             shutdown_photo_gallery_workers()
             server.shutdown()
             server.server_close()
@@ -879,5 +942,7 @@ def main(paths: AppPaths | None = None):
         finally:
             from .services.photo_gallery_service import shutdown_photo_gallery_workers
 
+            shutdown_upload_manager(active_paths)
+            acknowledge_completed_uploads(active_paths)
             shutdown_photo_gallery_workers()
             server.server_close()

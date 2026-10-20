@@ -36,6 +36,7 @@ from ..services.reference_photo_service import (
 )
 from ..services.reference_library_service import (
     handle_discover_references,
+    handle_open_project_file,
     handle_open_reference_video,
     handle_preview_reference_video,
 )
@@ -302,6 +303,9 @@ def route_projects(
                 return True
             if method == "POST" and action == "/video-preview":
                 send_json(handler, handle_preview_reference_video(project_id, body))
+                return True
+            if method == "POST" and action == "/file-open":
+                send_json(handler, handle_open_project_file(project_id, body, paths))
                 return True
             if method == "POST" and action == "/import-gallery":
                 send_json(handler, handle_import_gallery_references(project_id, body, paths))

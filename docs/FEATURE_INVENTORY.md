@@ -634,7 +634,7 @@ project controls and each configured vehicle opening its embedded build editor:
   changing QBO. **Connect existing estimate** is separate from the guarded **Update connected
   estimate** write action.
   Project actions use **Export / update all PDFs** plus batch QuickBooks options.
-- **Build reference photos**: the Project Overview shows one selectable **Project photos** gallery
+- **Build reference photos and project media**: the Project Overview shows one selectable **Project Media** gallery
   with assigned/unassigned states and notes, while the unit-group header and builder notes area open
   a thumbnail-card gallery with tags, inline note editing, multi-select removal, and a multi-select
   **Add photos** picker. Removing the last group assignment leaves the photo unassigned in the
@@ -647,10 +647,23 @@ project controls and each configured vehicle opening its embedded build editor:
   into Project Photos. Videos stay Company-only. Explicitly removed folder photos remain excluded
   until the user adds them again. Effective photos use adaptive orientation-aware appendix pages with
   assignment notes.
+- **Direct durable uploads**: Project Media and exact-vehicle completed galleries accept multiple
+  photos, videos, PDFs, Office documents, text/CSV, and ZIP files without a separate OneDrive or
+  SharePoint step. Browser bytes first stream into app-owned local staging and then upload through
+  bounded SharePoint upload-session chunks with per-file phase, byte, percentage, throughput, ETA,
+  retry, and cancel reporting. Two cloud transfers may run concurrently while navigation remains
+  available. Completed photos/videos go to the vehicle's **Completed Build Photos** folder;
+  documents go to **Technician Files**; project documents go to the Company year folder's
+  **Project Files**. HEIC/HEIF and WebP images are decoded locally, orientation-normalized, and
+  written to SharePoint as verified JPEG files with `.jpg` names; the Apple-format original remains
+  staging-only and is removed after completion. A native close guard offers **Close anyway** or
+  **View upload status**; acknowledged cloud chunks and complete staged files recover safely on the
+  next launch.
 - **Photo galleries and folders**: Project Overview and the Projects Completed tab open project reference and
   completed galleries; unit-group headers own reference controls, and individual vehicle cards open
-  only their completed photos. Completed photos scan only exact stored vehicle
-  folders in the background; the last authoritative completed-photo presence is cached locally for
+  only their completed media. Completed media scans only exact stored vehicle **Completed Build
+  Photos** and **Technician Files** folders in the background; videos and documents open through an
+  opaque process-local authorization token. The last authoritative actual-photo presence is cached locally for
   an immediate project paint while the folder refreshes. Reference assignments render immediately; thumbnails persist in a
   local source/eTag cache and full-resolution content hydrates on demand into a persistent local exact-media cache. Normalized thumbnails also
   use the app-managed Company Files `Settings/_DTM Photo Thumbnail Cache/v2` so another workstation
@@ -902,6 +915,12 @@ Load Preset next to Save as New Preset in both action areas.
 | `/api/project/{id}/references/discover` | Browse organized reusable media within the same agency |
 | `/api/project/{id}/references/save` | Add/update a portable asset and its scope assignments |
 | `/api/project/{id}/references/{reference_id}/delete` | Remove metadata only; never delete source media |
+| `/api/project/{id}/references/file-open` | Open one project file authorized by its persisted reference identity |
+| `/api/uploads/status` | Read durable background upload progress and recovery state |
+| `/api/uploads/project/create` | Create a project-media upload job |
+| `/api/uploads/completed/create` | Create an exact-vehicle completed-media upload job |
+| `/api/uploads/{project\|completed}/{job_id}/content` | Stream raw browser file bytes into local staging |
+| `/api/uploads/{project\|completed}/{job_id}/{retry\|cancel}` | Retry or cancel one upload job |
 | `/api/project/{id}/completion` | Mark a project completed or return it to the active list |
 | `/api/projects/naming-migration-report` | Read-only canonical names, duplicates, missing IDs, legacy output/folder changes, manual QBO checklist |
 

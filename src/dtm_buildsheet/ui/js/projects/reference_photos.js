@@ -38,7 +38,9 @@ function _ptReferenceOriginLabel(origin) {
 
 function _ptReferenceSourceLabel(asset) {
   if (asset.source_kind === "shop_completed") return "Completed build photo";
-  return asset.media_type === "video" ? "Company reference video" : "Company reference photo";
+  if (asset.media_type === "video") return "Company reference video";
+  if (asset.media_type === "file") return "Company project file";
+  return "Company reference photo";
 }
 
 function _ptGalleryTargetProjects(sourceProject) {
@@ -51,9 +53,19 @@ function _ptGalleryTargetProjects(sourceProject) {
 }
 
 function _ptGalleryActionMarkup(kind, sourceProject) {
-  if (!_ptCanEditProjects()) return "";
+  const canUpload = kind === "completed"
+    ? _ptHasCapability("completed_media.upload")
+    : _ptHasCapability("project_media.upload");
+  const context = _PT.photoGalleryContext || {};
+  const uploadButton = canUpload && (kind === "reference" || Boolean(context.unitId))
+    ? `<button type="button" class="btn btn-primary btn-sm photo-gallery-upload-action" onclick="DTMUploads.chooseFromGallery()">Upload files</button>`
+    : "";
+  if (!_ptCanEditProjects()) {
+    return uploadButton ? `<div class="photo-gallery-selection-bar">${uploadButton}</div>` : "";
+  }
   if (kind === "completed" && _ptGalleryTargetProjects(sourceProject).length) {
     return `<div class="photo-gallery-selection-bar">
+      ${uploadButton}
       <button type="button" class="btn btn-primary btn-sm" id="photo-gallery-use-selected" onclick="PT_chooseGalleryDestination()" disabled>Use as Reference Photo(s)</button>
       <span id="photo-gallery-selected-count">0 selected</span>
     </div>`;
@@ -61,57 +73,151 @@ function _ptGalleryActionMarkup(kind, sourceProject) {
   if (kind === "reference" && sourceProject?.project_status !== "completed") {
     const groupScoped = Boolean(_PT.photoGalleryContext?.unitId);
     return `<div class="photo-gallery-selection-bar">
+      ${uploadButton}
       ${groupScoped ? `<button type="button" class="btn btn-secondary btn-sm" onclick="PT_addGroupPhotos()">Add photos</button>` : `<button type="button" class="btn btn-secondary btn-sm" onclick="PT_addProjectPhotos()">Add photos</button>
       <button type="button" class="btn btn-primary btn-sm" id="photo-gallery-assign-selected" onclick="PT_assignSelectedProjectPhotos()" disabled>Assign to unit group</button>`}
       <button type="button" class="btn btn-danger btn-sm" id="photo-gallery-remove-selected" onclick="PT_removeSelectedReferencePhotos()" disabled>${groupScoped ? "Remove from unit group" : "Remove from project"}</button>
       <span id="photo-gallery-selected-count">0 selected</span>
     </div>`;
   }
-  return "";
+  return uploadButton ? `<div class="photo-gallery-selection-bar">${uploadButton}</div>` : "";
 }
 
 function _ptGalleryEmptyMarkup(kind, warnings = [], context = {}, sourceProject = null) {
   const title = kind === "completed"
-    ? "No completed build photos."
-    : context.unitId ? "No build reference photos." : "No project photos.";
+    ? "No completed media or technician files."
+    : context.unitId ? "No build reference photos." : "No project media.";
   const addAction = context.unitId ? "PT_addGroupPhotos()" : "PT_addProjectPhotos()";
   return `<div class="photo-gallery-empty"><strong>${esc(title)}</strong>
+    ${((kind === "reference" && _ptHasCapability("project_media.upload")) || (kind === "completed" && context.unitId && _ptHasCapability("completed_media.upload"))) ? `<button type="button" class="btn btn-primary" onclick="DTMUploads.chooseFromGallery()">Upload files</button>` : ""}
     ${_ptCanEditProjects() && kind === "reference" && sourceProject?.project_status !== "completed" ? `<button type="button" class="btn btn-primary" onclick="${addAction}">Add photos</button>` : ""}
     ${warnings.map(message => `<small>${esc(message)}</small>`).join("")}</div>`;
+}
+
+function _ptFileTypeMeta(fileName) {
+  const extension = String(fileName || "").split(".").pop().toLowerCase();
+  const types = {
+    pdf: ["PDF", "pdf"],
+    xls: ["XLS", "excel"],
+    xlsx: ["XLSX", "excel"],
+    csv: ["CSV", "csv"],
+    doc: ["DOC", "word"],
+    docx: ["DOCX", "word"],
+    ppt: ["PPT", "powerpoint"],
+    pptx: ["PPTX", "powerpoint"],
+    txt: ["TXT", "text"],
+    zip: ["ZIP", "archive"],
+  };
+  const [label, family] = types[extension] || [extension ? extension.slice(0, 5).toUpperCase() : "FILE", "generic"];
+  return {label, family};
+}
+
+function _ptFileIconMarkup(fileName) {
+  const type = _ptFileTypeMeta(fileName);
+  return `<span class="photo-gallery-file-icon file-type-${type.family}" aria-hidden="true">
+    <svg viewBox="0 0 64 76" focusable="false">
+      <path class="file-icon-page" d="M10 2h29l15 15v55H10z"/>
+      <path class="file-icon-fold" d="M39 2v16h15"/>
+      <path class="file-icon-line" d="M19 31h26M19 39h26"/>
+    </svg>
+    <span>${esc(type.label)}</span>
+  </span>`;
+}
+
+function _ptGalleryMediaBucket(item) {
+  if (item?.media_type === "video") return "videos";
+  if (item?.media_type === "file") return "documents";
+  return "photos";
+}
+
+function _ptGalleryVisibleEntries(items = _PT.photoGalleryPhotos || []) {
+  const filter = _PT.photoGalleryFilter || "all";
+  return items.map((item, index) => ({item, index})).filter(({item}) =>
+    filter === "all" || _ptGalleryMediaBucket(item) === filter
+  );
+}
+
+function _ptGallerySelectionKey(item) {
+  return _ptGalleryItemKey(item);
+}
+
+function _ptGalleryItemSelectable(kind, item, sourceProject) {
+  if (!_ptCanEditProjects()) return false;
+  const context = _PT.photoGalleryContext || {};
+  if (kind === "completed") {
+    return item?.media_type === "photo" && Boolean(item.photo_token) &&
+      Boolean(_ptGalleryTargetProjects(sourceProject).length);
+  }
+  if (sourceProject?.project_status === "completed") return false;
+  if (context.unitId) return item?.media_type === "photo" && Boolean(item.photo_token);
+  return Boolean(item?.photo_token || item?.reference_id);
+}
+
+function _ptSelectedGalleryItems() {
+  const selected = _PT.photoGallerySelected instanceof Set ? _PT.photoGallerySelected : new Set();
+  return (_PT.photoGalleryPhotos || []).filter(item => selected.has(_ptGallerySelectionKey(item)));
+}
+
+function _ptSelectedGalleryPhotoTokens() {
+  return [...new Set(_ptSelectedGalleryItems()
+    .filter(item => item.media_type === "photo" && item.photo_token)
+    .map(item => item.photo_token))];
+}
+
+function _ptGalleryFilterMarkup(kind, photos, sourceProject) {
+  const counts = {all: photos.length, photos: 0, videos: 0, documents: 0};
+  for (const item of photos) counts[_ptGalleryMediaBucket(item)] += 1;
+  const current = _PT.photoGalleryFilter || "all";
+  const labels = {all: "All media", photos: "Photos", videos: "Videos", documents: "Documents"};
+  const visible = _ptGalleryVisibleEntries(photos);
+  const eligible = visible.filter(({item}) => _ptGalleryItemSelectable(kind, item, sourceProject));
+  const selected = _PT.photoGallerySelected instanceof Set ? _PT.photoGallerySelected : new Set();
+  const allSelected = eligible.length > 0 && eligible.every(({item}) => selected.has(_ptGallerySelectionKey(item)));
+  return `<div class="photo-gallery-filterbar">
+    <div class="photo-gallery-tabs" role="tablist" aria-label="Filter project media">
+      ${Object.entries(labels).map(([value, label]) => `<button type="button" role="tab" aria-selected="${current === value}" class="photo-gallery-tab${current === value ? " active" : ""}" onclick="PT_setGalleryFilter('${value}')">${label}<span>${counts[value]}</span></button>`).join("")}
+    </div>
+    ${eligible.length ? `<button type="button" class="btn btn-secondary btn-sm photo-gallery-select-all" onclick="PT_toggleSelectAllGallery()">${allSelected ? "Clear visible" : "Select all"}</button>` : ""}
+  </div>`;
 }
 
 function _ptGalleryMarkup(kind, photos, warnings = [], sourceProject = null) {
   if (!photos.length) return _ptGalleryEmptyMarkup(kind, warnings, _PT.photoGalleryContext || {}, sourceProject);
   const groupScoped = kind === "reference" && Boolean(_PT.photoGalleryContext?.unitId);
-  const selectable = kind === "completed"
-    ? _ptCanEditProjects() && Boolean(_ptGalleryTargetProjects(sourceProject).length)
-    : _ptCanEditProjects() && sourceProject?.project_status !== "completed";
   const videoCount = photos.filter(item => item.media_type === "video").length;
-  const photoCount = photos.length - videoCount;
+  const fileCount = photos.filter(item => item.media_type === "file").length;
+  const photoCount = photos.length - videoCount - fileCount;
+  const visibleEntries = _ptGalleryVisibleEntries(photos);
   const countLabel = [
     photoCount ? `${photoCount} photo${photoCount === 1 ? "" : "s"}` : "",
     videoCount ? `${videoCount} video${videoCount === 1 ? "" : "s"}` : "",
+    fileCount ? `${fileCount} file${fileCount === 1 ? "" : "s"}` : "",
   ].filter(Boolean).join(" · ");
   return `<div class="photo-gallery-summary"><strong>${countLabel}</strong></div>
-    ${warnings.map(message => `<div class="photo-gallery-warning">${esc(message)}</div>`).join("")}
+    <div class="photo-gallery-warnings">${warnings.map(message => `<div class="photo-gallery-warning">${esc(message)}</div>`).join("")}</div>
+    ${_ptGalleryFilterMarkup(kind, photos, sourceProject)}
     ${_ptGalleryActionMarkup(kind, sourceProject)}
-    <div class="photo-gallery-grid">${photos.map((photo, index) => {
+    <div class="photo-gallery-grid">${visibleEntries.length ? visibleEntries.map(({item: photo, index}) => {
       const isVideo = photo.media_type === "video";
-      const itemSelectable = selectable && !isVideo && Boolean(photo.photo_token);
+      const isFile = photo.media_type === "file";
+      const itemSelectable = _ptGalleryItemSelectable(kind, photo, sourceProject);
+      const itemSelected = itemSelectable && _PT.photoGallerySelected?.has(_ptGallerySelectionKey(photo));
       const canEditGroupNote = _ptCanEditProjects() && groupScoped && photo.assignment_state === "assigned";
-      const sourceTag = photo.source_kind === "shop_completed" ? "Completed build" : isVideo ? "Company video" : "Company photo";
+      const sourceTag = photo.source_kind === "shop_technician_file"
+        ? "Technician file"
+        : photo.source_kind === "shop_completed" ? "Completed build" : isVideo ? "Company video" : isFile ? "Project file" : "Company photo";
       return `
-      <article class="photo-gallery-card${groupScoped ? " photo-gallery-card--group-reference" : ""}${isVideo ? " photo-gallery-card--video" : ""}" data-gallery-index="${index}">
-        ${itemSelectable ? `<label class="photo-gallery-select"><input type="checkbox" onchange="PT_toggleGalleryPhoto(${index},this.checked)"><span>Select</span></label>` : ""}
-        <button type="button" class="photo-gallery-open" onclick="${isVideo ? `PT_openGalleryVideo(${index})` : `PT_openGalleryPhoto(${index})`}" aria-label="${isVideo ? "Play" : "Open"} ${esc(photo.file_name || (isVideo ? "video" : "photo"))}">
-          ${isVideo ? `<span class="photo-gallery-thumb photo-gallery-video-thumb"><span class="photo-gallery-video-play" aria-hidden="true">▶</span><span>Play video</span><span class="photo-gallery-state-badge">Video</span></span>` : `<span class="photo-gallery-thumb"><span class="photo-gallery-thumb-loading"><span class="dtm-loading-spinner"></span><span data-thumbnail-loading-text>Loading thumbnail…</span><span class="photo-thumbnail-retry" data-thumbnail-retry role="button" tabindex="0" hidden>Retry</span></span><img data-thumbnail-url="${esc(photo.thumbnail_url || "")}" alt="">
+      <article class="photo-gallery-card${itemSelected ? " selected" : ""}${groupScoped ? " photo-gallery-card--group-reference" : ""}${isVideo ? " photo-gallery-card--video" : ""}${isFile ? " photo-gallery-file-card" : ""}" data-gallery-index="${index}" data-gallery-key="${esc(_ptGalleryItemKey(photo))}">
+        ${itemSelectable ? `<label class="photo-gallery-select"><input type="checkbox" onchange="PT_toggleGalleryPhoto(${index},this.checked)" ${itemSelected ? "checked" : ""}><span>Select</span></label>` : ""}
+        <button type="button" class="photo-gallery-open" onclick="${isVideo ? `PT_openGalleryVideo(${index})` : isFile ? `PT_openGalleryFile(${index})` : `PT_openGalleryPhoto(${index})`}" aria-label="${isVideo ? "Play" : "Open"} ${esc(photo.file_name || (isVideo ? "video" : isFile ? "file" : "photo"))}">
+          ${isVideo ? `<span class="photo-gallery-thumb photo-gallery-video-thumb"><span class="photo-gallery-video-play" aria-hidden="true">▶</span><span>Play video</span><span class="photo-gallery-state-badge">Video</span></span>` : isFile ? `<span class="photo-gallery-thumb photo-gallery-file-thumb">${_ptFileIconMarkup(photo.file_name)}<span class="photo-gallery-state-badge">${esc(_ptFileTypeMeta(photo.file_name).label)}</span></span>` : `<span class="photo-gallery-thumb"><span class="photo-gallery-thumb-loading"><span class="dtm-loading-spinner"></span><span data-thumbnail-loading-text>Loading thumbnail…</span><span class="photo-thumbnail-retry" data-thumbnail-retry role="button" tabindex="0" hidden>Retry</span></span><img data-thumbnail-url="${esc(photo.thumbnail_url || "")}" alt="">
             ${kind === "completed" ? `<span class="photo-gallery-state-badge photo-gallery-state-badge--completed">✓ Completed</span>`
               : `<span class="photo-gallery-state-badge${photo.assignment_state === "assigned" ? " photo-gallery-state-badge--assigned" : ""}">${esc(photo.assignment_state === "assigned" ? "Assigned" : photo.assignment_state === "legacy" ? "Legacy" : "Unassigned")}</span>`}
           </span>`}
-          <strong>${esc(isVideo ? (photo.file_name || "Reference video") : kind === "completed" ? (photo.label || "Completed build") : (photo.file_name || "Project photo"))}</strong>
-          ${isVideo ? `<span>${esc(sourceTag)}</span>` : kind === "completed" ? `<span class="photo-gallery-file-name">${esc(photo.file_name || "Photo")}</span>` : photo.label ? `<span>${esc(photo.label)}</span>` : ""}
+          <strong>${esc((isVideo || isFile) ? (photo.file_name || (isVideo ? "Reference video" : "Project file")) : kind === "completed" ? (photo.label || "Completed build") : (photo.file_name || "Project photo"))}</strong>
+          ${(isVideo || isFile) ? `<span>${esc(sourceTag)}</span>` : kind === "completed" ? `<span class="photo-gallery-file-name">${esc(photo.file_name || "Photo")}</span>` : photo.label ? `<span>${esc(photo.label)}</span>` : ""}
           ${groupScoped ? `<span class="photo-gallery-card-tags"><span>${esc(sourceTag)}</span></span>` : ""}
-          ${!isVideo && photo.note ? `<small data-gallery-note-display>${esc(photo.note)}</small>` : !isVideo && groupScoped ? `<small class="photo-gallery-note-empty" data-gallery-note-display>No shop note</small>` : ""}
+          ${!isVideo && !isFile && photo.note ? `<small data-gallery-note-display>${esc(photo.note)}</small>` : !isVideo && !isFile && groupScoped ? `<small class="photo-gallery-note-empty" data-gallery-note-display>No shop note</small>` : ""}
         </button>
         ${canEditGroupNote ? `<div class="photo-gallery-card-actions">
           <button type="button" class="btn btn-secondary btn-sm" onclick="PT_editGroupReferenceNote(${index})">Edit note</button>
@@ -122,7 +228,7 @@ function _ptGalleryMarkup(kind, photos, warnings = [], sourceProject = null) {
           <button type="button" class="btn btn-secondary btn-sm" onclick="PT_cancelGroupReferenceNote(${index})">Cancel</button></div>
         </div>` : ""}
       </article>`;
-    }).join("")}</div>
+    }).join("") : `<div class="photo-gallery-filter-empty">No ${esc((_PT.photoGalleryFilter || "media").toLowerCase())} in this project.</div>`}</div>
     <div class="photo-gallery-viewer" id="photo-gallery-viewer" hidden>
       <div class="photo-gallery-viewer-bar">
         <button type="button" class="btn btn-secondary btn-sm" onclick="PT_stepGalleryPhoto(-1)">← Previous</button>
@@ -133,6 +239,66 @@ function _ptGalleryMarkup(kind, photos, warnings = [], sourceProject = null) {
       <div class="photo-gallery-full-wrap"><div class="photo-gallery-full-loading"><span class="dtm-loading-spinner"></span><span data-full-photo-loading-text>Loading full-resolution image…</span><button type="button" class="btn btn-secondary btn-sm" id="photo-gallery-full-retry" onclick="PT_retryGalleryPhoto()" hidden>Retry</button></div><img id="photo-gallery-full" alt=""></div>
       <strong id="photo-gallery-full-name"></strong><p id="photo-gallery-full-note"></p>
     </div>`;
+}
+
+function _ptGalleryItemKey(item) {
+  return String(item?.source_key || item?.reference_id || item?.photo_token || [
+    item?.media_type, item?.source_path, item?.file_name,
+  ].join("::"));
+}
+
+function _ptMergeGalleryItems(...groups) {
+  const merged = new Map();
+  for (const item of groups.flat()) {
+    if (item) merged.set(_ptGalleryItemKey(item), item);
+  }
+  return [...merged.values()];
+}
+
+function _ptRenderGalleryStable(kind, items, warnings, sourceProject) {
+  const body = $("photo-gallery-body");
+  if (!body) return;
+  _PT.photoGalleryWarnings = warnings;
+  _PT.photoGallerySourceProject = sourceProject;
+  const existingKeys = [...body.querySelectorAll(".photo-gallery-card[data-gallery-key]")]
+    .map(card => card.dataset.galleryKey || "");
+  const nextKeys = _ptGalleryVisibleEntries(items).map(({item}) => _ptGalleryItemKey(item));
+  const selection = [...(_PT.photoGallerySelected || [])].sort().join("|");
+  const signature = `${_PT.photoGalleryFilter || "all"}::${nextKeys.join("|")}::${selection}`;
+  if (body.dataset.galleryRenderSignature === signature && existingKeys.length === nextKeys.length && existingKeys.every((key, index) => key === nextKeys[index])) {
+    const warningHolder = body.querySelector(".photo-gallery-warnings");
+    if (warningHolder) {
+      warningHolder.innerHTML = warnings.map(message => `<div class="photo-gallery-warning">${esc(message)}</div>`).join("");
+    }
+    return;
+  }
+  const priorGrid = body.querySelector(".photo-gallery-grid");
+  const priorScrollTop = priorGrid?.scrollTop || 0;
+  const thumbnails = new Map(_PT.galleryThumbnailState || []);
+  for (const image of body.querySelectorAll("img[data-thumbnail-url]")) {
+    if (!image.src || !["loaded", "preview"].includes(image.dataset.thumbnailState)) continue;
+    thumbnails.set(String(image.dataset.thumbnailUrl || ""), {
+      src: image.src,
+      state: image.dataset.thumbnailState,
+      attempts: image.dataset.thumbnailUpgradeAttempts || "0",
+    });
+  }
+  _PT.galleryThumbnailState = thumbnails;
+  body.innerHTML = _ptGalleryMarkup(kind, items, warnings, sourceProject);
+  body.dataset.galleryRenderSignature = signature;
+  for (const image of body.querySelectorAll("img[data-thumbnail-url]")) {
+    const previous = thumbnails.get(String(image.dataset.thumbnailUrl || ""));
+    if (!previous) continue;
+    image.src = previous.src;
+    image.hidden = false;
+    image.dataset.thumbnailState = previous.state;
+    image.dataset.thumbnailUpgradeAttempts = previous.attempts;
+    const loading = image.closest(".photo-gallery-thumb")?.querySelector(".photo-gallery-thumb-loading");
+    if (loading) loading.hidden = true;
+  }
+  const nextGrid = body.querySelector(".photo-gallery-grid");
+  if (nextGrid) nextGrid.scrollTop = priorScrollTop;
+  _ptBindGalleryThumbnailLoading();
 }
 
 function _ptThumbnailLoadingMarkup() {
@@ -149,6 +315,7 @@ function _ptReleaseThumbnailLoading() {
   _PT.thumbnailControllers = new Set();
   for (const url of (_PT.thumbnailObjectUrls || [])) URL.revokeObjectURL(url);
   _PT.thumbnailObjectUrls = new Set();
+  _PT.galleryThumbnailState = new Map();
   _PT.fullPhotoObjectUrl = "";
 }
 
@@ -263,6 +430,11 @@ function _ptBindThumbnailLoading(root) {
   let immediate = 0;
   const deferred = [];
   for (const image of images) {
+    if (image.src && image.dataset.thumbnailState === "loaded") continue;
+    if (image.src && image.dataset.thumbnailState === "preview") {
+      setTimeout(() => _ptLoadThumbnail(image), 0);
+      continue;
+    }
     image.dataset.thumbnailState = "queued";
     image.dataset.thumbnailUpgradeAttempts = "0";
     const retry = image.closest(".photo-gallery-thumb,.proj-reference-browser-thumb,.proj-reference-file-icon")
@@ -377,10 +549,22 @@ async function _ptLoadCurrentProjectVideos(project) {
   }
   if (response?.loading) throw new Error("Reference video loading is taking longer than expected");
   const prefix = `${yearRoot}/Reference Photos & Videos/`.toLowerCase();
+  const projectAssets = new Map((project?.reference_assets || [])
+    .filter(item => item.media_type === "video")
+    .map(item => [_ptReferenceKey(item), item]));
   return (response?.references || []).filter(item =>
     item.media_type === "video" &&
     String(item.source_path || "").replace(/^\/+/, "").toLowerCase().startsWith(prefix)
-  );
+  ).map(item => {
+    const asset = projectAssets.get(_ptReferenceKey(item));
+    return asset ? {...item, reference_id: asset.reference_id} : item;
+  });
+}
+
+function _ptCurrentProjectFiles(project) {
+  return (project?.reference_assets || [])
+    .filter(item => item.media_type === "file")
+    .map(item => ({...item, assignment_state: "file", label: "Project file"}));
 }
 
 function _ptSetProjectVideoCount(project, count, unavailable = false) {
@@ -406,13 +590,14 @@ window.PT_openPhotoGallery = async function (projectId, kind, unitId = "", indiv
   _PT.photoGalleryPhotos = [];
   _PT.photoGalleryIndex = -1;
   _PT.photoGallerySelected = new Set();
+  _PT.photoGalleryFilter = "all";
   _PT.photoGalleryContext = { projectId, kind, unitId: unitId || "", individualId: individualId || "" };
   let sourceProject = (_PT.projects || []).find(project => project.project_id === projectId) || _PT.viewProject;
   const modal = $("photo-gallery-modal");
   const body = $("photo-gallery-body");
   const title = kind === "completed"
-    ? "Completed Build Photos"
-    : unitId ? "Build Reference Photos" : "Project Photos";
+    ? "Completed Media & Files"
+    : unitId ? "Build Reference Photos" : "Project Media";
   $("photo-gallery-title").textContent = title;
   body.innerHTML = `<div class="photo-gallery-loading"><span class="dtm-loading-spinner"></span><strong>Loading ${esc(title.toLowerCase())}…</strong></div>`;
   modal?.removeAttribute("hidden");
@@ -420,6 +605,7 @@ window.PT_openPhotoGallery = async function (projectId, kind, unitId = "", indiv
 
   try {
     let result = null;
+    let painted = false;
     for (let attempt = 0; attempt < 90; attempt += 1) {
       result = await api(`/api/project/${encodeURIComponent(projectId)}/photo-gallery`, {
         kind, unit_id: unitId || "", individual_id: individualId || "",
@@ -428,16 +614,21 @@ window.PT_openPhotoGallery = async function (projectId, kind, unitId = "", indiv
       if (_PT.photoGalleryRequest !== request) return;
       if (!result?.ok) throw new Error(result?.error || "Could not load photos");
       if (!result.loading) break;
-      if ((result.photos || []).length) {
-        body.innerHTML = _ptGalleryMarkup(
+      const immediateFiles = kind === "reference" && !unitId
+        ? _ptCurrentProjectFiles(sourceProject)
+        : [];
+      const immediateItems = _ptMergeGalleryItems(result.photos || [], immediateFiles);
+      if (!painted && immediateItems.length) {
+        _PT.photoGalleryPhotos = immediateItems;
+        _ptRenderGalleryStable(
           kind,
-          result.photos,
+          immediateItems,
           [...(result.warnings || []), "Checking the project photo folder…"],
           sourceProject,
         );
-        _ptBindGalleryThumbnailLoading();
+        painted = true;
       } else if (kind === "reference" && !unitId) {
-        body.innerHTML = `<div class="photo-gallery-loading"><span class="dtm-loading-spinner"></span><strong>Checking the project photo folder…</strong></div>`;
+        if (!painted) body.innerHTML = `<div class="photo-gallery-loading"><span class="dtm-loading-spinner"></span><strong>Checking the project photo folder…</strong></div>`;
       }
       await new Promise(resolve => setTimeout(resolve, 600));
     }
@@ -447,21 +638,28 @@ window.PT_openPhotoGallery = async function (projectId, kind, unitId = "", indiv
       sourceProject = await _ptRefreshProjectPhotoState(projectId) || sourceProject;
     }
     const warnings = [...(result?.warnings || [])];
-    let galleryItems = result?.photos || [];
+    let galleryItems = _ptMergeGalleryItems(
+      result?.photos || [],
+      kind === "reference" && !unitId ? _ptCurrentProjectFiles(sourceProject) : [],
+    );
+    _PT.photoGalleryPhotos = galleryItems;
+    _ptRenderGalleryStable(kind, galleryItems, warnings, sourceProject);
+
     if (kind === "reference" && !unitId) {
-      try {
-        const videos = await _ptLoadCurrentProjectVideos(sourceProject);
+      _ptLoadCurrentProjectVideos(sourceProject).then(videos => {
         if (_PT.photoGalleryRequest !== request) return;
         _ptSetProjectVideoCount(sourceProject, videos.length);
-        galleryItems = [...galleryItems, ...videos];
-      } catch (error) {
+        galleryItems = _ptMergeGalleryItems(galleryItems, videos);
+        _PT.photoGalleryPhotos = galleryItems;
+        _ptRenderGalleryStable(kind, galleryItems, warnings, sourceProject);
+      }).catch(error => {
+        if (_PT.photoGalleryRequest !== request) return;
         _ptSetProjectVideoCount(sourceProject, null, true);
-        warnings.push(error.message || "Reference videos could not be loaded.");
-      }
+        const videoWarning = error.message || "Reference videos could not be loaded.";
+        if (!warnings.includes(videoWarning)) warnings.push(videoWarning);
+        _ptRenderGalleryStable(kind, galleryItems, warnings, sourceProject);
+      });
     }
-    _PT.photoGalleryPhotos = galleryItems;
-    body.innerHTML = _ptGalleryMarkup(kind, _PT.photoGalleryPhotos, warnings, sourceProject);
-    _ptBindGalleryThumbnailLoading();
   } catch (error) {
     body.innerHTML = `<div class="photo-gallery-empty"><strong>Could not load photos.</strong><p>${esc(error.message || "Try again after cloud sign-in.")}</p></div>`;
   }
@@ -469,21 +667,76 @@ window.PT_openPhotoGallery = async function (projectId, kind, unitId = "", indiv
 
 function _ptUpdateGallerySelection() {
   const count = _PT.photoGallerySelected?.size || 0;
+  const photoCount = _ptSelectedGalleryPhotoTokens().length;
   const label = $("photo-gallery-selected-count");
   if (label) label.textContent = `${count} selected`;
-  for (const id of ["photo-gallery-use-selected", "photo-gallery-assign-selected", "photo-gallery-remove-selected"]) {
-    const button = $(id);
-    if (button) button.disabled = count === 0;
-  }
+  const useButton = $("photo-gallery-use-selected");
+  const assignButton = $("photo-gallery-assign-selected");
+  const removeButton = $("photo-gallery-remove-selected");
+  if (useButton) useButton.disabled = photoCount === 0;
+  if (assignButton) assignButton.disabled = photoCount === 0;
+  if (removeButton) removeButton.disabled = count === 0;
+
+  const visible = _ptGalleryVisibleEntries();
+  const sourceProject = _PT.photoGallerySourceProject;
+  const kind = _PT.photoGalleryContext?.kind;
+  const eligible = visible.filter(({item}) => _ptGalleryItemSelectable(kind, item, sourceProject));
+  const allSelected = eligible.length > 0 && eligible.every(({item}) =>
+    _PT.photoGallerySelected?.has(_ptGallerySelectionKey(item))
+  );
+  const selectAll = document.querySelector(".photo-gallery-select-all");
+  if (selectAll) selectAll.textContent = allSelected ? "Clear visible" : "Select all";
 }
 
 window.PT_toggleGalleryPhoto = function (index, selected) {
   const photo = (_PT.photoGalleryPhotos || [])[Number(index)];
-  if (!photo?.photo_token) return;
+  if (!photo || !_ptGalleryItemSelectable(
+    _PT.photoGalleryContext?.kind,
+    photo,
+    _PT.photoGallerySourceProject,
+  )) return;
+  const key = _ptGallerySelectionKey(photo);
   if (!(_PT.photoGallerySelected instanceof Set)) _PT.photoGallerySelected = new Set();
-  if (selected) _PT.photoGallerySelected.add(photo.photo_token);
-  else _PT.photoGallerySelected.delete(photo.photo_token);
+  if (selected) _PT.photoGallerySelected.add(key);
+  else _PT.photoGallerySelected.delete(key);
   document.querySelector(`[data-gallery-index="${Number(index)}"]`)?.classList.toggle("selected", Boolean(selected));
+  _ptUpdateGallerySelection();
+};
+
+window.PT_setGalleryFilter = function (filter) {
+  if (!["all", "photos", "videos", "documents"].includes(filter)) return;
+  _PT.photoGalleryFilter = filter;
+  _ptRenderGalleryStable(
+    _PT.photoGalleryContext?.kind,
+    _PT.photoGalleryPhotos || [],
+    _PT.photoGalleryWarnings || [],
+    _PT.photoGallerySourceProject,
+  );
+  _ptUpdateGallerySelection();
+};
+
+window.PT_toggleSelectAllGallery = function () {
+  if (!(_PT.photoGallerySelected instanceof Set)) _PT.photoGallerySelected = new Set();
+  const eligible = _ptGalleryVisibleEntries()
+    .filter(({item}) => _ptGalleryItemSelectable(
+      _PT.photoGalleryContext?.kind,
+      item,
+      _PT.photoGallerySourceProject,
+    ));
+  const clear = eligible.length > 0 && eligible.every(({item}) =>
+    _PT.photoGallerySelected.has(_ptGallerySelectionKey(item))
+  );
+  for (const {item} of eligible) {
+    const key = _ptGallerySelectionKey(item);
+    if (clear) _PT.photoGallerySelected.delete(key);
+    else _PT.photoGallerySelected.add(key);
+  }
+  _ptRenderGalleryStable(
+    _PT.photoGalleryContext?.kind,
+    _PT.photoGalleryPhotos || [],
+    _PT.photoGalleryWarnings || [],
+    _PT.photoGallerySourceProject,
+  );
   _ptUpdateGallerySelection();
 };
 
@@ -572,7 +825,7 @@ async function _ptImportGalleryPhotos(tokens, targetProjectId, targetUnitId = ""
 }
 
 window.PT_chooseGalleryDestination = function () {
-  const tokens = [...(_PT.photoGallerySelected || [])];
+  const tokens = _ptSelectedGalleryPhotoTokens();
   if (!tokens.length) return;
   _PT.photoGalleryPendingTokens = tokens;
   _PT.photoUseMode = "reuse";
@@ -625,7 +878,7 @@ async function _ptConfirmPhotoUse() {
 
 window.PT_assignSelectedProjectPhotos = function () {
   const context = _PT.photoGalleryContext || {};
-  const tokens = [...(_PT.photoGallerySelected || [])];
+  const tokens = _ptSelectedGalleryPhotoTokens();
   const project = (_PT.projects || []).find(item => item.project_id === context.projectId);
   if (!project || !tokens.length || !(project.build_units || []).length) return;
   _PT.photoGalleryPendingTokens = tokens;
@@ -647,17 +900,20 @@ window.PT_assignSelectedProjectPhotos = function () {
 
 window.PT_removeSelectedReferencePhotos = async function () {
   const context = _PT.photoGalleryContext;
-  const tokens = [...(_PT.photoGallerySelected || [])];
-  if (!context?.projectId || !tokens.length) return;
+  const selected = _ptSelectedGalleryItems();
+  const tokens = [...new Set(selected.filter(item => item.media_type === "photo" && item.photo_token).map(item => item.photo_token))];
+  const referenceIds = [...new Set(selected.filter(item => item.reference_id).map(item => item.reference_id))];
+  if (!context?.projectId || !selected.length) return;
   const destination = context.unitId ? "this unit group" : "this project";
-  if (!confirm(`Remove ${tokens.length} selected reference photo${tokens.length === 1 ? "" : "s"} from ${destination}?\n\nThe original photo files will not be deleted.`)) return;
+  if (!confirm(`Remove ${selected.length} selected item${selected.length === 1 ? "" : "s"} from ${destination}?\n\nThe original files will not be deleted.`)) return;
   try {
     const response = await api(`/api/project/${encodeURIComponent(context.projectId)}/references/remove-gallery`, {
       photo_tokens: tokens,
+      reference_ids: context.unitId ? [] : referenceIds,
       target_unit_id: context.unitId || "",
     });
     if (!response?.ok) throw new Error(response?.error || "Could not remove the selected references");
-    toast(`${Number(response.removed) || 0} reference photo${Number(response.removed) === 1 ? "" : "s"} removed`, "success");
+    toast(`${Number(response.removed) || 0} item${Number(response.removed) === 1 ? "" : "s"} removed`, "success");
     await _ptRefreshProjectPhotoState(context.projectId);
     PT_openPhotoGallery(context.projectId, "reference", context.unitId, context.individualId);
   } catch (error) {
@@ -674,8 +930,12 @@ window.PT_openGalleryPhoto = function (index) {
     PT_openGalleryVideo(normalized);
     return;
   }
+  if (photo?.media_type === "file") {
+    PT_openGalleryFile(normalized);
+    return;
+  }
   const photoIndexes = photos
-    .map((item, itemIndex) => item.media_type === "video" ? -1 : itemIndex)
+    .map((item, itemIndex) => item.media_type === "photo" ? itemIndex : -1)
     .filter(itemIndex => itemIndex >= 0);
   const photoPosition = photoIndexes.indexOf(normalized);
   _PT.photoGalleryIndex = normalized;
@@ -776,7 +1036,7 @@ window.PT_retryGalleryPhoto = function () {
 window.PT_stepGalleryPhoto = function (direction) {
   const photos = _PT.photoGalleryPhotos || [];
   const photoIndexes = photos
-    .map((item, itemIndex) => item.media_type === "video" ? -1 : itemIndex)
+    .map((item, itemIndex) => item.media_type === "photo" ? itemIndex : -1)
     .filter(itemIndex => itemIndex >= 0);
   if (!photoIndexes.length) return;
   const current = photoIndexes.indexOf(Number(_PT.photoGalleryIndex));
@@ -875,9 +1135,11 @@ function _ptReferenceSummaryCounts(project, videoCount = null, videosUnavailable
     (asset.assignments || []).some(assignment => assignment.scope === "project" || assignment.scope === "individual")
   );
   const photoCount = (project?.reference_assets || []).filter(asset => asset.media_type === "photo").length;
+  const fileCount = (project?.reference_assets || []).filter(asset => asset.media_type === "file").length;
   const counts = [`${photoCount} photo${photoCount === 1 ? "" : "s"}`];
   if (Number.isInteger(videoCount)) counts.push(`${videoCount} video${videoCount === 1 ? "" : "s"}`);
   else counts.push(videosUnavailable ? "videos unavailable" : "checking videos…");
+  if (fileCount) counts.push(`${fileCount} file${fileCount === 1 ? "" : "s"}`);
   if (groupAssigned.length) counts.push(`${groupAssigned.length} assigned`);
   if (unassigned.length) counts.push(`${unassigned.length} unassigned`);
   if (legacy.length) counts.push(`${legacy.length} legacy`);
@@ -892,15 +1154,15 @@ function _ptReferenceSummaryMarkup(project) {
     project,
     Number.isInteger(cachedVideoCount) ? cachedVideoCount : null,
   );
-  return `<section class="proj-reference-overview-card" aria-label="Project Photos">
+  return `<section class="proj-reference-overview-card" aria-label="Project Media">
     <div>
-      <h3>Project Photos</h3>
+      <h3>Project Media</h3>
       <p data-project-reference-summary data-project-id="${esc(project.project_id)}">${esc(counts.join(" · "))}</p>
     </div>
     <div class="proj-reference-overview-actions">
       ${_ptCompletedPhotoButtonMarkup(project.project_id)}
       <button class="btn btn-secondary btn-sm" type="button"
-        onclick="PT_openPhotoGallery('${esc(project.project_id)}','reference')">Project photos</button>
+        onclick="PT_openPhotoGallery('${esc(project.project_id)}','reference')">Project media</button>
     </div>
   </section>`;
 }
@@ -1204,11 +1466,43 @@ window.PT_previewReferenceVideo = function (index) {
 
 window.PT_openGalleryVideo = function (index) {
   const asset = (_PT.photoGalleryPhotos || [])[Number(index)];
+  if (asset?.media_type === "video" && !asset.video_token && asset.photo_token) {
+    return _ptOpenRegisteredGalleryItem(asset);
+  }
   return _ptPreviewReferenceVideo(
     asset?.media_type === "video" ? asset : null,
     _PT.photoGalleryContext?.projectId || "",
   );
 };
+
+window.PT_openGalleryFile = async function (index) {
+  const asset = (_PT.photoGalleryPhotos || [])[Number(index)];
+  const projectId = _PT.photoGalleryContext?.projectId || "";
+  if (!projectId || asset?.media_type !== "file") return;
+  if (!asset.reference_id && asset.photo_token) return _ptOpenRegisteredGalleryItem(asset);
+  if (!asset.reference_id) return;
+  try {
+    const response = await api(
+      `/api/project/${encodeURIComponent(projectId)}/references/file-open`,
+      {reference_id: asset.reference_id},
+    );
+    if (!response?.ok) throw new Error(response?.error || "Could not open the project file");
+  } catch (error) {
+    toast(error.message || "Could not open the project file", "error");
+  }
+};
+
+async function _ptOpenRegisteredGalleryItem(asset) {
+  try {
+    const response = await api(
+      `/api/photo-gallery/${encodeURIComponent(asset.photo_token)}/open`,
+      {},
+    );
+    if (!response?.ok) throw new Error(response?.error || "Could not open the gallery item");
+  } catch (error) {
+    toast(error.message || "Could not open the gallery item", "error");
+  }
+}
 
 function _ptCloseReferenceVideo() {
   _PT.referenceVideoRequest = (_PT.referenceVideoRequest || 0) + 1;

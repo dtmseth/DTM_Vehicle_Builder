@@ -5,7 +5,7 @@ import re
 import sys as _sys
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_all, collect_data_files, collect_submodules
 
 
 ROOT = Path.cwd()
@@ -80,6 +80,8 @@ datas = collect_data_files("dtm_buildsheet")
 # that import, and the database itself is package data, so bundle both
 # explicitly. This is required for the calendar's America/Chicago timezone.
 datas += collect_data_files("tzdata")
+heif_datas, heif_binaries, heif_hiddenimports = collect_all("pillow_heif")
+datas += heif_datas
 
 # Explicitly bundle resources so they're always present regardless of
 # how collect_data_files resolves the editable install in CI.
@@ -92,6 +94,7 @@ if _ui.exists():
 
 hiddenimports = collect_submodules("dtm_buildsheet")
 hiddenimports += ["tzdata", "tzdata.zoneinfo"]
+hiddenimports += heif_hiddenimports
 
 # Windows PDF export uses PowerPoint COM via comtypes (runtime import — not
 # detected by static analysis). Must be explicit or the frozen app crashes.
@@ -113,7 +116,7 @@ manifest_path = str(_manifest) if _sys.platform != "darwin" and _manifest.exists
 a = Analysis(
     [str(ROOT / "packaging" / "pyinstaller" / "launch_gui.py")],
     pathex=[str(ROOT / "src")],
-    binaries=[],
+    binaries=heif_binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],

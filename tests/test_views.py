@@ -16,7 +16,7 @@ from dtm_buildsheet.config_loader import load_configs
 from dtm_buildsheet.paths import ensure_workspace
 
 
-def test_reference_photo_ui_uses_project_photos_and_group_assignments():
+def test_reference_photo_ui_uses_project_media_and_group_assignments():
     ui_root = Path(__file__).parents[1] / "src" / "dtm_buildsheet" / "ui"
     script = (ui_root / "js" / "projects" / "reference_photos.js").read_text(encoding="utf-8")
     build_script = (ui_root / "js" / "projects" / "detail_builds.js").read_text(encoding="utf-8")
@@ -30,7 +30,7 @@ def test_reference_photo_ui_uses_project_photos_and_group_assignments():
     assert "Project Reference Pool" not in script
     assert "Manage reference pool" not in script
     assert "View all project references" not in script
-    assert ">Project photos</button>" in script
+    assert ">Project media</button>" in script
     assert "Open project photos folder" in script
     assert "discover_folder: kind === \"reference\"" in script
     assert 'id="photo-use-project"' in html

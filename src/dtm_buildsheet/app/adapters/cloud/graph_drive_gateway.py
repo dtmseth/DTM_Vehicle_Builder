@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import re
+import threading
 import time
+from pathlib import Path
+from typing import Callable
 from urllib.parse import quote
 
 import requests
@@ -15,6 +18,10 @@ _UPLOAD_CHUNK_SIZE = 10 * 1024 * 1024
 
 class GraphDriveError(RuntimeError):
     """Safe Graph failure that never includes token-bearing redirect URLs."""
+
+
+class GraphUploadPaused(GraphDriveError):
+    """Raised between acknowledged chunks when a caller requests shutdown."""
 
 
 class GraphDriveGateway:
@@ -334,6 +341,78 @@ class GraphDriveGateway:
                     raise GraphDriveError(
                         f"Graph upload chunk failed (HTTP {chunk_response.status_code})"
                     )
+        except GraphDriveError:
+            raise
+        except requests.RequestException as exc:
+            raise GraphDriveError(
+                f"Graph upload session failed ({type(exc).__name__})"
+            ) from None
+
+    def upload_local_file(
+        self,
+        remote_path: str,
+        local_path: Path,
+        *,
+        progress: Callable[[int, int], None] | None = None,
+        stop_event: threading.Event | None = None,
+        conflict_behavior: str = "fail",
+    ) -> dict:
+        """Stream one local file through a resumable Graph upload session.
+
+        User-selected media can be much larger than generated PDFs, so this
+        path deliberately never materializes the whole file in memory.  The
+        callback advances only after Graph acknowledges a byte range.
+        """
+        if conflict_behavior not in {"fail", "rename", "replace"}:
+            raise ValueError("Unsupported upload conflict behavior")
+        total = local_path.stat().st_size
+        if total <= 0:
+            raise GraphDriveError("Empty files cannot be uploaded")
+        create_url = f"{self._path_url(remote_path)}:/createUploadSession"
+        try:
+            response = self._session.post(
+                create_url,
+                headers={**self._headers, "Content-Type": "application/json"},
+                json={"item": {"@microsoft.graph.conflictBehavior": conflict_behavior}},
+                timeout=30,
+            )
+            self._raise_for_status(response, operation="upload-session creation")
+            payload = response.json()
+            upload_url = str(payload.get("uploadUrl") or "")
+            if not upload_url:
+                raise GraphDriveError("Graph upload session did not return an upload URL")
+            uploaded = 0
+            with local_path.open("rb") as source:
+                while uploaded < total:
+                    if stop_event is not None and stop_event.is_set():
+                        raise GraphUploadPaused("Upload paused while the app is closing")
+                    chunk = source.read(_UPLOAD_CHUNK_SIZE)
+                    if not chunk:
+                        raise GraphDriveError("The staged upload ended before its expected size")
+                    last = uploaded + len(chunk) - 1
+                    chunk_response = self._session.put(
+                        upload_url,
+                        headers={
+                            "Content-Length": str(len(chunk)),
+                            "Content-Range": f"bytes {uploaded}-{last}/{total}",
+                        },
+                        data=chunk,
+                        timeout=120,
+                    )
+                    if chunk_response.status_code not in {200, 201, 202}:
+                        self._raise_for_status(chunk_response, operation="upload chunk")
+                    uploaded = last + 1
+                    if progress is not None:
+                        progress(uploaded, total)
+                    if chunk_response.status_code in {200, 201}:
+                        item = dict(chunk_response.json())
+                        if uploaded != total:
+                            raise GraphDriveError("Graph completed an upload before all bytes were sent")
+                        return item
+            item = self._get_path(remote_path)
+            if item is None:
+                raise GraphDriveError("Uploaded SharePoint file could not be verified")
+            return item
         except GraphDriveError:
             raise
         except requests.RequestException as exc:

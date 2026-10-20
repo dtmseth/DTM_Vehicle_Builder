@@ -214,8 +214,8 @@ def test_reference_video_ui_and_routes_are_read_only():
     assert "checking videos…" in script
     assert 'data-reference-media-type="${esc(asset.media_type || "photo")}"' in script
     assert 'row.dataset.referenceMediaType !== "video"' in script
-    assert 'galleryItems = [...galleryItems, ...videos]' in script
-    assert 'item.media_type === "video" ? -1 : itemIndex' in script
+    assert "galleryItems = _ptMergeGalleryItems(galleryItems, videos)" in script
+    assert 'item.media_type === "photo" ? itemIndex : -1' in script
     assert 'id="reference-video-frame"' in html
     assert 'referrerpolicy="no-referrer"' in html
     assert required_capabilities(

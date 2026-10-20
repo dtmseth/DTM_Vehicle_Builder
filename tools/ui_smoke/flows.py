@@ -1809,7 +1809,7 @@ def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:
     qb_menu.locator("summary").click()
     assert qb_menu.get_by_role("button", name="Manage QB project").count() == 1
     assert qb_menu.get_by_role("button", name="Create new estimate").is_disabled()
-    reference_button = page.get_by_role("button", name="Project photos", exact=True)
+    reference_button = page.get_by_role("button", name="Project media", exact=True)
     reference_button.click()
     assert qb_menu.get_attribute("open") is None
     assert page.locator("#photo-gallery-modal").is_hidden()
@@ -1961,7 +1961,7 @@ def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:
     )
     page.click("#photo-gallery-done")
     page.get_by_role("button", name="Build Reference Photos (3)").wait_for()
-    page.get_by_role("button", name="Project photos", exact=True).click()
+    page.get_by_role("button", name="Project media", exact=True).click()
     page.wait_for_selector("#photo-gallery-modal.open")
     page.wait_for_function(
         "() => !document.getElementById('photo-gallery-body').innerText.includes('Loading project photos')"
@@ -1999,7 +1999,7 @@ def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:
     archived_project = year_branch.locator(".proj-archive-project")
     assert "PIU" in archived_project.inner_text()
     assert archived_project.get_by_role("button", name="View completed photos").count() == 0
-    assert archived_project.get_by_role("button", name="Project photos").count() == 1
+    assert archived_project.get_by_role("button", name="Project media").count() == 1
     archived_project.get_by_role("button", name="Open", exact=True).click()
     page.wait_for_selector("#proj-detail-view:not([hidden])")
     assert page.locator("#btn-proj-complete").inner_text() == "Reopen Project"

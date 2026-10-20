@@ -388,6 +388,31 @@ def handle_preview_reference_video(project_id: str, body: dict) -> dict:
     return {"ok": True, "preview_url": preview_url, "file_name": source.file_name}
 
 
+def handle_open_project_file(project_id: str, body: dict, paths: AppPaths) -> dict:
+    """Open one file already authorized by the project's stored asset list."""
+    try:
+        project = load_project(project_id, paths)
+    except (FileNotFoundError, ValueError) as exc:
+        return {"ok": False, "error": str(exc)}
+    reference_id = str(body.get("reference_id") or "").strip()
+    asset = next((
+        item for item in project.reference_assets
+        if item.reference_id == reference_id and item.media_type == "file"
+    ), None)
+    if asset is None:
+        return {"ok": False, "error": "This project file is no longer available."}
+    url = _safe_https_url(asset.source_web_url)
+    if not url:
+        return {"ok": False, "error": "This file does not have a SharePoint browser link."}
+    try:
+        if not webbrowser.open(url, new=2):
+            return {"ok": False, "error": "The default browser could not be opened."}
+    except Exception:
+        logger.exception("Could not open project file in the default browser")
+        return {"ok": False, "error": "The default browser could not be opened."}
+    return {"ok": True}
+
+
 def _refresh_source_context(agency: str, result: dict, paths: AppPaths) -> dict:
     """Upgrade older cached discovery payloads before applying UI filters."""
     return {

@@ -22,6 +22,10 @@ from ...paths import AppPaths
 
 _PHOTO_SUFFIXES = {".jpg", ".jpeg", ".png"}
 _VIDEO_SUFFIXES = {".mp4", ".mov", ".m4v"}
+_FILE_SUFFIXES = {
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+    ".txt", ".csv", ".zip",
+}
 
 
 def _source_identity(*, drive_id: str = "", item_id: str = "", source_path: str = "") -> str:
@@ -61,12 +65,18 @@ def _validate_asset(asset) -> str | None:
     if "/" in asset.file_name or "\\" in asset.file_name or asset.file_name in {".", ".."}:
         return "Reference filename must not contain a folder path."
     suffix = PurePosixPath(asset.file_name).suffix.casefold()
-    allowed = _PHOTO_SUFFIXES if asset.media_type == "photo" else _VIDEO_SUFFIXES
+    allowed = (
+        _PHOTO_SUFFIXES if asset.media_type == "photo"
+        else _VIDEO_SUFFIXES if asset.media_type == "video"
+        else _FILE_SUFFIXES
+    )
     if suffix not in allowed:
         return (
-            "Reference photos must be JPG or PNG. Convert HEIC photos before assigning them."
+            "Reference photos must be JPG or PNG. Use Upload files to convert HEIC automatically."
             if asset.media_type == "photo"
             else "Reference videos must be MP4, MOV, or M4V."
+            if asset.media_type == "video"
+            else "Project files must be PDF, Office, text, CSV, or ZIP files."
         )
     if asset.source_kind == "shop_completed" and asset.media_type != "photo":
         return "Shop Completed Build Photos cannot contain reference videos."
@@ -300,17 +310,35 @@ def handle_remove_gallery_references(project_id: str, body: dict, paths: AppPath
     if target_unit_id and target_unit_id not in {unit.unit_id for unit in project.build_units}:
         return {"ok": False, "error": "The selected unit group no longer exists."}
 
-    raw_tokens = body.get("photo_tokens")
-    if not isinstance(raw_tokens, list):
-        return {"ok": False, "error": "Selected photos are required."}
-    tokens = [str(value or "").strip() for value in raw_tokens if str(value or "").strip()]
-    if not tokens or len(tokens) > 300:
-        return {"ok": False, "error": "Select between 1 and 300 photos."}
+    raw_tokens = body.get("photo_tokens", [])
+    raw_reference_ids = body.get("reference_ids", [])
+    if not isinstance(raw_tokens, list) or not isinstance(raw_reference_ids, list):
+        return {"ok": False, "error": "Selected media is invalid."}
+    tokens = list(dict.fromkeys(
+        str(value or "").strip() for value in raw_tokens if str(value or "").strip()
+    ))
+    reference_ids = list(dict.fromkeys(
+        str(value or "").strip()
+        for value in raw_reference_ids
+        if str(value or "").strip()
+    ))
+    if not tokens and not reference_ids:
+        return {"ok": False, "error": "Select at least one media item."}
+    if len(tokens) + len(reference_ids) > 300:
+        return {"ok": False, "error": "Select no more than 300 media items."}
+    if target_unit_id and reference_ids:
+        return {"ok": False, "error": "Only photos can be removed from a unit group."}
 
     from .photo_gallery_service import reference_sources_from_tokens
-    sources = reference_sources_from_tokens(project_id, tokens)
-    if len(sources) != len(set(tokens)):
+    sources = reference_sources_from_tokens(project_id, tokens) if tokens else []
+    if len(sources) != len(tokens):
         return {"ok": False, "error": "One or more selected photos expired. Reopen the gallery."}
+    known_reference_ids = {
+        asset.reference_id for asset in project.reference_assets
+        if asset.reference_id in reference_ids
+    }
+    if len(known_reference_ids) != len(reference_ids):
+        return {"ok": False, "error": "One or more selected media items are no longer in this project."}
     keys = {
         (
             str(source.get("source_drive_id") or ""),
@@ -338,14 +366,20 @@ def handle_remove_gallery_references(project_id: str, body: dict, paths: AppPath
         removed_assets = [
             asset
             for asset in project.reference_assets
-            if (asset.source_drive_id, asset.source_item_id or asset.source_path) in keys
+            if (
+                (asset.source_drive_id, asset.source_item_id or asset.source_path) in keys
+                or asset.reference_id in known_reference_ids
+            )
         ]
         for asset in removed_assets:
             _exclude_removed_project_folder_asset(project, asset)
         project.reference_assets = [
             asset
             for asset in project.reference_assets
-            if (asset.source_drive_id, asset.source_item_id or asset.source_path) not in keys
+            if (
+                (asset.source_drive_id, asset.source_item_id or asset.source_path) not in keys
+                and asset.reference_id not in known_reference_ids
+            )
         ]
         removed = original_count - len(project.reference_assets)
     if removed:

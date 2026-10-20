@@ -115,6 +115,11 @@ class AppPaths:
         """Local-only cache for SharePoint reference media used during render."""
         return self.workspace_dir / "reference_media"
 
+    @property
+    def workspace_uploads_dir(self) -> Path:
+        """Durable local staging and job state for background media uploads."""
+        return self.workspace_dir / "uploads"
+
 
 def _md5(path: Path) -> str:
     # This digest only detects changed bundled files; it is not an integrity or
@@ -189,7 +194,7 @@ def ensure_workspace() -> AppPaths:
     for d in (paths.workspace_dir, paths.workspace_config_dir, paths.workspace_assets_dir,
               paths.workspace_input_dir, paths.workspace_output_dir, paths.workspace_drafts_dir,
               paths.workspace_presets_dir, paths.workspace_projects_dir,
-              paths.workspace_reference_cache_dir):
+              paths.workspace_reference_cache_dir, paths.workspace_uploads_dir):
         d.mkdir(parents=True, exist_ok=True)
 
     # In dev mode workspace_config_dir IS DEFAULT_CONFIG_DIR — no copying needed.

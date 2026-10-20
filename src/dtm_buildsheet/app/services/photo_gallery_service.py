@@ -15,11 +15,15 @@ import logging
 import mimetypes
 import os
 import shutil
+import subprocess
+import sys
 import threading
 import time
+import webbrowser
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
+from urllib.parse import urlparse
 
 from PIL import Image, ImageOps
 
@@ -36,6 +40,11 @@ from .reference_media_service import cached_reference_media, resolve_reference_m
 
 logger = logging.getLogger(__name__)
 _PHOTO_SUFFIXES = {".jpg", ".jpeg", ".png"}
+_VIDEO_SUFFIXES = {".mp4", ".mov", ".m4v"}
+_FILE_SUFFIXES = {
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+    ".txt", ".csv", ".zip",
+}
 _MAX_GALLERY_ITEMS = 3000
 _MAX_GALLERY_DEPTH = 8
 _RESULT_TTL_SECONDS = 300
@@ -70,6 +79,7 @@ class _PhotoSource:
     project_id: str
     file_name: str
     source_kind: str
+    media_type: str = "photo"
     source_drive_id: str = ""
     source_item_id: str = ""
     source_path: str = ""
@@ -89,6 +99,7 @@ class _CompletedFolder:
     label: str
     unit_id: str
     individual_id: str = ""
+    folder_kind: str = "completed_media"
 
 
 _SOURCES: dict[str, _PhotoSource] = {}
@@ -103,6 +114,15 @@ _CACHE_PREP_JOBS: dict[str, Future] = {}
 _CACHE_PREP_STATES: dict[str, dict] = {}
 _FULL_RESOLUTION_JOBS: dict[str, Future] = {}
 _FULL_RESOLUTION_CURRENT_TOKEN = ""
+
+
+def invalidate_completed_gallery() -> None:
+    """Discard completed-media scan results after an in-app upload."""
+    with _LOCK:
+        for future in _SCAN_JOBS.values():
+            future.cancel()
+        _SCAN_JOBS.clear()
+        _SCAN_RESULTS.clear()
 
 
 def _token_for(_project_id: str, item: dict) -> str:
@@ -129,6 +149,7 @@ def _register(project_id: str, item: dict) -> dict:
         project_id=project_id,
         file_name=Path(str(item.get("file_name") or "photo")).name,
         source_kind=str(item.get("source_kind") or "company_reference"),
+        media_type=str(item.get("media_type") or "photo"),
         source_drive_id=str(item.get("source_drive_id") or ""),
         source_item_id=str(item.get("source_item_id") or ""),
         source_path=str(item.get("source_path") or ""),
@@ -163,6 +184,7 @@ def _register(project_id: str, item: dict) -> dict:
         "photo_token": token,
         "source_key": f"{source.source_drive_id}::{source.source_item_id or source.source_path}",
         "file_name": source.file_name,
+        "media_type": source.media_type,
         "source_kind": source.source_kind,
         "source_path": source.source_path,
         "source_web_url": source.source_web_url,
@@ -180,6 +202,8 @@ def decorate_photo_items(project_id: str, items: list[dict], paths: AppPaths) ->
     """Register portable items, return safe gallery payloads, and prefetch."""
     decorated = [_register(project_id, item) for item in items]
     for item in decorated:
+        if item.get("media_type") != "photo":
+            continue
         _schedule_preview(item["photo_token"], paths, foreground=False)
     return decorated
 
@@ -271,6 +295,7 @@ def _reference_items(project, *, unit_id: str, individual_id: str) -> list[dict]
 def asset_to_source(asset: BuildReferenceAsset) -> dict:
     return {
         "file_name": asset.file_name,
+        "media_type": asset.media_type,
         "source_kind": asset.source_kind,
         "source_drive_id": asset.source_drive_id,
         "source_item_id": asset.source_item_id,
@@ -292,21 +317,51 @@ def _completed_folders(project, *, unit_id: str, individual_id: str) -> list[_Co
                     continue
                 base = str(individual.shop_vehicle_folder_path or "").strip("/")
                 if base:
-                    folders.append(_CompletedFolder(
-                        remote_path=f"{base}/Completed Build Photos",
-                        label=vehicle_display_name(project, unit, individual, ordinal=index),
-                        unit_id=unit.unit_id,
-                        individual_id=individual.individual_id,
+                    label = vehicle_display_name(project, unit, individual, ordinal=index)
+                    folders.extend((
+                        _CompletedFolder(
+                            remote_path=f"{base}/Completed Build Photos",
+                            label=label,
+                            unit_id=unit.unit_id,
+                            individual_id=individual.individual_id,
+                        ),
+                        _CompletedFolder(
+                            remote_path=f"{base}/Technician Files",
+                            label=label,
+                            unit_id=unit.unit_id,
+                            individual_id=individual.individual_id,
+                            folder_kind="technician_files",
+                        ),
                     ))
         elif not individual_id:
             base = str(getattr(unit, "shop_vehicle_folder_path", "") or "").strip("/")
             if base:
-                folders.append(_CompletedFolder(
-                    remote_path=f"{base}/Completed Build Photos",
-                    label=vehicle_display_name(project, unit, None),
-                    unit_id=unit.unit_id,
+                label = vehicle_display_name(project, unit, None)
+                folders.extend((
+                    _CompletedFolder(
+                        remote_path=f"{base}/Completed Build Photos",
+                        label=label,
+                        unit_id=unit.unit_id,
+                    ),
+                    _CompletedFolder(
+                        remote_path=f"{base}/Technician Files",
+                        label=label,
+                        unit_id=unit.unit_id,
+                        folder_kind="technician_files",
+                    ),
                 ))
     return folders
+
+
+def _completed_media_type(file_name: str, completed: _CompletedFolder) -> str:
+    suffix = PurePosixPath(file_name).suffix.casefold()
+    if completed.folder_kind == "technician_files":
+        return "file" if suffix in _FILE_SUFFIXES else ""
+    if suffix in _PHOTO_SUFFIXES:
+        return "photo"
+    if suffix in _VIDEO_SUFFIXES:
+        return "video"
+    return ""
 
 
 def _local_folder_items(folder: Path, completed: _CompletedFolder) -> list[dict]:
@@ -317,7 +372,10 @@ def _local_folder_items(folder: Path, completed: _CompletedFolder) -> list[dict]
             if len(items) >= _MAX_GALLERY_ITEMS:
                 break
             try:
-                if not candidate.is_file() or candidate.suffix.casefold() not in _PHOTO_SUFFIXES:
+                if not candidate.is_file():
+                    continue
+                media_type = _completed_media_type(candidate.name, completed)
+                if not media_type:
                     continue
                 stat = candidate.stat()
                 relative = candidate.relative_to(folder).as_posix()
@@ -325,7 +383,8 @@ def _local_folder_items(folder: Path, completed: _CompletedFolder) -> list[dict]
                 continue
             items.append({
                 "file_name": candidate.name,
-                "source_kind": "shop_completed",
+                "media_type": media_type,
+                "source_kind": "shop_technician_file" if media_type == "file" else "shop_completed",
                 "source_path": f"{completed.remote_path}/{relative}",
                 "source_etag": f"local:{stat.st_mtime_ns}:{stat.st_size}",
                 "source_size": stat.st_size,
@@ -359,11 +418,13 @@ def _graph_folder_items(gateway: GraphDriveGateway, completed: _CompletedFolder)
                 if depth < _MAX_GALLERY_DEPTH:
                     stack.append((path, depth + 1))
                 continue
-            if PurePosixPath(name).suffix.casefold() not in _PHOTO_SUFFIXES:
+            media_type = _completed_media_type(name, completed)
+            if not media_type:
                 continue
             items.append({
                 "file_name": name,
-                "source_kind": "shop_completed",
+                "media_type": media_type,
+                "source_kind": "shop_technician_file" if media_type == "file" else "shop_completed",
                 "source_drive_id": gateway.drive_id,
                 "source_item_id": str(child.get("id") or ""),
                 "source_path": path,
@@ -441,14 +502,20 @@ def _scan_key(project_id: str, folders: list[_CompletedFolder]) -> str:
 
 def _completed_presence(items: list[dict]) -> dict:
     targets: dict[str, int] = {}
+    photo_count = 0
     for item in items:
+        # Cached payloads from before mixed-media galleries contain only
+        # photos and therefore have no explicit media_type field.
+        if item.get("media_type", "photo") != "photo":
+            continue
+        photo_count += 1
         unit_id = str(item.get("_unit_id") or "")
         individual_id = str(item.get("_individual_id") or "")
         if not unit_id:
             continue
         key = f"{unit_id}::{individual_id}"
         targets[key] = targets.get(key, 0) + 1
-    return {"project": bool(items), "targets": targets}
+    return {"project": photo_count > 0, "targets": targets}
 
 
 def _presence_cache_path(scan_key: str, paths: AppPaths) -> Path:
@@ -1181,11 +1248,40 @@ def shutdown_photo_gallery_workers() -> None:
         _PRIORITY_CONDITION.notify_all()
 
 
+def open_gallery_item(token: str) -> dict:
+    """Open a registered completed-build video or technician file."""
+    with _LOCK:
+        source = _SOURCES.get(token)
+    if source is None or source.media_type not in {"video", "file"}:
+        return {"ok": False, "error": "This gallery item is no longer available."}
+    local_path = Path(source.local_path) if source.local_path else None
+    try:
+        if local_path is not None and local_path.is_file():
+            if sys.platform == "darwin":
+                subprocess.Popen(["open", str(local_path)])
+            elif os.name == "nt":
+                os.startfile(str(local_path))  # type: ignore[attr-defined]
+            else:
+                subprocess.Popen(["xdg-open", str(local_path)])
+            return {"ok": True}
+        parsed = urlparse(source.source_web_url)
+        if parsed.scheme != "https" or not parsed.netloc:
+            return {"ok": False, "error": "This file does not have a safe SharePoint link."}
+        if not webbrowser.open(source.source_web_url, new=2):
+            return {"ok": False, "error": "The default browser could not be opened."}
+        return {"ok": True}
+    except Exception:
+        logger.exception("Could not open gallery file")
+        return {"ok": False, "error": "The file could not be opened."}
+
+
 def get_gallery_media(token: str, variant: str, paths: AppPaths) -> tuple[int, bytes, str, str, str]:
     """Return status, bytes, content type, filename, and cache state."""
     with _LOCK:
         source = _SOURCES.get(token)
     if source is None:
+        return 404, b"Not found", "text/plain", "", "missing"
+    if source.media_type != "photo":
         return 404, b"Not found", "text/plain", "", "missing"
     if variant == "thumbnail":
         path = _thumbnail_path(token, paths)

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="dtm-upload-token" content="{{UPLOAD_TOKEN}}" />
   <title>DTM Vehicle Builder</title>
   <link rel="stylesheet" href="/ui/styles.css?v={{APP_VERSION}}">
 </head>
@@ -26,6 +27,11 @@
     <button class="htab" id="general-settings-header-tab" data-tab="general-settings" hidden>⚙️ General Settings</button>
     <button class="htab" id="advanced-settings-header-tab" data-tab="advanced-settings" hidden>🔧 Advanced Settings</button>
   </div>
+  <button class="upload-status" id="upload-status" type="button" hidden
+          aria-label="View upload status">
+    <span aria-hidden="true">↑</span>
+    <span id="upload-status-text">Uploads</span>
+  </button>
   <!-- Cloud connection indicator — updated by refreshCloudStatus() in api.js.
        Hidden via the `cloud-status-local` class which collapses the chip
        down to a small badge in local mode. -->
@@ -44,6 +50,32 @@
       <span class="photo-cache-progress-count" id="photo-cache-progress-count"></span>
     </span>
   </button>
+</div>
+
+<!-- ══ BACKGROUND UPLOAD MANAGER ══ -->
+<div class="modal-overlay" id="upload-manager-modal" role="dialog" aria-modal="true" aria-labelledby="upload-manager-title" hidden>
+  <div class="modal upload-manager-modal">
+    <div class="modal-title">
+      <span id="upload-manager-title">Uploads</span>
+      <button class="modal-close" id="upload-manager-close" type="button" aria-label="Close upload status">✕</button>
+    </div>
+    <p class="upload-manager-summary" id="upload-manager-summary">No uploads yet.</p>
+    <div class="upload-manager-list" id="upload-manager-list" aria-live="polite"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="upload-manager-done" type="button">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="upload-close-warning" role="dialog" aria-modal="true" aria-labelledby="upload-close-warning-title" hidden>
+  <div class="modal" style="max-width:500px">
+    <div class="modal-title" id="upload-close-warning-title">Uploads are still in progress</div>
+    <p class="upload-close-copy" id="upload-close-warning-copy">Closing now will cancel the active SharePoint transfer. Files already staged locally will resume the next time the app opens.</p>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="upload-close-anyway" type="button">Close anyway</button>
+      <button class="btn btn-primary" id="upload-close-view" type="button">View upload status</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ CLOUD STATUS MODAL ══ -->
@@ -2878,6 +2910,7 @@
 <script src="/ui/js/projects/vehicle_create.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/projects/vehicle_picker.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/projects/reference_photos.js?v={{APP_VERSION}}"></script>
+<script src="/ui/js/uploads.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/projects/combo_search.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/projects/list_view.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/projects/detail_overview.js?v={{APP_VERSION}}"></script>

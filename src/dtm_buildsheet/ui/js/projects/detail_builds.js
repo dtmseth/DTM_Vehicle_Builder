@@ -93,7 +93,9 @@ function _ptPhotoOptionsMarkup(project, projectId, unitId, individualId) {
     : ["pending", "publishing"].includes(publication) ? "Shop publication is pending."
       : ["error", "withdrawal_error"].includes(publication) ? "Shop publication needs a cloud-sync retry."
         : "Completed Build Photos are mirrored from Shop Documents to Company Files.";
-  return `${_ptCompletedPhotoButtonMarkup(projectId, unitId, individualId)}
+  return `${_ptHasCapability("completed_media.upload") ? `<button class="btn btn-primary btn-sm" type="button"
+    onclick="DTMUploads.choose({projectId:'${esc(projectId)}',kind:'completed',unitId:'${esc(unitId)}',individualId:'${esc(individualId)}'})">Upload media / files</button>` : ""}
+    ${_ptCompletedPhotoButtonMarkup(projectId, unitId, individualId)}
     <details class="proj-build-action-menu proj-build-folder-menu">
     <summary class="btn btn-secondary btn-sm">Folder options</summary>
     <div class="proj-build-action-menu-items">

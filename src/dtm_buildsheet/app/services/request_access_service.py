@@ -41,14 +41,25 @@ def required_capabilities(method: str, raw_path: str) -> frozenset[Capability]:
         return _quickbooks_capabilities(method, path)
 
     if method == "GET":
+        if path == "/api/uploads/status":
+            return frozenset({Capability.PROJECTS_VIEW})
         if path.startswith("/api/"):
             return frozenset({Capability.PROJECTS_VIEW})
         return frozenset()
 
     if method == "POST":
+        if path == "/api/uploads/acknowledge":
+            return frozenset({Capability.PROJECTS_VIEW})
+        if path.startswith("/api/uploads/project/"):
+            return frozenset({Capability.PROJECT_MEDIA_UPLOAD})
+        if path.startswith("/api/uploads/completed/"):
+            return frozenset({Capability.COMPLETED_MEDIA_UPLOAD})
         if path in {"/api/build/render-status", "/api/build/show-folder", "/open"}:
             return frozenset({Capability.PROJECTS_VIEW})
-        if path in {"/api/validate", "/api/preview/plan", "/api/photo-gallery/cache-prepare"}:
+        if (
+            path in {"/api/validate", "/api/preview/plan", "/api/photo-gallery/cache-prepare"}
+            or (path.startswith("/api/photo-gallery/") and path.endswith("/open"))
+        ):
             return frozenset({Capability.PROJECTS_VIEW})
         if path.startswith("/api/project/") and (
             path.endswith("/photo-gallery")
@@ -56,6 +67,7 @@ def required_capabilities(method: str, raw_path: str) -> frozenset[Capability]:
             or path.endswith("/references/effective")
             or path.endswith("/references/video-open")
             or path.endswith("/references/video-preview")
+            or path.endswith("/references/file-open")
         ):
             return frozenset({Capability.PROJECTS_VIEW})
         if path.startswith("/api/project/") and (

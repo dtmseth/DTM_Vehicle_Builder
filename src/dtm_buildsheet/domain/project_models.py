@@ -53,7 +53,7 @@ class BuildReferenceAssignment:
 
 @dataclass
 class BuildReferenceAsset:
-    """Portable identity for a Company/Shop reference photo or video."""
+    """Portable identity for a Company/Shop reference photo, video, or file."""
 
     reference_id: str
     file_name: str = ""

@@ -35,6 +35,8 @@ class Capability(StrEnum):
     PROJECTS_VIEW = "projects.view"
     PROJECTS_EDIT = "projects.edit"
     PROJECTS_LIFECYCLE_UPDATE = "projects.lifecycle.update"
+    PROJECT_MEDIA_UPLOAD = "project_media.upload"
+    COMPLETED_MEDIA_UPLOAD = "completed_media.upload"
     ESTIMATES_MANAGE = "estimates.manage"
     SETTINGS_GENERAL_MANAGE = "settings.general.manage"
     SETTINGS_ADVANCED_MANAGE = "settings.advanced.manage"
@@ -77,6 +79,7 @@ ROLE_CAPABILITIES: dict[AppRole, frozenset[Capability]] = {
         Capability.OPERATIONS_PROGRAMMING_QC_UPDATE,
         Capability.OPERATIONS_FINAL_FINISH_UPDATE,
         Capability.PROJECTS_VIEW,
+        Capability.COMPLETED_MEDIA_UPLOAD,
     }),
 }
 

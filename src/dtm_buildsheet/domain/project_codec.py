@@ -22,8 +22,8 @@ from .project_models import (
 
 
 _REFERENCE_SCOPES = {"project", "unit_group", "individual"}
-_REFERENCE_MEDIA_TYPES = {"photo", "video"}
-_REFERENCE_SOURCE_KINDS = {"company_reference", "shop_completed"}
+_REFERENCE_MEDIA_TYPES = {"photo", "video", "file"}
+_REFERENCE_SOURCE_KINDS = {"company_reference", "company_project_file", "shop_completed"}
 _QUOTE_REFERENCE_STATES = {"current", "obsolete"}
 _QUOTE_MATCH_STATUSES = {"pending", "linked", "not_found", "multiple", "linked_elsewhere"}
 _VEHICLE_SOURCES = {"catalog", "custom", "legacy", "unknown"}
