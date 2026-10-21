@@ -27,6 +27,48 @@ const api = (path, body) =>
     }
   });
 
+let _quickBooksConnectionAttempt = null;
+
+async function connectQuickBooksInPrivateBrowser() {
+  if (_quickBooksConnectionAttempt) return _quickBooksConnectionAttempt;
+  _quickBooksConnectionAttempt = (async () => {
+    const started = await api("/api/quickbooks/connect", {});
+    if (!started?.ok) {
+      throw new Error(started?.error || "Could not open QuickBooks sign-in");
+    }
+    const browserName = started.browser ? ` in ${started.browser}` : "";
+    toast(`QuickBooks sign-in opened${browserName} in a private window`, "info");
+    const deadline = Date.now() + 5 * 60 * 1000;
+    let consecutiveErrors = 0;
+    while (Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      try {
+        const status = await api("/api/quickbooks/status");
+        consecutiveErrors = 0;
+        if (status?.connected) return status;
+        if (status?.authorization_status === "error") {
+          throw new Error(
+            status.authorization_error || "QuickBooks sign-in was not completed. Try again."
+          );
+        }
+      } catch (_) {
+        consecutiveErrors += 1;
+        if (consecutiveErrors >= 3) {
+          throw new Error("Builder could not check whether QuickBooks finished connecting");
+        }
+      }
+    }
+    throw new Error(
+      "QuickBooks sign-in did not finish. Close the private browser window and try again."
+    );
+  })();
+  try {
+    return await _quickBooksConnectionAttempt;
+  } finally {
+    _quickBooksConnectionAttempt = null;
+  }
+}
+
 async function apiSave(endpoint, data){
   const res = await api(endpoint, data);
   if(res?.ok && res.template_regen) setTimeout(loadTemplateInfo, 800);
@@ -709,9 +751,10 @@ async function _doQuickBooksAction(){
   }
   if (btn) btn.disabled = true;
   try {
-    const res = await api("/api/quickbooks/auth-url");
-    if (res?.ok && res.url) window.location.href = res.url;
-    else toast(res?.error || "Could not start QuickBooks sign-in", "error");
+    await connectQuickBooksInPrivateBrowser();
+    toast("QuickBooks connected", "success");
+    await refreshCloudStatus();
+    _refreshCloudModalBody();
   } catch (e) {
     toast(e?.message || "Could not start QuickBooks sign-in", "error");
   } finally {

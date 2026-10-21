@@ -5,6 +5,7 @@
 // Four top-level header tabs are capability-gated after the session endpoint
 // resolves the signed-in user's Entra roles:
 //   - projects           → #tab-projects (project manager)
+//   - vehicle-sales      → #tab-vehicle-sales (buyback / sale records)
 //   - operations         → #tab-operations (shared production backlog)
 //   - general-settings   → #tab-settings + #stab-bar-general
 //   - advanced-settings  → #tab-settings + #stab-bar-advanced
@@ -76,6 +77,7 @@ function appPermissionDenied(action) {
 
 function _appCanOpenHeader(tab) {
   if (tab === "projects") return appHasCapability("projects.view");
+  if (tab === "vehicle-sales") return appHasCapability("projects.edit");
   if (tab === "calendar") return appHasCapability("operations.view");
   if (tab === "operations") return appHasCapability("operations.view");
   if (tab === "general-settings") {
@@ -89,7 +91,7 @@ function _appCanOpenHeader(tab) {
 function _appFirstWorkspace() {
   const preferred = window.DTM_ACCESS_SESSION?.default_workspace || "";
   if (preferred && _appCanOpenHeader(preferred)) return preferred;
-  return ["projects", "operations", "general-settings", "advanced-settings"]
+  return ["projects", "vehicle-sales", "operations", "general-settings", "advanced-settings"]
     .find(_appCanOpenHeader) || "";
 }
 
@@ -97,6 +99,7 @@ window.applyAppAccessSession = function (session) {
   window.DTM_ACCESS_SESSION = session || { capabilities: [] };
   const headerIds = {
     projects: "projects-header-tab",
+    "vehicle-sales": "vehicle-sales-header-tab",
     operations: "operations-header-tab",
     calendar: "calendar-header-tab",
     "general-settings": "general-settings-header-tab",
@@ -211,6 +214,7 @@ function switchTab(t) {
   });
 
   $("tab-projects").hidden = t !== "projects";
+  $("tab-vehicle-sales").hidden = t !== "vehicle-sales";
   $("tab-operations").hidden = t !== "operations";
   $("tab-calendar").hidden = t !== "calendar";
   $("tab-settings").hidden = (t !== "general-settings" && t !== "advanced-settings");
@@ -221,6 +225,10 @@ function switchTab(t) {
   }
   if (t === "calendar") {
     if (typeof initCalendarTab === "function") initCalendarTab();
+    return;
+  }
+  if (t === "vehicle-sales") {
+    if (typeof initVehicleSalesTab === "function") initVehicleSalesTab();
     return;
   }
   if (t === "operations") {

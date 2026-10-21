@@ -4,9 +4,9 @@
 // /api/quickbooks/* routes. Secrets are never rendered back into fields —
 // the Client Secret shows only a "saved" placeholder once stored.
 //
-// OAuth round-trip: clicking Connect navigates the app window to Intuit's
-// consent page; the callback redirects back to /?qb=connected|error, which
-// main.js hands to qbConsumeReturnTab() on load.
+// OAuth round-trip: clicking Connect opens Intuit in a private window of a
+// supported system browser while this tab polls connection status. The callback
+// returns the browser to a small completion page, not a second Builder UI.
 (function () {
   let _wired = false;
   let _status = null;
@@ -419,13 +419,24 @@
   }
 
   async function _connect() {
-    const res = await api("/api/quickbooks/auth-url");
-    if (res?.ok && res.url) {
-      // Navigate the app window to Intuit's consent page. The OAuth redirect
-      // chain returns to /api/quickbooks/callback which 302s back to /?qb=…
-      window.location.href = res.url;
-    } else {
-      toast(res?.error || "Could not start authorization", "error");
+    const button = $("qb-connect-btn");
+    const originalLabel = button?.textContent || "Connect to QuickBooks";
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Waiting for QuickBooks…";
+    }
+    try {
+      _status = await connectQuickBooksInPrivateBrowser();
+      _render();
+      await _loadItems();
+      toast("QuickBooks connected", "success");
+    } catch (error) {
+      toast(error?.message || "Could not start QuickBooks sign-in", "error");
+    } finally {
+      if (button) {
+        button.textContent = originalLabel;
+        button.disabled = !_status?.configured || !!_status?.connected;
+      }
     }
   }
 

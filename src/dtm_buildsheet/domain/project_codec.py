@@ -181,6 +181,7 @@ def individual_unit_from_dict(d: Any) -> IndividualUnit:
         existing_year=str(d.get("existing_year", "")),
         existing_make=str(d.get("existing_make", "")),
         existing_model=str(d.get("existing_model", "")),
+        existing_color=str(d.get("existing_color", "")),
         existing_build_type=str(d.get("existing_build_type", "")),
         existing_unit_number=str(d.get("existing_unit_number", "")),
         existing_vin=str(d.get("existing_vin", "")),

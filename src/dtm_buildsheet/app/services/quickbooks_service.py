@@ -22,7 +22,11 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import secrets as _secrets
+import shutil
+import subprocess
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -58,6 +62,8 @@ _SHARED_CATALOG_CHECK_FILE = "quickbooks_catalog_check.json"
 # for a single-process desktop app.
 _pending_state: str | None = None
 _pending_states: dict[str, str] = {}
+_authorization_status = "idle"
+_authorization_error = ""
 
 
 # ── config metadata (non-secret) ───────────────────────────────────────────
@@ -147,6 +153,12 @@ def _profile_for_pending_state(state: str) -> str:
     return _DEFAULT_PROFILE
 
 
+def _set_authorization_status(status: str, error: str = "") -> None:
+    global _authorization_status, _authorization_error
+    _authorization_status = status
+    _authorization_error = error
+
+
 # ── time helpers ────────────────────────────────────────────────────────────
 
 
@@ -232,6 +244,144 @@ def generate_auth_url(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> di
     return {"ok": True, "url": url}
 
 
+def _private_browser_candidates() -> list[tuple[str, Path, str]]:
+    """Return supported private-browser launch targets for this platform."""
+    if sys.platform == "darwin":
+        return [
+            (
+                "Google Chrome",
+                Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+                "--incognito",
+            ),
+            (
+                "Microsoft Edge",
+                Path("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"),
+                "--inprivate",
+            ),
+            (
+                "Firefox",
+                Path("/Applications/Firefox.app/Contents/MacOS/firefox"),
+                "--private-window",
+            ),
+            (
+                "Brave",
+                Path("/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"),
+                "--incognito",
+            ),
+        ]
+    if os.name == "nt":
+        root_values = [
+            os.environ.get("PROGRAMFILES(X86)"),
+            os.environ.get("PROGRAMFILES"),
+            os.environ.get("LOCALAPPDATA"),
+        ]
+        candidates: list[tuple[str, Path, str]] = []
+        for root_value in root_values:
+            if not root_value:
+                continue
+            root = Path(root_value)
+            candidates.extend(
+                [
+                    (
+                        "Microsoft Edge",
+                        root / "Microsoft/Edge/Application/msedge.exe",
+                        "--inprivate",
+                    ),
+                    (
+                        "Google Chrome",
+                        root / "Google/Chrome/Application/chrome.exe",
+                        "--incognito",
+                    ),
+                    ("Firefox", root / "Mozilla Firefox/firefox.exe", "--private-window"),
+                    (
+                        "Brave",
+                        root / "BraveSoftware/Brave-Browser/Application/brave.exe",
+                        "--incognito",
+                    ),
+                ]
+            )
+        return candidates
+    names = [
+        ("Google Chrome", "google-chrome", "--incognito"),
+        ("Chromium", "chromium", "--incognito"),
+        ("Microsoft Edge", "microsoft-edge", "--inprivate"),
+        ("Firefox", "firefox", "--private-window"),
+        ("Brave", "brave-browser", "--incognito"),
+    ]
+    return [
+        (label, Path(executable), flag)
+        for label, executable, flag in names
+        if shutil.which(executable)
+    ]
+
+
+def _open_private_browser(url: str) -> str:
+    """Launch an isolated browser session and return the browser label."""
+    for label, executable, private_flag in _private_browser_candidates():
+        resolved = (
+            shutil.which(str(executable)) if not executable.is_absolute() else str(executable)
+        )
+        if not resolved or not Path(resolved).is_file():
+            continue
+        kwargs: dict = {
+            "stdin": subprocess.DEVNULL,
+            "stdout": subprocess.DEVNULL,
+            "stderr": subprocess.DEVNULL,
+            "close_fds": True,
+        }
+        if os.name == "nt":
+            kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+        else:
+            kwargs["start_new_session"] = True
+        try:
+            subprocess.Popen([resolved, private_flag, url], **kwargs)  # noqa: S603
+            return label
+        except OSError:
+            logger.warning("Could not launch %s for QuickBooks authorization", label)
+    return ""
+
+
+def open_authorization_in_private_browser(paths: AppPaths) -> dict:
+    """Start managed OAuth in a supported, isolated system browser.
+
+    Intuit's sign-in shell depends on a normal, supported browser profile.
+    A private window avoids silently reusing a personal Intuit session when
+    the Builder must be authorized by the designated company admin account.
+    """
+    result = generate_auth_url(paths)
+    if not result.get("ok"):
+        return result
+    _set_authorization_status("pending")
+    browser = _open_private_browser(result["url"])
+    if not browser:
+        _take_pending_state(_DEFAULT_PROFILE)
+        _set_authorization_status(
+            "error", "A supported private browser could not be opened for QuickBooks sign-in."
+        )
+        return {
+            "ok": False,
+            "error": (
+                "Could not find Edge, Chrome, Firefox, or Brave for private "
+                "QuickBooks sign-in."
+            ),
+        }
+    return {"ok": True, "opened": True, "private": True, "browser": browser}
+
+
+def cancel_authorization(state: str) -> str:
+    """Consume a declined OAuth callback and return its connection profile."""
+    profile = _profile_for_pending_state(state)
+    valid = validate_state(state, profile=profile)
+    if profile == _DEFAULT_PROFILE:
+        message = (
+            "QuickBooks sign-in was cancelled."
+            if valid
+            else "QuickBooks authorization could not be verified. Try connecting again."
+        )
+        _set_authorization_status("error", message)
+    return profile
+
+
 def validate_state(state: str, *, profile: str = _DEFAULT_PROFILE) -> bool:
     """Constant-time, single-use validation of the OAuth state parameter."""
     expected = _take_pending_state(_profile_name(profile))
@@ -251,8 +401,14 @@ def complete_authorization(
     """Validate state, exchange the code for tokens, and store them."""
     profile = _profile_name(profile or _profile_for_pending_state(state))
     if not validate_state(state, profile=profile):
+        if profile == _DEFAULT_PROFILE:
+            _set_authorization_status(
+                "error", "QuickBooks authorization could not be verified. Try connecting again."
+            )
         return {"ok": False, "error": "Invalid OAuth state — authorization rejected."}
     if not code:
+        if profile == _DEFAULT_PROFILE:
+            _set_authorization_status("error", "QuickBooks did not return an authorization code.")
         return {"ok": False, "error": "Missing authorization code."}
 
     config = _load_config(paths, profile)
@@ -267,9 +423,15 @@ def complete_authorization(
         token = client.exchange_code(code=code, redirect_uri=config["redirect_uri"])
     except QuickBooksOAuthError as exc:
         logger.warning("QuickBooks code exchange failed: %s", exc)
+        if profile == _DEFAULT_PROFILE:
+            _set_authorization_status(
+                "error", "QuickBooks could not finish connecting. Try again."
+            )
         return {"ok": False, "error": str(exc)}
 
     _store_token(paths, store, token, realm_id=realm_id, fresh=True, profile=profile)
+    if profile == _DEFAULT_PROFILE:
+        _set_authorization_status("connected")
     logger.info("QuickBooks connected: profile=%s", profile)
     return {"ok": True, "profile": profile}
 
@@ -392,6 +554,8 @@ def disconnect(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> dict:
     config["hard_expiry_utc"] = ""
     config["connection_status"] = "disconnected"
     _save_config(paths, config, profile)
+    if profile == _DEFAULT_PROFILE:
+        _set_authorization_status("idle")
     logger.info("QuickBooks disconnected: profile=%s", profile)
     return {"ok": True, "profile": profile}
 
@@ -404,7 +568,7 @@ def get_status(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> dict:
     has_secret = bool(blob.get("client_secret"))
     managed_connection = bool(config.get("token_broker_url"))
     connected = config.get("connection_status") == "connected" and bool(blob.get("refresh_token"))
-    return {
+    result = {
         "ok": True,
         "configured": bool(config.get("client_id")) and (has_secret or managed_connection),
         "connected": connected,
@@ -422,6 +586,10 @@ def get_status(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> dict:
         "profile": profile,
         "preview_only": profile == PRODUCTION_PREVIEW_PROFILE,
     }
+    if profile == _DEFAULT_PROFILE:
+        result["authorization_status"] = _authorization_status
+        result["authorization_error"] = _authorization_error
+    return result
 
 
 def get_shared_catalog_check(paths: AppPaths) -> str | None:

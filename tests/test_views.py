@@ -122,7 +122,7 @@ def test_existing_vehicle_metadata_is_editable_but_not_used_by_unit_labels():
     state = (ui_root / "js" / "projects" / "state.js").read_text(encoding="utf-8")
     modal = (ui_root / "js" / "projects" / "individual_modal.js").read_text(encoding="utf-8")
 
-    assert "Existing / replaced vehicle (optional)" in html
+    assert "Existing / trade-in vehicle" in html
     assert "Existing / replaced vehicle (optional)" in state
     assert "ind-edit-existing-unit-number" in html
     assert "ind-edit-existing-unit-number" in modal

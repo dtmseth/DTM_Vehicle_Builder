@@ -133,6 +133,63 @@ function _ptQuoteReferencesMarkup(references) {
   }).join(" · ")}</div>`;
 }
 
+function _ptVehicleDetailsButton(projectId, unitId, individualId) {
+  return `<button type="button" class="proj-vehicle-details-button" onclick="PT_openDetailIndModal('${projectId}','${unitId}','${individualId}')">
+    <span class="proj-vehicle-details-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span><strong>Vehicle details &amp; records</strong><small>Unit info, quotes, notes, and buyback / sale</small></span>
+    <b aria-hidden="true">›</b>
+  </button>`;
+}
+
+function _ptMoreActionsMarkup(project, projectId, unitId, individualId, type, holder, disabledAttrs) {
+  const companyVehiclePath = String(holder.company_vehicle_folder_path || "").trim();
+  const shopVehiclePath = String(holder.shop_vehicle_folder_path || "").trim();
+  const previous = individualId && (project.project_type || "build") !== "build"
+    ? `${holder.previous_build?.project_id ? `<button type="button" onclick="PT_previousBuild('${projectId}','${unitId}','${individualId}')">View previous build</button>` : ""}
+       ${_ptCanEditProjects() ? `<button type="button" onclick="PT_linkPreviousBuild('${projectId}','${unitId}','${individualId}')">${holder.previous_build?.project_id ? "Change previous build link" : "Link previous build"}</button>` : ""}`
+    : "";
+  const quickBooks = _PT_QUICKBOOKS_UI_ENABLED && individualId && _ptCanManageEstimates()
+    ? `<div class="proj-build-action-menu-heading">Estimate</div>
+       <button type="button" onclick="PT_setupQbProject('${projectId}','${individualId}')">QuickBooks project</button>
+       <button type="button" onclick="PT_linkQbEstimate('${projectId}','${individualId}')">Estimate connection</button>
+       ${String(holder.qb_estimate_id || "").trim() && String(holder.draft_id || "").trim() ? `<button type="button"${disabledAttrs} onclick="PT_previewQbEstimateImport('${projectId}','${individualId}')">Import estimate parts</button>` : ""}
+       <button type="button"${disabledAttrs} onclick="PT_buildCreateEstimate('${projectId}','${unitId}','${individualId}')">${String(holder.qb_estimate_id || "").trim() ? "Update estimate" : "Create estimate"}</button>`
+    : "";
+  const folderAction = companyVehiclePath
+    ? `<button type="button" data-library-target="company" data-folder-path="${esc(companyVehiclePath)}" onclick="PT_openCloudFolder(this)">Open vehicle files</button>`
+    : shopVehiclePath
+      ? `<button type="button" data-library-target="shop" data-folder-path="${esc(shopVehiclePath)}" onclick="PT_openCloudFolder(this)">Open vehicle files</button>`
+      : `<button type="button" onclick="PT_buildShowFolder('${projectId}','${unitId}','${individualId}','${type}')">Open saved files</button>`;
+  return `<details class="proj-build-action-menu proj-build-more-menu">
+    <summary class="btn btn-secondary btn-sm">More</summary>
+    <div class="proj-build-action-menu-items">
+      <div class="proj-build-action-menu-heading">Build sheet</div>
+      ${_ptCanEditProjects() ? `<button type="button"${disabledAttrs} onclick="PT_buildExportPdf('${projectId}','${unitId}','${individualId}','${type}')">Create or update PDF</button>` : ""}
+      ${folderAction}
+      <div class="proj-build-action-menu-heading">Photos &amp; files</div>
+      ${_ptHasCapability("completed_media.upload") ? `<button type="button" onclick="DTMUploads.choose({projectId:'${esc(projectId)}',kind:'completed',unitId:'${esc(unitId)}',individualId:'${esc(individualId)}'})">Add completed photos or files</button>` : ""}
+      ${_ptCompletedPhotoButtonMarkup(projectId, unitId, individualId)}
+      ${quickBooks}
+      ${previous ? `<div class="proj-build-action-menu-heading">History</div>${previous}` : ""}
+    </div>
+  </details>`;
+}
+
+function _ptFocusedBuildActionsMarkup(project, projectId, unitId, individualId, type, holder, disabledAttrs) {
+  const hasPdf = Boolean(String(holder.pdf_path || "").trim());
+  const canOpen = _ptCanEditProjects() || Boolean(holder.draft_id) || holder.status === "finalized";
+  const openLabel = holder.draft_id ? "Open build" : "Set up build";
+  return `<div class="proj-build-primary-actions">
+      ${canOpen ? `<button type="button" class="btn btn-primary btn-sm" onclick="PT_openBuildAction(this)">${openLabel}</button>` : ""}
+      ${hasPdf ? `<button type="button" class="btn btn-secondary btn-sm" onclick="PT_buildOpenPdf('${projectId}','${unitId}','${individualId}','${type}')">View PDF</button>` : ""}
+      ${_ptMoreActionsMarkup(project, projectId, unitId, individualId, type, holder, disabledAttrs)}
+    </div>
+    ${_ptCanEditProjects() ? `<button type="button" class="proj-final-review-row${holder.status === "finalized" ? " proj-final-review-row--finalized" : ""}"${disabledAttrs}
+      onclick="PT_reviewFinalization('${projectId}','${unitId}','${individualId}','${type}')">
+      <span><strong>${holder.status === "finalized" ? "Design finalized" : "Ready for review"}</strong><small>${holder.status === "finalized" ? "Review final checks or reopen for changes" : "Review checks and finalize design"}</small></span><b aria-hidden="true">›</b>
+    </button>` : ""}`;
+}
+
 function _ptBuildCardsMarkup(p) {
   const units = p.build_units || [];
   const pid   = esc(p.project_id);
@@ -160,33 +217,25 @@ function _ptBuildCardsMarkup(p) {
         const buildDis  = !hasDraft ? ` disabled title="Configure build first"` : "";
 
         const draftIdEsc  = hasDraft  ? esc(ind.draft_id) : "";
-        const canOpen = _ptCanEditProjects() || hasDraft || ind.status === "finalized";
-        return `<div class="proj-build-card${canOpen ? " proj-build-card--openable" : ""}" id="build-card-${iid}"
-          ${canOpen ? `tabindex="0" role="button" aria-label="${hasDraft ? "Open" : "Set up"} ${esc(label)}"` : ""}
+        return `<div class="proj-build-card" id="build-card-${iid}"
           data-build-kind="ind" data-project-id="${pid}" data-unit-id="${uid}"
           data-individual-id="${iid}" data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}"
           data-build-label="${esc(label)}" data-final-status="${esc(ind.status || "draft")}">
           <div class="proj-build-card-top">
             <div class="proj-build-card-label">${esc(label)}</div>
-            <button class="btn btn-secondary btn-sm proj-build-details-btn"
-              onclick="PT_openDetailIndModal('${pid}','${uid}','${iid}')">Details</button>
           </div>
           <div class="proj-ind-card-badges">
             ${confirmed ? `<span class="proj-confirmed-badge">✓ confirmed</span>` : ""}
             ${_ptFinalizationBadge(ind)}
           </div>
+          ${_ptVehicleDetailsButton(pid, uid, iid)}
           ${_ptUnitNotesMarkup(ind.notes, ind.individual_id)}
           ${_ptQuoteReferencesMarkup(ind.quote_references)}
           <div class="proj-build-card-stats" id="build-stats-${iid}">
             ${hasDraft ? `<span class="proj-stats-loading">Loading…</span>` : ""}
           </div>
           <div class="proj-build-actions">
-            ${_ptPdfOptionsMarkup(pid, uid, iid, "ind", ind, buildDis)}
-            ${_ptQuickBooksOptionsMarkup(pid, uid, iid, ind, buildDis)}
-            ${_ptPhotoOptionsMarkup(p, pid, uid, iid)}
-            ${(p.project_type||'build')!=='build'?`${ind.previous_build?.project_id?`<button class="btn btn-secondary btn-sm" type="button" onclick="PT_previousBuild('${pid}','${uid}','${iid}')">Previous Build Design</button>`:''}${_ptCanEditProjects()?`<button class="btn btn-secondary btn-sm" type="button" onclick="PT_linkPreviousBuild('${pid}','${uid}','${iid}')">${ind.previous_build?.project_id?'Change previous build':'Link previous build'}</button>`:''}`:''}
-            ${_ptCanEditProjects() ? `<button class="btn btn-sm proj-final-review-btn${ind.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
-              onclick="PT_reviewFinalization('${pid}','${uid}','${iid}','ind')">${ind.status === "finalized" ? "✓ Design finalized" : "Finalize design"}</button>` : ""}
+            ${_ptFocusedBuildActionsMarkup(p, pid, uid, iid, "ind", ind, buildDis)}
           </div>
         </div>`;
       }).join("");
@@ -195,10 +244,7 @@ function _ptBuildCardsMarkup(p) {
       const buildDis  = !hasDraft ? ` disabled title="Configure build first"` : "";
       const draftIdEsc = hasDraft  ? esc(u.draft_id) : "";
       const groupLabel = _ptUnitLabel(u, null, uIdx);
-      const canOpen = _ptCanEditProjects() || hasDraft || u.status === "finalized";
-
-      cards = `<div class="proj-build-card${canOpen ? " proj-build-card--openable" : ""}" id="build-card-unit-${uid}"
-        ${canOpen ? `tabindex="0" role="button" aria-label="${hasDraft ? "Open" : "Set up"} ${esc(groupLabel)}"` : ""}
+      cards = `<div class="proj-build-card" id="build-card-unit-${uid}"
         data-build-kind="unit" data-project-id="${pid}" data-unit-id="${uid}"
         data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}"
         data-build-label="${esc(groupLabel)}" data-final-status="${esc(u.status || "draft")}">
@@ -210,10 +256,7 @@ function _ptBuildCardsMarkup(p) {
           ${hasDraft ? `<span class="proj-stats-loading">Loading…</span>` : ""}
         </div>
         <div class="proj-build-actions">
-          ${_ptPdfOptionsMarkup(pid, uid, "", "unit", u, buildDis)}
-          ${_ptPhotoOptionsMarkup(p, pid, uid, "")}
-          ${_ptCanEditProjects() ? `<button class="btn btn-sm proj-final-review-btn${u.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
-            onclick="PT_reviewFinalization('${pid}','${uid}','','unit')">${u.status === "finalized" ? "✓ Design finalized" : "Finalize design"}</button>` : ""}
+          ${_ptFocusedBuildActionsMarkup(p, pid, uid, "", "unit", u, buildDis)}
         </div>
       </div>`;
     }
@@ -231,8 +274,8 @@ function _ptBuildCardsMarkup(p) {
   return `
     ${groups}
     ${_ptCanEditProjects() ? `<div class="proj-builds-footer">
-      <button class="btn btn-primary btn-sm" onclick="PT_exportAllPdf()">Export / update all PDFs</button>
-      ${_PT_QUICKBOOKS_UI_ENABLED ? `<button class="btn btn-secondary btn-sm" onclick="PT_createEstimatesBatch()">QuickBooks options</button>` : ""}
+      <button class="btn btn-primary btn-sm" onclick="PT_exportAllPdf()">Create or update all PDFs</button>
+      ${_PT_QUICKBOOKS_UI_ENABLED ? `<button class="btn btn-secondary btn-sm" onclick="PT_createEstimatesBatch()">Estimate options</button>` : ""}
     </div>` : ""}
     <div id="proj-action-status" class="proj-action-status" style="display:none"></div>`;
 }
@@ -344,6 +387,11 @@ function _ptOpenBuildCard(card) {
     PT_setupOrEditBuildUnit(projectId, unitId, draftId, unitIndex);
   }
 }
+
+window.PT_openBuildAction = function (button) {
+  const card = button?.closest?.(".proj-build-card");
+  if (card) _ptOpenBuildCard(card);
+};
 
 $("pbe-reopen-btn")?.addEventListener("click", () => {
   const projectId = _PT.pbeProject?.project_id || "";

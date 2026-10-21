@@ -398,6 +398,7 @@ function _ptBuildPayload() {
         existing_year:        ind.existing_year        || "",
         existing_make:        ind.existing_make        || "",
         existing_model:       ind.existing_model       || "",
+        existing_color:       ind.existing_color       || "",
         existing_build_type:  ind.existing_build_type  || "",
         existing_unit_number: ind.existing_unit_number || "",
         existing_vin:         ind.existing_vin         || "",

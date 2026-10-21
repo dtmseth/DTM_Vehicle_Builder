@@ -60,7 +60,7 @@ _INDIVIDUAL_OPERATIONAL_FIELDS = (
 
 
 _OPTIONAL_EXISTING_VEHICLE_FIELDS = (
-    "existing_year", "existing_make", "existing_model", "existing_build_type",
+    "existing_year", "existing_make", "existing_model", "existing_color", "existing_build_type",
     "existing_unit_number", "existing_vin", "previous_build",
     "quote_references",
 )

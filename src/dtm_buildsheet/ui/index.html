@@ -22,6 +22,7 @@
   </div>
   <div class="header-tabs">
     <button class="htab" id="projects-header-tab" data-tab="projects" hidden>📋 Projects</button>
+    <button class="htab" id="vehicle-sales-header-tab" data-tab="vehicle-sales" hidden>🚙 Buyback &amp; Sales</button>
     <button class="htab" id="calendar-header-tab" data-tab="calendar" hidden>📅 Calendar</button>
     <button class="htab" id="operations-header-tab" data-tab="operations" hidden>🏭 Operations</button>
     <button class="htab" id="general-settings-header-tab" data-tab="general-settings" hidden>⚙️ General Settings</button>
@@ -1194,8 +1195,9 @@
       <!-- Disconnected state -->
       <div id="qb-connect-row">
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">
-          Authorize the app to connect to your QuickBooks company. You'll be taken to Intuit
-          to sign in, then returned here automatically.
+          Authorize the app to connect to your QuickBooks company. Intuit sign-in opens in a
+          private browser window so you can use the designated admin account; return to Builder
+          when the browser confirms the connection.
         </p>
         <button class="btn btn-primary" id="qb-connect-btn">🔗 Connect to QuickBooks</button>
         <p id="qb-connect-hint" style="font-size:12px;color:var(--orange,#b45309);margin:8px 0 0" hidden>
@@ -1458,6 +1460,145 @@
   </div>
 </div><!-- end tab-settings -->
 
+
+<!-- ═══════════ VEHICLE BUYBACK / SALE RECORDS ═══════════ -->
+<div id="tab-vehicle-sales" class="main-content" hidden>
+  <div id="vehicle-sales-list" class="card vehicle-sales-shell">
+    <div class="card-title vehicle-sales-title">
+      <div>
+        <span>Vehicle Buyback / Sale</span>
+        <small>Used and existing vehicle records</small>
+      </div>
+      <button class="btn btn-primary btn-sm" id="vehicle-sales-new" type="button">+ New record</button>
+    </div>
+    <div class="vehicle-sales-toolbar">
+      <label class="vehicle-sales-search">
+        <span>Search</span>
+        <input id="vehicle-sales-search" type="search" placeholder="Buyer, seller, VIN, vehicle, or project…" autocomplete="off">
+      </label>
+      <button class="btn btn-secondary btn-sm" id="vehicle-sales-refresh" type="button">Refresh</button>
+    </div>
+    <div id="vehicle-sales-message" class="proj-empty-msg" hidden></div>
+    <div id="vehicle-sales-years"></div>
+  </div>
+
+  <div id="vehicle-sales-editor" class="card vehicle-sales-shell" hidden>
+    <div class="card-title vehicle-sales-title">
+      <div>
+        <span>Vehicle Buyback / Sale</span>
+        <small id="vehicle-sales-editor-subtitle">New record</small>
+      </div>
+      <div class="vehicle-sales-title-actions">
+        <span id="vehicle-sales-save-state" class="vehicle-sales-save-state" role="status">Saved</span>
+        <button class="btn btn-gold btn-sm" id="vehicle-sales-print-pdf" type="button">Print PDF</button>
+        <details class="proj-build-action-menu vehicle-sales-more-menu">
+          <summary class="btn btn-secondary btn-sm">More</summary>
+          <div class="proj-build-action-menu-items">
+            <button id="vehicle-sales-open-pdf" type="button">Open PDF</button>
+            <button id="vehicle-sales-open-folder" type="button">Open SharePoint folder</button>
+            <button class="pbe-build-action-danger" id="vehicle-sales-delete" type="button">Delete record and PDF</button>
+          </div>
+        </details>
+        <button class="btn btn-primary btn-sm" id="vehicle-sales-done" type="button">Done</button>
+      </div>
+    </div>
+
+    <div class="vehicle-sales-link" id="vehicle-sales-link" hidden>
+      <div><strong>Internal reference</strong><span id="vehicle-sales-link-label"></span></div>
+      <span>Linked to its Builder vehicle.</span>
+    </div>
+
+    <form id="vehicle-sales-form" class="vehicle-sales-form" autocomplete="off">
+      <section class="vehicle-sales-section">
+        <h3><span>01</span> Record details</h3>
+        <div class="vehicle-sales-grid vehicle-sales-grid--2-1">
+          <label>Prepared by<input data-sale-field="prepared_by" maxlength="120"></label>
+          <label>Date received<input data-sale-field="date_received" type="date"></label>
+        </div>
+      </section>
+
+      <section class="vehicle-sales-section">
+        <h3><span>02</span> Vehicle &amp; purchase</h3>
+        <label>Purchased from
+          <div class="vehicle-sales-agency-combo">
+            <input id="vehicle-sales-purchased-from" data-sale-field="purchased_from" maxlength="180" autocomplete="off" placeholder="Search agencies or enter a private seller">
+            <input id="vehicle-sales-purchased-from-agency-id" type="hidden">
+            <div id="vehicle-sales-purchased-from-suggestions" class="sug-dropdown" style="display:none"></div>
+          </div>
+          <small class="vehicle-sales-agency-help">Choose a known agency when applicable; private sellers can be entered as plain text.</small>
+        </label>
+        <div class="vehicle-sales-grid vehicle-sales-grid--vehicle">
+          <label>Year<input data-sale-field="vehicle_year" inputmode="numeric" maxlength="4"></label>
+          <label>Make<input data-sale-field="vehicle_make" maxlength="80"></label>
+          <label>Model<input data-sale-field="vehicle_model" maxlength="100"></label>
+          <label>Color<input data-sale-field="vehicle_color" maxlength="60"></label>
+        </div>
+        <div class="vehicle-sales-grid vehicle-sales-grid--3">
+          <label>Unit number <small>optional</small><input data-sale-field="vehicle_unit_number" maxlength="120" placeholder="Previous unit number"></label>
+          <label>VIN<input data-sale-field="vin" maxlength="32"></label>
+          <label>Odometer / miles<input data-sale-field="odometer" inputmode="numeric" maxlength="20"></label>
+        </div>
+        <div id="vehicle-sales-match-assistant" class="vehicle-sales-match-assistant" hidden>
+          <div class="vehicle-sales-match-heading">
+            <div><strong>Possible previous build</strong><span id="vehicle-sales-match-status"></span></div>
+          </div>
+          <div id="vehicle-sales-match-results" class="vehicle-sales-match-results"></div>
+        </div>
+        <div class="vehicle-sales-grid vehicle-sales-grid--purchase">
+          <label>Purchase amount<input data-sale-field="purchase_amount" inputmode="decimal" maxlength="30"></label>
+          <fieldset class="vehicle-sales-via">
+            <legend>Purchased via</legend>
+            <label><input type="radio" name="vehicle-sales-purchase-via" value="account_credit" data-sale-field="purchase_via"> Account credit</label>
+            <label><input type="radio" name="vehicle-sales-purchase-via" value="check_issued" data-sale-field="purchase_via"> Check issued</label>
+            <label><input type="radio" name="vehicle-sales-purchase-via" value="other" data-sale-field="purchase_via"> Other</label>
+          </fieldset>
+          <label>Other method<input data-sale-field="purchase_via_other" maxlength="80"></label>
+        </div>
+        <div class="vehicle-sales-credit-row">
+          <label>Quote number <small>required for account credit</small><input data-sale-field="quote_number" maxlength="80"></label>
+          <p id="vehicle-sales-credit-note">Choose <strong>Account credit</strong> to connect the purchase to a quote.</p>
+        </div>
+      </section>
+
+      <section class="vehicle-sales-section">
+        <h3><span>03</span> Title, DTM &amp; DVS</h3>
+        <div class="vehicle-sales-grid vehicle-sales-grid--3">
+          <label class="vehicle-sales-check"><input type="checkbox" data-sale-field="title_signed_dtm"> Title signed / DTM information complete</label>
+          <label class="vehicle-sales-check"><input type="checkbox" data-sale-field="mn_dvs_complete"> MN DVS complete</label>
+          <label>DVS Date flagged held for resale<input type="date" data-sale-field="dvs_flagged_resale_date"></label>
+        </div>
+        <label>Title / VIN notes<textarea data-sale-field="title_vin_notes" rows="2" maxlength="2000"></textarea></label>
+      </section>
+
+      <section class="vehicle-sales-section">
+        <h3><span>04</span> Sale</h3>
+        <div class="vehicle-sales-grid vehicle-sales-grid--sale">
+          <label>Date sold<input type="date" data-sale-field="date_sold"></label>
+          <label>Buyer name <small>private buyer or dealer</small><input data-sale-field="buyer_name" maxlength="180"></label>
+          <label>Dealer license # <small>if applicable</small><input data-sale-field="dealer_license_number" maxlength="80"></label>
+        </div>
+        <div class="vehicle-sales-grid vehicle-sales-grid--3">
+          <label>Sale amount<input data-sale-field="sale_amount" inputmode="decimal" maxlength="30"></label>
+          <label>Order / invoice #<input data-sale-field="order_invoice_number" maxlength="80"></label>
+          <label>Sale notes<textarea data-sale-field="sale_notes" rows="2" maxlength="2000"></textarea></label>
+        </div>
+      </section>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="vehicle-sales-delete-modal" role="dialog" aria-modal="true" aria-labelledby="vehicle-sales-delete-title">
+  <div class="modal vehicle-sales-delete-modal">
+    <div class="modal-title" id="vehicle-sales-delete-title">Delete this record?</div>
+    <p id="vehicle-sales-delete-summary" class="vehicle-sales-delete-summary"></p>
+    <p class="vehicle-sales-delete-warning"><strong>PERMANENTLY DELETES THIS RECORD AND PDF. THIS CANNOT BE UNDONE.</strong></p>
+    <p id="vehicle-sales-delete-status" class="vehicle-sales-delete-status" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="vehicle-sales-delete-cancel" type="button">Cancel</button>
+      <button class="btn btn-danger" id="vehicle-sales-delete-confirm" type="button">Permanently Delete</button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════ PROJECTS TAB ═══════════ -->
 <div id="tab-projects" class="main-content" hidden>
@@ -2220,43 +2361,66 @@
 
 <!-- ══ INDIVIDUAL UNIT EDIT MODAL ══ -->
 <div id="ind-edit-modal" class="modal-overlay" role="dialog" aria-modal="true">
-  <div class="modal" style="max-width:680px">
+  <div class="modal vehicle-details-modal">
     <div class="modal-title">
-      <span id="ind-edit-modal-title">Edit Unit Details</span>
+      <span>Vehicle details <small id="ind-edit-modal-title"></small></span>
       <button class="modal-close" onclick="PT_closeIndModal()" title="Close">✕</button>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Unit #</label>
-        <input type="text" id="ind-edit-unit-number" placeholder="e.g. 101">
+    <div id="ind-edit-vehicle-selector-shell" class="vehicle-details-selector-shell" hidden>
+      <div class="vehicle-details-section-heading">
+        <div><span>Vehicles in this unit group</span><small>Choose another vehicle without closing this window.</small></div>
       </div>
-      <div class="form-group">
-        <label>Vehicle Year</label>
-        <input type="text" id="ind-edit-year" placeholder="2026">
-      </div>
+      <div id="ind-edit-vehicle-selector" class="vehicle-details-selector" role="tablist" aria-label="Vehicles in this unit group"></div>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Make <span style="font-size:11px;font-weight:400;color:var(--muted)">(from vehicle)</span></label>
-        <input type="text" id="ind-edit-make" readonly style="background:#f4f5f9">
+
+    <section class="vehicle-details-section">
+      <div class="vehicle-details-section-heading">
+        <div><span>This vehicle</span><small>Information that is unique to this physical vehicle.</small></div>
       </div>
-      <div class="form-group">
-        <label>Model <span style="font-size:11px;font-weight:400;color:var(--muted)">(from vehicle)</span></label>
-        <input type="text" id="ind-edit-model" readonly style="background:#f4f5f9">
+      <div class="vehicle-details-identity">
+        <div>
+          <span>Unit group vehicle</span>
+          <strong id="ind-edit-group-vehicle">Vehicle not selected</strong>
+          <small>Year, make, model, and package are shared by every vehicle in this unit group.</small>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="ind-edit-change-group-vehicle" onclick="PT_editIndUnitGroupVehicle()">Change unit group vehicle</button>
       </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Color</label>
-        <input type="text" id="ind-edit-color" placeholder="e.g. White">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Unit #</label>
+          <input type="text" id="ind-edit-unit-number" placeholder="e.g. 101">
+        </div>
+        <div class="form-group">
+          <label>Color</label>
+          <input type="text" id="ind-edit-color" placeholder="e.g. White">
+        </div>
+        <div class="form-group vehicle-details-vin-field">
+          <label>Actual VIN</label>
+          <input type="text" id="ind-edit-vin" placeholder="17-character VIN">
+        </div>
       </div>
-      <div class="form-group">
-        <label>Actual VIN</label>
-        <input type="text" id="ind-edit-vin" placeholder="17-char VIN">
+    </section>
+
+    <section class="vehicle-details-section proj-unit-quotes" id="ind-edit-quotes-section">
+      <div class="vehicle-details-section-heading">
+        <div><span>Quote connections</span><small>Keep current and superseded quote numbers with this vehicle.</small></div>
       </div>
-    </div>
-    <div class="proj-existing-vehicle-modal">
-      <div class="proj-section-label">Existing / replaced vehicle (optional)</div>
+      <div id="ind-edit-quotes-list" class="proj-unit-quotes-list"></div>
+      <div id="ind-edit-quotes-controls" class="proj-unit-quotes-controls">
+        <label class="proj-unit-quote-search-label" for="ind-edit-quote-search">Find or add a quote</label>
+        <div class="proj-unit-quote-search-row">
+          <input type="search" id="ind-edit-quote-search" placeholder="Search QuickBooks or enter a quote number" autocomplete="off">
+          <button type="button" class="btn btn-primary btn-sm" id="ind-edit-quote-add">Add quote</button>
+        </div>
+        <div id="ind-edit-quote-search-status" class="proj-unit-quote-search-status" role="status"></div>
+        <div id="ind-edit-quote-search-results" class="proj-unit-quote-search-results"></div>
+      </div>
+    </section>
+
+    <section class="vehicle-details-section vehicle-details-trade-in">
+      <div class="vehicle-details-section-heading">
+        <div><span>Existing / trade-in vehicle</span><small>The used vehicle related to this new build, if there is one.</small></div>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label>Year</label>
@@ -2270,44 +2434,39 @@
           <label>Model</label>
           <input type="text" id="ind-edit-existing-model" placeholder="Optional">
         </div>
+        <div class="form-group">
+          <label>Color</label>
+          <input type="text" id="ind-edit-existing-color" placeholder="Optional">
+        </div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Build Type</label>
-          <input type="text" id="ind-edit-existing-build-type" placeholder="Optional">
-        </div>
         <div class="form-group">
           <label>Unit #</label>
           <input type="text" id="ind-edit-existing-unit-number" placeholder="03">
         </div>
-        <div class="form-group">
+        <div class="form-group vehicle-details-vin-field">
           <label>VIN</label>
-          <input type="text" id="ind-edit-existing-vin" placeholder="17-char VIN">
+          <input type="text" id="ind-edit-existing-vin" placeholder="17-character VIN">
         </div>
       </div>
-    </div>
-    <div class="form-group">
-      <label>Unit / Build Notes</label>
-      <textarea id="ind-edit-notes" class="proj-unit-notes-textarea" rows="7" placeholder="Optional notes for this unit; paragraphs and line breaks are preserved"></textarea>
-    </div>
-    <div class="proj-unit-quotes" id="ind-edit-quotes-section">
-      <div class="proj-section-label">Quote numbers</div>
-      <p class="proj-unit-quotes-hint">Keep every quote tied to this vehicle. Mark superseded configurations obsolete instead of deleting their history.</p>
-      <div id="ind-edit-quotes-list" class="proj-unit-quotes-list"></div>
-      <div id="ind-edit-quotes-controls">
-        <div class="proj-unit-quote-search-row">
-          <input type="search" id="ind-edit-quote-search" placeholder="Type a QuickBooks quote / Estimate number" autocomplete="off">
-          <button type="button" class="btn btn-secondary btn-sm" id="ind-edit-quote-add">Add number</button>
-        </div>
-        <div id="ind-edit-quote-search-status" class="proj-unit-quote-search-status" role="status"></div>
-        <div id="ind-edit-quote-search-results" class="proj-unit-quote-search-results"></div>
+      <div id="ind-edit-buyback" class="vehicle-details-buyback" hidden>
+        <div id="ind-edit-buyback-content" class="vehicle-details-buyback-content" aria-live="polite"></div>
       </div>
-    </div>
+    </section>
+
+    <section class="vehicle-details-section">
+      <div class="vehicle-details-section-heading">
+        <div><span>Vehicle notes</span><small>Build-specific notes for this vehicle only.</small></div>
+      </div>
+      <textarea id="ind-edit-notes" class="proj-unit-notes-textarea" rows="5" placeholder="Optional notes; paragraphs and line breaks are preserved"></textarea>
+    </section>
+
     <!-- Setup Build section — shown when opened from detail view -->
-    <div id="ind-modal-setup-section" style="display:none;padding-top:12px;margin-top:8px;border-top:1px solid var(--border)">
-      <button class="btn btn-primary" id="ind-edit-setup-build" style="width:100%" onclick="PT_setupBuildFromModal()">⚡ Setup Build for this Unit</button>
-      <p style="font-size:11px;color:var(--muted);margin:6px 0 0">Opens the build sheet editor — saves any detail changes above first.</p>
+    <div id="ind-modal-setup-section" class="vehicle-details-build-action" hidden>
+      <button class="btn btn-primary" id="ind-edit-setup-build" onclick="PT_setupBuildFromModal()">Open this vehicle's build</button>
+      <p>Saves any detail changes above before opening the build editor.</p>
     </div>
+    <div id="ind-edit-modal-status" class="vehicle-details-save-status" role="status"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="PT_closeIndModal()">Close</button>
       <button class="btn btn-primary" id="ind-edit-save" onclick="PT_saveIndModal()">Save Details</button>
@@ -2922,6 +3081,7 @@
 <script src="/ui/js/projects/individual_modal.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/projects/wizard.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/projects/index.js?v={{APP_VERSION}}"></script>
+<script src="/ui/js/vehicle_sales.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/operations.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/calendar.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/update_banner.js?v={{APP_VERSION}}"></script>

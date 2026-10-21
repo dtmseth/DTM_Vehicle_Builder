@@ -450,12 +450,21 @@ function _ptWireEditTabSearch() {
 
 // ── Public actions ─────────────────────────────────────────────────────────────
 
-window.PT_enterEditMode = function (focusProjectNotes = false) {
+window.PT_enterEditMode = function (focusProjectNotes = false, focusUnitId = "") {
   if (!_ptCanEditProjects()) return;
   if (!_PT.viewProject) return;
   _ptLoadPrefsOptions().then(() => {
     _ptRenderEditTab(_PT.viewProject, true);
     if (focusProjectNotes) requestAnimationFrame(() => $("et-project-notes")?.focus());
+    if (focusUnitId) requestAnimationFrame(() => {
+      const row = [...document.querySelectorAll(".proj-edit-unit-row")]
+        .find(item => item.dataset.etUid === focusUnitId);
+      if (!row) return;
+      row.classList.add("is-focus-target");
+      row.scrollIntoView({behavior: "smooth", block: "center"});
+      row.querySelector(".vehicle-year-input, .vehicle-make-input, .vehicle-model-input")?.focus({preventScroll: true});
+      setTimeout(() => row.classList.remove("is-focus-target"), 2200);
+    });
   });
 };
 

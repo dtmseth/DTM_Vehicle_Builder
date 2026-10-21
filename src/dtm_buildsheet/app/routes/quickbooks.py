@@ -4,6 +4,7 @@ GET:
 - /api/quickbooks/status    — connection state (no secrets)
 - /api/quickbooks/auth-url  — start the OAuth handshake (returns a URL)
 - /api/quickbooks/callback  — OAuth redirect target; always 302s, never HTML
+- /api/quickbooks/complete  — safe browser-only completion page
 - /api/quickbooks/items     — locally cached pulled items (no network)
 - /api/quickbooks/customers/preview — dry-run count of a customer import
 - /api/quickbooks/pricing-status — read-only price-level capability check
@@ -11,6 +12,7 @@ GET:
 - /api/quickbooks/production-preview/* — isolated production catalog mapping preview
 
 POST:
+- /api/quickbooks/connect     — open managed OAuth in the system browser
 - /api/quickbooks/settings    — save client_id / client_secret / env / redirect
 - /api/quickbooks/disconnect  — revoke + clear stored tokens
 - /api/quickbooks/sync        — pull active Items from QBO into the cache
@@ -98,6 +100,37 @@ def _redirect(handler: BaseHTTPRequestHandler, location: str) -> None:
     handler.end_headers()
 
 
+def _send_oauth_completion(handler: BaseHTTPRequestHandler) -> None:
+    status = (parse_qs(urlparse(handler.path).query).get("status") or [""])[0]
+    connected = status == "connected"
+    title = "QuickBooks connected" if connected else "QuickBooks sign-in was not completed"
+    detail = (
+        "Return to DTM Vehicle Builder. You can close this private browser window."
+        if connected
+        else "Return to DTM Vehicle Builder and try connecting again."
+    )
+    accent = "#166534" if connected else "#b45309"
+    icon = "&#10003;" if connected else "!"
+    body = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title}</title><style>
+body{{margin:0;min-height:100vh;display:grid;place-items:center;background:#f4f7fb;color:#172033;font:16px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}}
+main{{max-width:520px;margin:24px;padding:36px;border:1px solid #d9e1ec;border-radius:14px;background:white;box-shadow:0 12px 32px rgba(23,32,51,.1);text-align:center}}
+.icon{{width:56px;height:56px;margin:0 auto 18px;display:grid;place-items:center;border-radius:50%;background:{accent};color:white;font-size:30px;font-weight:800}}
+h1{{margin:0 0 12px;font-size:25px}}p{{margin:0;color:#5b6678;line-height:1.55}}
+</style></head><body><main><div class="icon">{icon}</div><h1>{title}</h1><p>{detail}</p></main></body></html>""".encode("utf-8")
+    handler.send_response(200)
+    handler.send_header("Content-Type", "text/html; charset=utf-8")
+    handler.send_header("Content-Length", str(len(body)))
+    handler.send_header("Cache-Control", "no-store")
+    handler.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'")
+    handler.send_header("Referrer-Policy", "no-referrer")
+    handler.send_header("X-Content-Type-Options", "nosniff")
+    handler.send_header("X-Frame-Options", "DENY")
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
 def _share_estimate_observation(result: dict, *, individual_id: str) -> dict:
     """Copy safe Estimate metadata into Operations for non-QBO users."""
 
@@ -164,6 +197,9 @@ def route_quickbooks(
     body: dict,
     paths: AppPaths,
 ) -> bool:
+    if method == "GET" and path == "/api/quickbooks/complete":
+        _send_oauth_completion(handler)
+        return True
     if method == "GET" and path == "/api/quickbooks/status":
         _send_json(handler, quickbooks_service.get_status(paths))
         return True
@@ -219,6 +255,9 @@ def route_quickbooks(
             handler,
             qb_production_preview_service.create_baseline_snapshot(paths, body.get("label", "")),
         )
+        return True
+    if method == "POST" and path == "/api/quickbooks/connect":
+        _send_json(handler, quickbooks_service.open_authorization_in_private_browser(paths))
         return True
     if method == "POST" and path == "/api/quickbooks/production-preview/settings":
         _send_json(
@@ -457,7 +496,11 @@ def _handle_callback(handler: BaseHTTPRequestHandler, paths: AppPaths) -> bool:
 
     if error:
         # User declined or Intuit returned an error. Never echo it as HTML.
-        _redirect(handler, "/?qb=error")
+        profile = quickbooks_service.cancel_authorization(state)
+        if profile == quickbooks_service.PRODUCTION_PREVIEW_PROFILE:
+            _redirect(handler, "/?qb=error")
+        else:
+            _redirect(handler, "/api/quickbooks/complete?status=error")
         return True
 
     result = quickbooks_service.complete_authorization(paths, code=code, realm_id=realm_id, state=state)
@@ -471,5 +514,6 @@ def _handle_callback(handler: BaseHTTPRequestHandler, paths: AppPaths) -> bool:
             from ..services import qb_sync_service
 
             qb_sync_service.request_background_sync()
-        _redirect(handler, "/?qb=connected" if result.get("ok") else "/?qb=error")
+        status = "connected" if result.get("ok") else "error"
+        _redirect(handler, f"/api/quickbooks/complete?status={status}")
     return True

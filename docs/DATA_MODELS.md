@@ -88,6 +88,7 @@ class IndividualUnit:
     existing_year: str = ""    # optional replaced-vehicle display metadata
     existing_make: str = ""
     existing_model: str = ""
+    existing_color: str = ""
     existing_build_type: str = ""
     existing_unit_number: str = ""
     existing_vin: str = ""

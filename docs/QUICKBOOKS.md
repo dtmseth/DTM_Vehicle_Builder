@@ -92,7 +92,10 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
   workspace root, managed **directly** (NOT via `config_service`/SharePoint mirror).
 - `app/routes/quickbooks.py` — all routes; every response sets `Cache-Control: no-store`;
   callback is **302-only** (never echoes code/token).
-- `ui/index.html` + `ui/js/settings/quickbooks.js` — Settings → General → QuickBooks tab.
+- `ui/index.html` + `ui/js/settings/quickbooks.js` — Settings → General → QuickBooks tab. Managed
+  authorization opens in a private window of a supported system browser while Builder polls for
+  completion. This avoids reusing a personal Intuit session, and Intuit credentials are never
+  entered into the embedded app webview.
 - `relay/` — hosted HTTPS OAuth relay (Netlify primary, Vercel alt). The production relay is live at
   `dtmvehiclebuilder.netlify.app`. Its `qb-token` function holds the shared Intuit app secret only
   in Netlify's protected environment; it never persists user tokens. See `relay/DEPLOY.md`.

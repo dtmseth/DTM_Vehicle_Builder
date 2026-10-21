@@ -183,6 +183,7 @@ def individual_existing_vehicle_block(individual: IndividualUnit) -> dict[str, s
         "YEAR": str(individual.existing_year or "").strip(),
         "MAKE": str(individual.existing_make or "").strip(),
         "MODEL": str(individual.existing_model or "").strip(),
+        "COLOR": str(individual.existing_color or "").strip(),
         "BUILD TYPE": str(individual.existing_build_type or "").strip(),
         "UNIT ID": str(individual.existing_unit_number or "").strip(),
         "VIN": str(individual.existing_vin or "").strip(),

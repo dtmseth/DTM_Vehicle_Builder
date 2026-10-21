@@ -5,6 +5,9 @@ let _ptQuoteSearchTimer = null;
 let _ptQuoteSearchRevision = 0;
 let _ptQuoteEditorReadOnly = false;
 let _ptQuoteEditorNeedsReconcile = false;
+let _ptIndModalDirty = false;
+let _ptIndModalDirtyWired = false;
+let _ptIndModalBuybackRevision = 0;
 
 function _ptQuoteMatchLabel(ref) {
   if (ref.match_status === "linked") {
@@ -21,17 +24,17 @@ function _ptRenderQuoteEditor() {
   const list = $("ind-edit-quotes-list");
   if (!list) return;
   if (!_ptQuoteEditorRefs.length) {
-    list.innerHTML = `<span class="proj-unit-quote-meta">No quote numbers recorded for this unit.</span>`;
+    list.innerHTML = `<div class="proj-unit-quotes-empty"><strong>No quotes connected</strong><span>Add a quote number below so it stays with this vehicle.</span></div>`;
   } else {
     list.innerHTML = _ptQuoteEditorRefs.map(ref => `
       <div class="proj-unit-quote${ref.state === "obsolete" ? " proj-unit-quote--obsolete" : ""}">
         <div class="proj-unit-quote-copy">
-          <strong class="proj-unit-quote-number">${esc(ref.quote_number)}</strong>
-          <span class="proj-unit-quote-meta">${esc(ref.state === "obsolete" ? `Obsolete · ${_ptQuoteMatchLabel(ref)}` : _ptQuoteMatchLabel(ref))}</span>
+          <div class="proj-unit-quote-title"><strong class="proj-unit-quote-number">${esc(ref.quote_number)}</strong><span class="proj-unit-quote-state">${ref.state === "obsolete" ? "Obsolete" : "Current"}</span></div>
+          <span class="proj-unit-quote-meta">${esc(_ptQuoteMatchLabel(ref))}</span>
         </div>
         ${_ptQuoteEditorReadOnly ? "" : `<div class="proj-unit-quote-actions">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="PT_toggleQuoteReference('${esc(ref.reference_id)}')">${ref.state === "obsolete" ? "Restore" : "Mark obsolete"}</button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="PT_removeQuoteReference('${esc(ref.reference_id)}')">Remove</button>
+          <button type="button" class="proj-unit-quote-action" onclick="PT_toggleQuoteReference('${esc(ref.reference_id)}')">${ref.state === "obsolete" ? "Restore" : "Mark obsolete"}</button>
+          <button type="button" class="proj-unit-quote-action proj-unit-quote-action--remove" onclick="PT_removeQuoteReference('${esc(ref.reference_id)}')">Remove</button>
         </div>`}
       </div>`).join("");
   }
@@ -60,6 +63,7 @@ function _ptAddQuoteReference(values) {
   if (input) input.value = "";
   $("ind-edit-quote-search-results")?.replaceChildren();
   if ($("ind-edit-quote-search-status")) $("ind-edit-quote-search-status").textContent = "Quote added. Save Details to keep it with this unit.";
+  _ptIndModalDirty = true;
   _ptRenderQuoteEditor();
 }
 
@@ -70,12 +74,14 @@ window.PT_toggleQuoteReference = function (referenceId) {
   if (ref.state === "current" && ref.match_status !== "linked") {
     _ptQuoteEditorNeedsReconcile = true;
   }
+  _ptIndModalDirty = true;
   _ptRenderQuoteEditor();
 };
 
 window.PT_removeQuoteReference = function (referenceId) {
   if (_ptQuoteEditorReadOnly) return;
   _ptQuoteEditorRefs = _ptQuoteEditorRefs.filter(item => item.reference_id !== referenceId);
+  _ptIndModalDirty = true;
   _ptRenderQuoteEditor();
 };
 
@@ -126,9 +132,8 @@ async function _ptSearchQuoteNumbers() {
       : "No matching Estimate was found. You can still add the number and Builder will check again later.";
     results.innerHTML = rows.map(row => {
       const unavailable = !!row.linked_elsewhere;
-      const label = `${row.number || row.id} · ${row.customer || "Customer not recorded"} · ${row.date || "Undated"}${row.status ? ` · ${row.status}` : ""}${unavailable ? " · Linked to another build" : ""}`;
       const encoded = encodeURIComponent(JSON.stringify(row)).replace(/'/g, "%27");
-      return `<button type="button" class="btn btn-secondary btn-sm" ${unavailable ? "disabled" : ""} onclick="PT_selectQuoteSearchResult('${encoded}')">${esc(label)}</button>`;
+      return `<button type="button" class="proj-unit-quote-result" ${unavailable ? "disabled" : ""} onclick="PT_selectQuoteSearchResult('${encoded}')"><strong>${esc(row.number || row.id)}</strong><span>${esc([row.customer || "Customer not recorded", row.date || "Undated", row.status || ""].filter(Boolean).join(" · "))}</span>${unavailable ? `<small>Already linked to another build</small>` : `<b aria-hidden="true">›</b>`}</button>`;
     }).join("");
   } catch (_) {
     if (revision === _ptQuoteSearchRevision && status) {
@@ -171,21 +176,114 @@ window.PT_reconcileQuoteReferences = async function () {
   }
 };
 
-function _ptFillIndModal(vm, ind, title) {
+function _ptFillIndModal(unit, ind, title) {
   $("ind-edit-modal-title").textContent = title;
+  $("ind-edit-group-vehicle").textContent = _ptVehicleDisplayName(unit);
   $("ind-edit-unit-number").value   = ind.unit_number          || "";
-  $("ind-edit-year").value          = ind.year                 || "";
-  $("ind-edit-make").value          = vm.make  || ind.make     || "";
-  $("ind-edit-model").value         = vm.model || ind.model    || "";
   $("ind-edit-color").value         = ind.color                || "";
   $("ind-edit-vin").value           = ind.vin                  || "";
   $("ind-edit-existing-year").value = ind.existing_year        || "";
   $("ind-edit-existing-make").value = ind.existing_make        || "";
   $("ind-edit-existing-model").value = ind.existing_model      || "";
-  $("ind-edit-existing-build-type").value = ind.existing_build_type || "";
+  $("ind-edit-existing-color").value = ind.existing_color      || "";
   $("ind-edit-existing-unit-number").value = ind.existing_unit_number || "";
   $("ind-edit-existing-vin").value  = ind.existing_vin         || "";
   $("ind-edit-notes").value         = ind.notes                || "";
+}
+
+function _ptWireIndModalDirtyState() {
+  if (_ptIndModalDirtyWired) return;
+  const modal = $("ind-edit-modal");
+  if (!modal) return;
+  const markDirty = event => {
+    if (_ptQuoteEditorReadOnly || !modal.classList.contains("open")) return;
+    if (event.target.closest("button")) return;
+    _ptIndModalDirty = true;
+  };
+  modal.addEventListener("input", markDirty);
+  modal.addEventListener("change", markDirty);
+  _ptIndModalDirtyWired = true;
+}
+
+function _ptRenderIndModalSelector(unit, activeId) {
+  const shell = $("ind-edit-vehicle-selector-shell");
+  const host = $("ind-edit-vehicle-selector");
+  if (!shell || !host) return;
+  const individuals = unit?.individuals || [];
+  shell.hidden = !_PT.indModalFromDetail || individuals.length < 2;
+  if (shell.hidden) {
+    host.replaceChildren();
+    return;
+  }
+  host.innerHTML = individuals.map((individual, index) => {
+    const active = individual.individual_id === activeId;
+    const label = _ptUnitLabel(unit, individual, index);
+    const detail = individual.vin
+      ? `VIN …${String(individual.vin).slice(-6)}`
+      : individual.color || "Details not entered";
+    return `<button type="button" role="tab" aria-selected="${active ? "true" : "false"}" class="vehicle-details-selector-option${active ? " active" : ""}" onclick="PT_selectIndModalVehicle('${esc(individual.individual_id)}')"><strong>${esc(label)}</strong><span>${esc(detail)}</span></button>`;
+  }).join("");
+}
+
+function _ptBuybackAmount(record) {
+  const amount = String(record?.sale_amount || "").trim();
+  return amount ? `$${amount.replace(/^\$/, "")}` : "Sale amount not entered";
+}
+
+function _ptRenderIndModalBuyback(record) {
+  const host = $("ind-edit-buyback-content");
+  if (!host) return;
+  if (!record) {
+    host.innerHTML = `<div><span>Buyback / sale record</span><strong>No record created yet</strong><small>Create the legal paper record for this existing vehicle when it is purchased or sold.</small></div>${_ptCanEditProjects() ? `<button type="button" class="btn btn-secondary btn-sm" onclick="PT_openIndModalVehicleSale()">Create record</button>` : ""}`;
+    return;
+  }
+  const vehicle = [record.vehicle_year, record.vehicle_make, record.vehicle_model].filter(Boolean).join(" ") || "Vehicle details not entered";
+  const status = record.date_sold
+    ? `Sold ${record.date_sold}${record.buyer_name ? ` to ${record.buyer_name}` : ""}`
+    : record.dvs_flagged_resale_date ? `Held for resale since ${record.dvs_flagged_resale_date}` : "Sale is not recorded yet";
+  const details = [record.quote_number ? `Quote ${record.quote_number}` : "", record.date_sold ? _ptBuybackAmount(record) : ""].filter(Boolean).join(" · ");
+  host.innerHTML = `<div><span>Buyback / sale record</span><strong>${esc(vehicle)}</strong><small>${esc(status)}${details ? ` · ${esc(details)}` : ""}</small></div><button type="button" class="btn btn-secondary btn-sm" onclick="PT_openIndModalVehicleSale()">Open record</button>`;
+}
+
+async function _ptLoadIndModalBuyback(projectId, individualId) {
+  const section = $("ind-edit-buyback");
+  const host = $("ind-edit-buyback-content");
+  if (!section || !host) return;
+  section.hidden = !_PT.indModalFromDetail;
+  if (section.hidden) return;
+  const revision = ++_ptIndModalBuybackRevision;
+  host.innerHTML = `<div><span>Buyback / sale record</span><strong>Checking for a linked record…</strong></div>`;
+  try {
+    const result = await api("/api/vehicle-sales/lookup", {
+      project_id: projectId,
+      individual_id: individualId,
+    });
+    if (revision !== _ptIndModalBuybackRevision || !host.isConnected) return;
+    if (!result?.ok) throw new Error(result?.error || "Record lookup failed");
+    _ptRenderIndModalBuyback(result.record || null);
+  } catch (_) {
+    if (revision === _ptIndModalBuybackRevision) {
+      host.innerHTML = `<div><span>Buyback / sale record</span><strong>Record status unavailable</strong><small>You can still open the buyback / sale workspace.</small></div>${_ptCanEditProjects() ? `<button type="button" class="btn btn-secondary btn-sm" onclick="PT_openIndModalVehicleSale()">Open workspace</button>` : ""}`;
+    }
+  }
+}
+
+function _ptApplyIndModalFields(unit, ind) {
+  const identity = _ptVehicleIdentity(unit);
+  ind.unit_number          = $("ind-edit-unit-number").value.trim();
+  ind.year                 = identity.model_year || ind.year || "";
+  ind.make                 = identity.make || "";
+  ind.model                = identity.model || "";
+  ind.color                = $("ind-edit-color").value.trim();
+  ind.vin                  = $("ind-edit-vin").value.trim();
+  ind.existing_year        = $("ind-edit-existing-year").value.trim();
+  ind.existing_make        = $("ind-edit-existing-make").value.trim();
+  ind.existing_model       = $("ind-edit-existing-model").value.trim();
+  ind.existing_color       = $("ind-edit-existing-color").value.trim();
+  ind.existing_unit_number = $("ind-edit-existing-unit-number").value.trim();
+  ind.existing_vin         = $("ind-edit-existing-vin").value.trim();
+  ind.notes                = $("ind-edit-notes").value.trim();
+  ind.quote_references     = _ptQuoteEditorRefs.map(ref => ({...ref}));
 }
 
 function _ptSetIndividualModalReadOnly(readOnly) {
@@ -198,6 +296,8 @@ function _ptSetIndividualModalReadOnly(readOnly) {
   if (save) save.hidden = !!readOnly;
   const setup = $("ind-edit-setup-build");
   if (setup) setup.hidden = !!readOnly;
+  const changeGroup = $("ind-edit-change-group-vehicle");
+  if (changeGroup) changeGroup.hidden = !!readOnly || !_PT.indModalFromDetail;
 }
 
 // Opened from wizard Review tab
@@ -213,12 +313,16 @@ window.PT_openIndModal = function (uid, indIdx) {
   _ptEnsureIndividuals(u);
   const ind = u.individuals[indIdx];
   if (!ind) return;
-  const vm = _ptVehicleConfig(u.vehicle_model);
-  _ptFillIndModal(vm, ind, `Edit: ${_ptUnitLabel(u, ind, indIdx)}`);
+  _ptFillIndModal(u, ind, _ptUnitLabel(u, ind, indIdx));
   _ptSetIndividualModalReadOnly(false);
   _ptPrepareQuoteEditor(ind, false);
+  _ptRenderIndModalSelector(u, ind.individual_id);
+  $("ind-edit-buyback").hidden = true;
   const setupSec = $("ind-modal-setup-section");
-  if (setupSec) setupSec.style.display = "none";
+  if (setupSec) setupSec.hidden = true;
+  $("ind-edit-modal-status").textContent = "";
+  _ptWireIndModalDirtyState();
+  _ptIndModalDirty = false;
   $("ind-edit-modal").classList.add("open");
 };
 
@@ -238,21 +342,59 @@ window.PT_openDetailIndModal = function (projectId, unitId, individualId) {
   _PT.indModalIdx        = null;
   _PT.viewProject        = project;
   const indIdx = unit.individuals.indexOf(ind);
-  const vm     = _ptVehicleConfig(unit.vehicle_model);
-  _ptFillIndModal(vm, ind, `${_ptUnitLabel(unit, ind, indIdx)}`);
+  _ptFillIndModal(unit, ind, _ptUnitLabel(unit, ind, indIdx));
   const readOnly = !_ptCanEditProjects();
   _ptSetIndividualModalReadOnly(readOnly);
   _ptPrepareQuoteEditor(ind, readOnly);
+  _ptRenderIndModalSelector(unit, individualId);
   const setupSec = $("ind-modal-setup-section");
-  if (setupSec) setupSec.style.display = _ptCanEditProjects() ? "" : "none";
+  if (setupSec) setupSec.hidden = !_ptCanEditProjects();
+  $("ind-edit-modal-status").textContent = "";
+  _ptWireIndModalDirtyState();
+  _ptIndModalDirty = false;
   $("ind-edit-modal").classList.add("open");
+  _ptLoadIndModalBuyback(projectId, individualId);
 };
 
 window.PT_closeIndModal = function () {
   $("ind-edit-modal").classList.remove("open");
   _PT.indModalFromDetail = false;
+  _ptIndModalDirty = false;
+  _ptIndModalBuybackRevision += 1;
   const setupSec = $("ind-modal-setup-section");
-  if (setupSec) setupSec.style.display = "none";
+  if (setupSec) setupSec.hidden = true;
+};
+
+window.PT_selectIndModalVehicle = async function (individualId) {
+  if (!_PT.indModalFromDetail || individualId === _PT.indModalIndId) return;
+  const projectId = _PT.viewProject?.project_id;
+  const unitId = _PT.indModalUnitId;
+  if (!projectId || !unitId) return;
+  if (_ptIndModalDirty && _ptCanEditProjects()) {
+    await _ptSaveDetailIndModal(false, individualId);
+    return;
+  }
+  PT_openDetailIndModal(projectId, unitId, individualId);
+};
+
+window.PT_editIndUnitGroupVehicle = async function () {
+  if (!_PT.indModalFromDetail || !_ptCanEditProjects()) return;
+  const unitId = _PT.indModalUnitId;
+  if (_ptIndModalDirty && !(await _ptSaveDetailIndModal(false))) return;
+  else if ($("ind-edit-modal")?.classList.contains("open")) PT_closeIndModal();
+  _ptSetDetailTab("edit");
+  PT_enterEditMode(false, unitId);
+};
+
+window.PT_openIndModalVehicleSale = async function () {
+  if (!_PT.indModalFromDetail || !_ptCanEditProjects()) return;
+  const projectId = _PT.viewProject?.project_id;
+  const unitId = _PT.indModalUnitId;
+  const individualId = _PT.indModalIndId;
+  if (!projectId || !unitId || !individualId) return;
+  if (_ptIndModalDirty && !(await _ptSaveDetailIndModal(false))) return;
+  else if ($("ind-edit-modal")?.classList.contains("open")) PT_closeIndModal();
+  await PT_openVehicleSale(projectId, unitId, individualId);
 };
 
 window.PT_saveIndModal = function () {
@@ -267,51 +409,28 @@ window.PT_saveIndModal = function () {
   _ptEnsureIndividuals(u);
   const ind = u.individuals[_PT.indModalIdx];
   if (!ind) return;
-  const vm = _ptVehicleConfig(u.vehicle_model);
-  ind.unit_number          = $("ind-edit-unit-number").value.trim();
-  ind.year                 = $("ind-edit-year").value.trim();
-  ind.make                 = vm.make  || "";
-  ind.model                = vm.model || "";
-  ind.color                = $("ind-edit-color").value.trim();
-  ind.vin                  = $("ind-edit-vin").value.trim();
-  ind.existing_year        = $("ind-edit-existing-year").value.trim();
-  ind.existing_make        = $("ind-edit-existing-make").value.trim();
-  ind.existing_model       = $("ind-edit-existing-model").value.trim();
-  ind.existing_build_type  = $("ind-edit-existing-build-type").value.trim();
-  ind.existing_unit_number = $("ind-edit-existing-unit-number").value.trim();
-  ind.existing_vin         = $("ind-edit-existing-vin").value.trim();
-  ind.notes                = $("ind-edit-notes").value.trim();
-  ind.quote_references     = _ptQuoteEditorRefs.map(ref => ({...ref}));
+  _ptApplyIndModalFields(u, ind);
   PT_closeIndModal();
   _ptRenderReview();
 };
 
-async function _ptSaveDetailIndModal(thenBuild) {
+async function _ptSaveDetailIndModal(thenBuild, nextIndividualId = "") {
   const project = _PT.projects.find(p => p.project_id === _PT.viewProject?.project_id);
-  if (!project) { PT_closeIndModal(); return; }
+  if (!project) return false;
   const unit = project.build_units.find(u => u.unit_id === _PT.indModalUnitId);
-  if (!unit) { PT_closeIndModal(); return; }
+  if (!unit) return false;
   const ind = unit.individuals.find(i => i.individual_id === _PT.indModalIndId);
-  if (!ind) { PT_closeIndModal(); return; }
+  if (!ind) return false;
 
-  const vm = _ptVehicleConfig(unit.vehicle_model);
-  ind.unit_number          = $("ind-edit-unit-number").value.trim();
-  ind.year                 = $("ind-edit-year").value.trim();
-  ind.make                 = vm.make  || "";
-  ind.model                = vm.model || "";
-  ind.color                = $("ind-edit-color").value.trim();
-  ind.vin                  = $("ind-edit-vin").value.trim();
-  ind.existing_year        = $("ind-edit-existing-year").value.trim();
-  ind.existing_make        = $("ind-edit-existing-make").value.trim();
-  ind.existing_model       = $("ind-edit-existing-model").value.trim();
-  ind.existing_build_type  = $("ind-edit-existing-build-type").value.trim();
-  ind.existing_unit_number = $("ind-edit-existing-unit-number").value.trim();
-  ind.existing_vin         = $("ind-edit-existing-vin").value.trim();
-  ind.notes                = $("ind-edit-notes").value.trim();
+  const projectId = project.project_id;
+  const unitId = unit.unit_id;
+  const individualId = ind.individual_id;
+  _ptApplyIndModalFields(unit, ind);
   ind.notes_expected       = _PT.indModalOriginalNotes;
-  ind.quote_references     = _ptQuoteEditorRefs.map(ref => ({...ref}));
-
-  PT_closeIndModal();
+  const status = $("ind-edit-modal-status");
+  const saveButton = $("ind-edit-save");
+  if (status) status.textContent = nextIndividualId ? "Saving before switching vehicles…" : "Saving vehicle details…";
+  if (saveButton) saveButton.disabled = true;
 
   try {
     const res = await api("/api/project/save", {
@@ -327,26 +446,40 @@ async function _ptSaveDetailIndModal(thenBuild) {
       _ptRenderOverview(_PT.viewProject);
       _ptRenderEditTab(_PT.viewProject, false);
       _ptRenderBuildsTab(_PT.viewProject);
+      PT_closeIndModal();
+      if (nextIndividualId) {
+        PT_openDetailIndModal(projectId, unitId, nextIndividualId);
+        return true;
+      }
     } else {
       toast(res.error || "Save failed", "error");
+      if (status) status.textContent = res.error || "Vehicle details could not be saved.";
+      _ptIndModalDirty = true;
+      return false;
     }
   } catch (e) {
     toast(e.message || "Save failed", "error");
+    if (status) status.textContent = e.message || "Vehicle details could not be saved.";
+    _ptIndModalDirty = true;
+    return false;
+  } finally {
+    if (saveButton) saveButton.disabled = false;
   }
 
   if (thenBuild) {
-    const proj = _PT.projects.find(p => p.project_id === _PT.viewProject?.project_id);
-    if (!proj) return;
-    const unitIdx = proj.build_units.findIndex(u => u.unit_id === _PT.indModalUnitId);
-    if (unitIdx === -1) return;
+    const proj = _PT.projects.find(p => p.project_id === projectId);
+    if (!proj) return true;
+    const unitIdx = proj.build_units.findIndex(u => u.unit_id === unitId);
+    if (unitIdx === -1) return true;
     const theUnit = proj.build_units[unitIdx];
-    const theInd  = theUnit.individuals.find(i => i.individual_id === _PT.indModalIndId);
+    const theInd  = theUnit.individuals.find(i => i.individual_id === individualId);
     if (theInd?.draft_id) {
       await _ptShowBuildEditor(theInd.draft_id, theUnit, proj, "overview", theInd);
     } else {
-      PT_startBuildIndividual(proj.project_id, unitIdx, _PT.indModalIndId);
+      PT_startBuildIndividual(proj.project_id, unitIdx, individualId);
     }
   }
+  return true;
 }
 
 window.PT_setupBuildFromModal = function () {

@@ -77,6 +77,8 @@ def _fakes(monkeypatch):
     monkeypatch.setattr(svc, "_store", lambda _profile=svc._DEFAULT_PROFILE: store)
     monkeypatch.setattr(svc, "QuickBooksOAuthClient", _FakeClient)
     monkeypatch.setattr(svc, "_pending_state", None, raising=False)
+    monkeypatch.setattr(svc, "_authorization_status", "idle")
+    monkeypatch.setattr(svc, "_authorization_error", "")
     return store
 
 
@@ -138,6 +140,68 @@ def test_auth_url_sets_pending_state(paths):
     assert r["ok"] is True
     state = r["url"].split("state=")[1].split("&")[0]
     assert svc._pending_state == state
+
+
+def test_managed_connect_opens_private_browser_without_returning_auth_url(paths, monkeypatch):
+    opened = []
+    monkeypatch.setattr(svc, "_open_private_browser", lambda url: opened.append(url) or "Edge")
+
+    result = svc.open_authorization_in_private_browser(paths)
+
+    assert result == {"ok": True, "opened": True, "private": True, "browser": "Edge"}
+    assert opened and opened[0].startswith("https://appcenter.example/connect?")
+    assert svc._pending_state
+    assert svc.get_status(paths)["authorization_status"] == "pending"
+
+
+def test_managed_connect_clears_pending_state_when_browser_cannot_open(paths, monkeypatch):
+    monkeypatch.setattr(svc, "_open_private_browser", lambda _url: "")
+
+    result = svc.open_authorization_in_private_browser(paths)
+
+    assert result["ok"] is False
+    assert "private QuickBooks sign-in" in result["error"]
+    assert svc._pending_state is None
+    assert svc.get_status(paths)["authorization_status"] == "error"
+
+
+def test_cancelled_managed_connect_surfaces_immediately_to_status(paths, monkeypatch):
+    monkeypatch.setattr(svc, "_open_private_browser", lambda _url: "Edge")
+    assert svc.open_authorization_in_private_browser(paths)["ok"] is True
+    state = svc._pending_state
+
+    assert svc.cancel_authorization(state) == svc._DEFAULT_PROFILE
+
+    status = svc.get_status(paths)
+    assert status["authorization_status"] == "error"
+    assert status["authorization_error"] == "QuickBooks sign-in was cancelled."
+
+
+def test_private_browser_launcher_keeps_url_and_private_flag_as_separate_arguments(
+    tmp_path, monkeypatch
+):
+    executable = tmp_path / "browser"
+    executable.touch()
+    launches = []
+    monkeypatch.setattr(
+        svc,
+        "_private_browser_candidates",
+        lambda: [("Test Browser", executable, "--private-window")],
+    )
+    monkeypatch.setattr(
+        svc.subprocess,
+        "Popen",
+        lambda command, **kwargs: launches.append((command, kwargs)),
+    )
+
+    browser = svc._open_private_browser("https://example.test/oauth?state=one")
+
+    assert browser == "Test Browser"
+    assert launches[0][0] == [
+        str(executable),
+        "--private-window",
+        "https://example.test/oauth?state=one",
+    ]
 
 
 def test_state_validation_is_single_use(paths):

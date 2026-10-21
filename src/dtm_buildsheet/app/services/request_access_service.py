@@ -33,12 +33,17 @@ def required_capabilities(method: str, raw_path: str) -> frozenset[Capability]:
         or path.startswith("/api/update/")
         or path.startswith("/api/operations/")
         or path == "/api/calendar" or path.startswith("/api/calendar/")
-        or path == "/api/quickbooks/callback"
+        or path in {"/api/quickbooks/callback", "/api/quickbooks/complete"}
     ):
         return frozenset()
 
     if path.startswith("/api/quickbooks/"):
         return _quickbooks_capabilities(method, path)
+
+    # Buyback / sale records contain purchase and buyer information.  Staff
+    # and Admin both have projects.edit; Shop deliberately does not.
+    if path.startswith("/api/vehicle-sales"):
+        return frozenset({Capability.PROJECTS_EDIT})
 
     if method == "GET":
         if path == "/api/uploads/status":

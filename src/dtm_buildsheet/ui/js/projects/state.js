@@ -297,7 +297,7 @@ function _ptEnsureIndividuals(u) {
       unit_number: "", year: _ptCurrentBuildYear(),
       make: vm.make || "", model: vm.model || "",
       color: "", vin: "",
-      existing_year: "", existing_make: "", existing_model: "",
+      existing_year: "", existing_make: "", existing_model: "", existing_color: "",
       existing_build_type: "", existing_unit_number: "", existing_vin: "",
       notes: "", quote_references: [], draft_id: null,
     });
