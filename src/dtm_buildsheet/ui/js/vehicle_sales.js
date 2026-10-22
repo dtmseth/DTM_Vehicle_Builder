@@ -137,7 +137,6 @@ function _vehicleSaleOpenEditor(record) {
   $("vehicle-sales-link").hidden = !linked;
   $("vehicle-sales-link-label").textContent = [record.project_agency, record.vehicle_unit_number ? `Unit ${record.vehicle_unit_number}` : ""].filter(Boolean).join(" · ") || "Existing vehicle";
   _vehicleSaleSetSaveState("Saved", "saved");
-  _vehicleSaleRefreshPurchaseState();
   _vehicleSaleScheduleMatch({immediate: true});
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -165,13 +164,6 @@ function _vehicleSaleSetSaveState(text, state = "") {
   if (!status) return;
   status.textContent = text;
   status.dataset.state = state;
-}
-
-function _vehicleSaleRefreshPurchaseState() {
-  const via = document.querySelector("input[name='vehicle-sales-purchase-via']:checked")?.value || "";
-  const invoiceNumber = document.querySelector("[data-sale-field='quote_number']")?.value.trim() || "";
-  $("vehicle-sales-credit-note")?.closest(".vehicle-sales-credit-row")
-    ?.classList.toggle("is-required", via === "account_credit" && !invoiceNumber);
 }
 
 function _vehicleSaleField(name) {
@@ -374,14 +366,12 @@ function _vehicleSaleWire() {
   $("vehicle-sales-search")?.addEventListener("input", _vehicleSaleRenderList);
   $("vehicle-sales-done")?.addEventListener("click", _vehicleSaleFinishEditing);
   $("vehicle-sales-form")?.addEventListener("input", event => {
-    _vehicleSaleRefreshPurchaseState();
     _vehicleSaleQueueSave();
     if (["vin", "purchased_from", "vehicle_unit_number"].includes(event.target.dataset.saleField)) {
       _vehicleSaleScheduleMatch();
     }
   });
   $("vehicle-sales-form")?.addEventListener("change", event => {
-    _vehicleSaleRefreshPurchaseState();
     _vehicleSaleQueueSave();
     if (["vin", "purchased_from", "vehicle_unit_number"].includes(event.target.dataset.saleField)) {
       _vehicleSaleScheduleMatch();

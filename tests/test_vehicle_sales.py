@@ -49,6 +49,7 @@ def test_vehicle_sale_save_replaces_one_fillable_pdf_and_keeps_record(tmp_path):
         "vehicle_model": "Tahoe",
         "vin": "1GNSKDEC0KR123456",
         "purchase_via": "account_credit",
+        "purchase_via_other": "Internal account credit adjustment",
         "quote_number": "Q-1042",
         "dvs_flagged_resale_date": "2027-03-08",
         "buyer_name": "Private buyer",
@@ -68,7 +69,12 @@ def test_vehicle_sale_save_replaces_one_fillable_pdf_and_keeps_record(tmp_path):
     assert widgets["prepared_by"].border_color == [0.0, 0.0, 0.0]
     assert widgets["date_received"].field_value == "03/04/2027"
     assert widgets["quote_number"].field_value == "Q-1042"
+    assert 7 <= widgets["purchase_via_other"].text_fontsize < 10
     assert "INVOICE NUMBER" in " ".join(page.get_text() for page in document)
+    assert "OPTIONALVIN" not in " ".join(page.get_text() for page in document)
+    assert "FILLABLE PDF" not in " ".join(page.get_text() for page in document)
+    assert "LETTER  |  1 PAGE" not in " ".join(page.get_text() for page in document)
+    assert "Complete electronically" not in " ".join(page.get_text() for page in document)
     assert "project_agency" not in widgets
     assert "vehicle_unit_number" in widgets
     assert "DTM Fleet Service" in " ".join(page.get_text() for page in document)
@@ -235,7 +241,8 @@ def test_vehicle_sale_workspace_is_staff_admin_only_and_vehicle_cards_use_focuse
     assert "DVS Date flagged held for resale" in html
     assert "Invoice number" in html
     assert 'data-sale-field="quote_number"' in html
-    assert "An invoice number is required" in html
+    assert "Add the related invoice number when it is available" in html
+    assert "required for account credit" not in html
     assert "Open SharePoint folder" in html
     assert 'id="vehicle-sales-print-pdf"' in html
     assert "vehicle-sales-more-menu" in html
@@ -273,7 +280,7 @@ def test_vehicle_sale_workspace_is_staff_admin_only_and_vehicle_cards_use_focuse
     assert 'id="vehicle-sales-record-year"' not in html
     assert 'id="vehicle-sales-purchased-from"' in html
     assert "_ptWireAgencySearch(" in sales
-    assert 'via === "account_credit" && !invoiceNumber' in sales
+    assert "_vehicleSaleRefreshPurchaseState" not in sales
     assert "other.disabled" not in sales
     assert "`Invoice ${record.quote_number}`" in individual_modal
     assert "Record &amp; optional project link" not in html

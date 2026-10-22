@@ -557,7 +557,13 @@ def _text_widget(page: fitz.Page, record: dict[str, Any], name: str, rect: fitz.
         value = f"{month}/{day}/{year}"
     widget.field_value = value
     widget.text_font = "Helv"
-    widget.text_fontsize = 10
+    font_size = 10.0
+    if value and not multiline:
+        available_width = max(1.0, rect.width - 6.0)
+        text_width = fitz.get_text_length(value, fontname="helv", fontsize=font_size)
+        if text_width > available_width:
+            font_size = max(7.0, font_size * available_width / text_width)
+    widget.text_fontsize = font_size
     widget.text_color = _rgb(0x000000)
     widget.fill_color = _rgb(0xFFFFFF)
     widget.border_color = _rgb(0x000000)
@@ -601,11 +607,8 @@ def render_vehicle_sale_pdf(record: dict[str, Any], target: Path, paths: AppPath
     page.insert_text((168, 49), "VEHICLE BUYBACK / SALE", fontsize=18, fontname="hebo", color=_rgb(0x000000))
     page.insert_text((168, 65), "USED / EXISTING VEHICLE RECORD", fontsize=9, fontname="hebo", color=_rgb(0x000000))
     page.draw_line((36, 79), (576, 79), color=_rgb(0x000000), width=2)
-    page.draw_rect(fitz.Rect(36, 87, 576, 104), color=_rgb(0x000000), fill=_rgb(0xFFFFFF), width=0.9)
-    page.insert_text((43, 99), "Complete electronically or print and write by hand.", fontsize=8.2, fontname="helv", color=_rgb(0x000000))
-    page.insert_text((488, 99), "LETTER  |  1 PAGE", fontsize=8.2, fontname="hebo", color=_rgb(0x000000))
 
-    y = _section(page, "01", "RECORD DETAILS", 112)
+    y = _section(page, "01", "RECORD DETAILS", 88)
     _label(page, "PREPARED BY", 36, y)
     _label(page, "DATE RECEIVED", 408, y)
     _label(page, "MM/DD/YYYY", 523, y, size=6.8, bold=False)
@@ -624,7 +627,7 @@ def render_vehicle_sale_pdf(record: dict[str, Any], target: Path, paths: AppPath
     _text_widget(page, record, "vehicle_color", fitz.Rect(480, y + 5, 576, y + 35))
     y += 43
     _label(page, "UNIT NUMBER", 36, y)
-    _label(page, "OPTIONAL", 129, y, size=6.8, bold=False)
+    _label(page, "OPTIONAL", 103, y, size=6.8, bold=False)
     _label(page, "VIN", 157, y)
     _label(page, "ODOMETER / MILES", 420, y)
     _text_widget(page, record, "vehicle_unit_number", fitz.Rect(36, y + 5, 145, y + 35))
@@ -646,11 +649,11 @@ def render_vehicle_sale_pdf(record: dict[str, Any], target: Path, paths: AppPath
     _text_widget(page, record, "purchase_via_other", fitz.Rect(445, y + 5, 576, y + 35))
     y += 45
     _label(page, "INVOICE NUMBER", 36, y)
-    _label(page, "REQUIRED FOR ACCOUNT CREDIT", 157, y, size=6.8, bold=False)
+    _label(page, "OPTIONAL", 157, y, size=6.8, bold=False)
     _text_widget(page, record, "quote_number", fitz.Rect(36, y + 5, 266, y + 35))
     page.draw_rect(fitz.Rect(278, y + 5, 576, y + 35), color=_rgb(0x000000), fill=_rgb(0xFFFFFF), width=1.1)
     page.insert_text((288, y + 18), "ACCOUNT CREDIT", fontsize=8.2, fontname="hebo", color=_rgb(0x000000))
-    page.insert_text((288, y + 30), "Enter the related invoice number before printing.", fontsize=7.8, fontname="helv", color=_rgb(0x000000))
+    page.insert_text((288, y + 30), "Add the related invoice number when available.", fontsize=7.8, fontname="helv", color=_rgb(0x000000))
 
     y = _section(page, "03", "TITLE, DTM & DVS", y + 43)
     _checkbox(page, record, "title_signed_dtm", 37, y + 9)
@@ -683,7 +686,6 @@ def render_vehicle_sale_pdf(record: dict[str, Any], target: Path, paths: AppPath
 
     page.draw_line((36, 744), (576, 744), color=_rgb(0x000000), width=1)
     page.insert_text((36, 758), "DTM Fleet Service  |  Vehicle Buyback / Sale", fontsize=7.2, fontname="hebo", color=_rgb(0x000000))
-    page.insert_text((508, 758), "FILLABLE PDF", fontsize=7.2, fontname="hebo", color=_rgb(0x000000))
     document.set_metadata({"title": "DTM Fleet Service - Vehicle Buyback / Sale"})
     temporary = target.with_name(target.name + ".tmp.pdf")
     document.save(str(temporary), garbage=4, deflate=True)
