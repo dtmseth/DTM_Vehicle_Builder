@@ -169,10 +169,9 @@ function _vehicleSaleSetSaveState(text, state = "") {
 
 function _vehicleSaleRefreshPurchaseState() {
   const via = document.querySelector("input[name='vehicle-sales-purchase-via']:checked")?.value || "";
+  const invoiceNumber = document.querySelector("[data-sale-field='quote_number']")?.value.trim() || "";
   $("vehicle-sales-credit-note")?.closest(".vehicle-sales-credit-row")
-    ?.classList.toggle("is-required", via === "account_credit");
-  const other = document.querySelector("[data-sale-field='purchase_via_other']");
-  if (other) other.disabled = via !== "other";
+    ?.classList.toggle("is-required", via === "account_credit" && !invoiceNumber);
 }
 
 function _vehicleSaleField(name) {

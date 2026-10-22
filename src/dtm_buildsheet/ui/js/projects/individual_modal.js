@@ -241,7 +241,7 @@ function _ptRenderIndModalBuyback(record) {
   const status = record.date_sold
     ? `Sold ${record.date_sold}${record.buyer_name ? ` to ${record.buyer_name}` : ""}`
     : record.dvs_flagged_resale_date ? `Held for resale since ${record.dvs_flagged_resale_date}` : "Sale is not recorded yet";
-  const details = [record.quote_number ? `Quote ${record.quote_number}` : "", record.date_sold ? _ptBuybackAmount(record) : ""].filter(Boolean).join(" · ");
+  const details = [record.quote_number ? `Invoice ${record.quote_number}` : "", record.date_sold ? _ptBuybackAmount(record) : ""].filter(Boolean).join(" · ");
   host.innerHTML = `<div><span>Buyback / sale record</span><strong>${esc(vehicle)}</strong><small>${esc(status)}${details ? ` · ${esc(details)}` : ""}</small></div><button type="button" class="btn btn-secondary btn-sm" onclick="PT_openIndModalVehicleSale()">Open record</button>`;
 }
 

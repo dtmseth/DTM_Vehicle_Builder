@@ -68,6 +68,7 @@ def test_vehicle_sale_save_replaces_one_fillable_pdf_and_keeps_record(tmp_path):
     assert widgets["prepared_by"].border_color == [0.0, 0.0, 0.0]
     assert widgets["date_received"].field_value == "03/04/2027"
     assert widgets["quote_number"].field_value == "Q-1042"
+    assert "INVOICE NUMBER" in " ".join(page.get_text() for page in document)
     assert "project_agency" not in widgets
     assert "vehicle_unit_number" in widgets
     assert "DTM Fleet Service" in " ".join(page.get_text() for page in document)
@@ -111,6 +112,18 @@ def test_vehicle_sale_save_replaces_one_fillable_pdf_and_keeps_record(tmp_path):
     editable_after_print = fitz.open(pdf_path)
     assert len(list(editable_after_print[0].widgets() or [])) == 26
     editable_after_print.close()
+
+    with patch(
+        "dtm_buildsheet.app.services.vehicle_sale_service._print_pdf_windows",
+        return_value="Front Office",
+    ) as windows_print, patch(
+        "dtm_buildsheet.app.services.vehicle_sale_service.sys.platform", "win32",
+    ):
+        windows_result = print_record_pdf(created["record"]["record_id"], paths)
+    assert windows_result["ok"] is True
+    assert windows_result["printer_name"] == "Front Office"
+    assert windows_result["message"] == "Sent to Front Office"
+    windows_print.assert_called_once_with(Path(windows_result["spool_path"]))
 
     with pytest.raises(ValueError, match="DELETE RECORD"):
         delete_record(created["record"]["record_id"], "delete", paths, publish=False)
@@ -220,6 +233,9 @@ def test_vehicle_sale_workspace_is_staff_admin_only_and_vehicle_cards_use_focuse
 
     assert 'data-tab="vehicle-sales"' in html
     assert "DVS Date flagged held for resale" in html
+    assert "Invoice number" in html
+    assert 'data-sale-field="quote_number"' in html
+    assert "An invoice number is required" in html
     assert "Open SharePoint folder" in html
     assert 'id="vehicle-sales-print-pdf"' in html
     assert "vehicle-sales-more-menu" in html
@@ -257,6 +273,9 @@ def test_vehicle_sale_workspace_is_staff_admin_only_and_vehicle_cards_use_focuse
     assert 'id="vehicle-sales-record-year"' not in html
     assert 'id="vehicle-sales-purchased-from"' in html
     assert "_ptWireAgencySearch(" in sales
+    assert 'via === "account_credit" && !invoiceNumber' in sales
+    assert "other.disabled" not in sales
+    assert "`Invoice ${record.quote_number}`" in individual_modal
     assert "Record &amp; optional project link" not in html
     assert "<span>01</span> Record details" in html
     assert 'id="vehicle-sales-match-assistant"' in html

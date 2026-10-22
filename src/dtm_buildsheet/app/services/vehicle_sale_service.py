@@ -645,12 +645,12 @@ def render_vehicle_sale_pdf(record: dict[str, Any], target: Path, paths: AppPath
         _label(page, text, x + 20, y + 24, size=8.4, bold=False)
     _text_widget(page, record, "purchase_via_other", fitz.Rect(445, y + 5, 576, y + 35))
     y += 45
-    _label(page, "QUOTE NUMBER", 36, y)
+    _label(page, "INVOICE NUMBER", 36, y)
     _label(page, "REQUIRED FOR ACCOUNT CREDIT", 157, y, size=6.8, bold=False)
     _text_widget(page, record, "quote_number", fitz.Rect(36, y + 5, 266, y + 35))
     page.draw_rect(fitz.Rect(278, y + 5, 576, y + 35), color=_rgb(0x000000), fill=_rgb(0xFFFFFF), width=1.1)
     page.insert_text((288, y + 18), "ACCOUNT CREDIT", fontsize=8.2, fontname="hebo", color=_rgb(0x000000))
-    page.insert_text((288, y + 30), "Enter the related quote number before printing.", fontsize=7.8, fontname="helv", color=_rgb(0x000000))
+    page.insert_text((288, y + 30), "Enter the related invoice number before printing.", fontsize=7.8, fontname="helv", color=_rgb(0x000000))
 
     y = _section(page, "03", "TITLE, DTM & DVS", y + 43)
     _checkbox(page, record, "title_signed_dtm", 37, y + 9)
@@ -716,6 +716,127 @@ def _flattened_print_copy(source: Path, record_id: str) -> Path:
     return target
 
 
+def _windows_default_printer_name() -> str:
+    """Return the Windows default printer without relying on file associations."""
+    import ctypes
+    from ctypes import wintypes
+
+    winspool = ctypes.WinDLL("winspool.drv", use_last_error=True)
+    get_default_printer = winspool.GetDefaultPrinterW
+    get_default_printer.argtypes = [wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)]
+    get_default_printer.restype = wintypes.BOOL
+
+    required = wintypes.DWORD(0)
+    get_default_printer(None, ctypes.byref(required))
+    if not required.value:
+        raise OSError("No default printer is configured. Open the PDF to choose a printer.")
+    buffer = ctypes.create_unicode_buffer(required.value)
+    if not get_default_printer(buffer, ctypes.byref(required)):
+        error = ctypes.get_last_error()
+        raise OSError(error, "Windows could not read the default printer")
+    return buffer.value
+
+
+def _print_pdf_windows(source: Path) -> str:
+    """Rasterize a PDF and print it through Windows GDI.
+
+    ShellExecute's ``print`` verb requires an installed PDF application to own
+    the file association.  Printing page images to the printer device context
+    works on stock Windows even when no PDF application is registered.
+    """
+    import ctypes
+    from ctypes import wintypes
+    from PIL import ImageWin
+
+    class DOCINFOW(ctypes.Structure):
+        _fields_ = [
+            ("cbSize", ctypes.c_int),
+            ("lpszDocName", wintypes.LPCWSTR),
+            ("lpszOutput", wintypes.LPCWSTR),
+            ("lpszDatatype", wintypes.LPCWSTR),
+            ("fwType", wintypes.DWORD),
+        ]
+
+    printer_name = _windows_default_printer_name()
+    gdi32 = ctypes.WinDLL("gdi32", use_last_error=True)
+    gdi32.CreateDCW.argtypes = [
+        wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.LPCWSTR, ctypes.c_void_p,
+    ]
+    gdi32.CreateDCW.restype = wintypes.HDC
+    gdi32.DeleteDC.argtypes = [wintypes.HDC]
+    gdi32.DeleteDC.restype = wintypes.BOOL
+    gdi32.GetDeviceCaps.argtypes = [wintypes.HDC, ctypes.c_int]
+    gdi32.GetDeviceCaps.restype = ctypes.c_int
+    gdi32.StartDocW.argtypes = [wintypes.HDC, ctypes.POINTER(DOCINFOW)]
+    gdi32.StartDocW.restype = ctypes.c_int
+    gdi32.StartPage.argtypes = [wintypes.HDC]
+    gdi32.StartPage.restype = ctypes.c_int
+    gdi32.EndPage.argtypes = [wintypes.HDC]
+    gdi32.EndPage.restype = ctypes.c_int
+    gdi32.EndDoc.argtypes = [wintypes.HDC]
+    gdi32.EndDoc.restype = ctypes.c_int
+    gdi32.AbortDoc.argtypes = [wintypes.HDC]
+    gdi32.AbortDoc.restype = ctypes.c_int
+
+    printer_dc = gdi32.CreateDCW("WINSPOOL", printer_name, None, None)
+    if not printer_dc:
+        error = ctypes.get_last_error()
+        raise OSError(error, f"Windows could not connect to {printer_name}")
+
+    # HORZRES and VERTRES are the printable area's dimensions in device pixels.
+    printable_width = gdi32.GetDeviceCaps(printer_dc, 8)
+    printable_height = gdi32.GetDeviceCaps(printer_dc, 10)
+    document_started = False
+    document = None
+    try:
+        if printable_width <= 0 or printable_height <= 0:
+            raise OSError(f"{printer_name} did not report a printable page size")
+        info = DOCINFOW(
+            ctypes.sizeof(DOCINFOW),
+            "DTM Vehicle Buyback Sale",
+            None,
+            None,
+            0,
+        )
+        if gdi32.StartDocW(printer_dc, ctypes.byref(info)) <= 0:
+            error = ctypes.get_last_error()
+            raise OSError(error, f"Windows could not start a print job on {printer_name}")
+        document_started = True
+        document = fitz.open(source)
+        for page in document:
+            if gdi32.StartPage(printer_dc) <= 0:
+                error = ctypes.get_last_error()
+                raise OSError(error, f"Windows could not start a page on {printer_name}")
+            pixmap = page.get_pixmap(matrix=fitz.Matrix(2.5, 2.5), alpha=False)
+            image = Image.frombytes("RGB", (pixmap.width, pixmap.height), pixmap.samples)
+            scale = min(printable_width / image.width, printable_height / image.height)
+            width = max(1, round(image.width * scale))
+            height = max(1, round(image.height * scale))
+            left = (printable_width - width) // 2
+            top = (printable_height - height) // 2
+            ImageWin.Dib(image).draw(
+                printer_dc,
+                (left, top, left + width, top + height),
+            )
+            image.close()
+            if gdi32.EndPage(printer_dc) <= 0:
+                error = ctypes.get_last_error()
+                raise OSError(error, f"Windows could not finish a page on {printer_name}")
+        if gdi32.EndDoc(printer_dc) <= 0:
+            error = ctypes.get_last_error()
+            raise OSError(error, f"Windows could not submit the print job to {printer_name}")
+        document_started = False
+        return printer_name
+    except Exception:
+        if document_started:
+            gdi32.AbortDoc(printer_dc)
+        raise
+    finally:
+        if document is not None:
+            document.close()
+        gdi32.DeleteDC(printer_dc)
+
+
 def print_record_pdf(record_id: str, paths: AppPaths) -> dict[str, Any]:
     """Send a flattened copy of the current PDF to the default printer."""
     record = get_record(record_id, paths)
@@ -754,13 +875,13 @@ def print_record_pdf(record_id: str, paths: AppPaths) -> dict[str, Any]:
 
     if sys.platform == "win32":
         try:
-            os.startfile(str(print_target), "print")  # type: ignore[attr-defined]
+            printer_name = _print_pdf_windows(print_target)
             return {
                 "ok": True,
                 "path": str(target),
                 "spool_path": str(print_target),
-                "printer_name": "default printer",
-                "message": "Sent to the default printer",
+                "printer_name": printer_name,
+                "message": f"Sent to {printer_name}",
             }
         except Exception as exc:
             logger.exception("Could not print the vehicle sale PDF")
