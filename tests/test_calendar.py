@@ -648,13 +648,14 @@ def test_calendar_scheduled_cards_open_project_or_split_unit_and_show_vin_ending
 const fs=require('fs'),assert=require('assert'),source=fs.readFileSync(process.argv[1],'utf8');
 function element(){return {children:[],dataset:{},attributes:{},style:{setProperty(){}},
  append(child){this.children.push(child);},setAttribute(name,value){this.attributes[name]=value;}};}
-const document={createElement:element,addEventListener(){}},window={addEventListener(){}},state={view:'week',data:{split_projects:[]}},opened=[];
+const document={createElement:element,addEventListener(){}},window={addEventListener(){}},state={view:'week',data:{split_projects:[],settings:{teams:[{id:'team',strip_hours:6}]}}},opened=[];
 const openJob=id=>opened.push(['unit',id]),openProject=id=>opened.push(['project',id]);
 let editable=false,choice=true;const removed=[];
-const bookingSpan=()=>({start:0,end:1}),canEdit=()=>editable,label=x=>x,dateTime=x=>x,kinds={build:'Build'},text=x=>x;
+const bookingSpan=()=>({start:0,end:1}),canEdit=()=>editable,label=x=>x,dateTime=x=>x,kinds={build:'Build',strip_build:'Strip + build'},text=x=>x;
 const draggable=()=>{},dropTarget=()=>{};
 const askCalendar=async()=>choice,removeBooking=async(...args)=>removed.push(args);
 eval(source.slice(source.indexOf('  function statusEntries('),source.indexOf('  const bookingWarnings=')));
+eval(source.slice(source.indexOf('  function leadingSegments('),source.indexOf('  function bookingRows(')));
 eval(source.slice(source.indexOf('  function openScheduledBuild('),source.indexOf('  function renderWeek(')));
 const job={id:'u1',project_id:'p1',title:'Agency',team_name:'Team',kind:'build',vin:'1ABCDEFGH12345678',build_number:1,build_count:2};
 for(const view of ['week','month']){
@@ -676,6 +677,20 @@ for(const view of ['week','month']){
   assert(!blank.title.includes('VIN ending'));
  }
 }
+state.view='week';
+const stripCard=booking({...job,kind:'strip_build',team_id:'team',hours:71,strip_hours:6,build_hours:65,
+ strip_segments:[{date:'2026-09-17',start_hour:8,end_hour:14}]},[],['2026-09-17'],element());
+const stripMarker=stripCard.children.find(c=>c.className==='calendar-strip-segment');
+assert(stripMarker);assert(stripCard.className.includes('calendar-has-strip'));
+assert.equal(stripMarker.children[0].textContent,'6h STRIP');
+assert(!stripMarker.className.includes('calendar-strip-waiting'));
+assert(stripCard.title.includes('6h strip, 65h build'));
+assert(!stripCard.title.includes('71 labor hours'));
+const stripSummary=stripCard.children.find(c=>String(c.textContent||'').includes('65h build'));
+assert(stripSummary);assert(!stripSummary.textContent.includes('6h strip'));
+const waitingStrip=booking({...job,kind:'strip_build',team_id:'team',hours:71,strip_hours:6,build_hours:65,
+ blocked:['Waiting on vehicle'],strip_segments:[{date:'2026-09-17',start_hour:8,end_hour:14}]},[],['2026-09-17'],element());
+assert(waitingStrip.children.find(c=>String(c.className||'').includes('calendar-strip-segment')).className.includes('calendar-strip-waiting'));
 state.data.split_projects=[];
 booking({...job,custom:true},[],['2026-09-17'],element()).onclick();assert.deepEqual(opened.pop(),['unit','u1']);
 booking({...job,project_id:null},[],['2026-09-17'],element()).onclick();assert.deepEqual(opened.pop(),['unit','u1']);
@@ -1206,6 +1221,27 @@ def test_capacity_settings_review_keeps_segments_and_exposes_impacts(service):
     assert j['promised_ready']==original['promised_ready']
     assert 'Reservation includes a team absence or shop closure' in j['warnings']
     assert result['history'][-1]['settings_before']!=result['history'][-1]['settings_after']
+
+
+def test_strip_labor_breakdown_marks_the_start_of_saved_booking(service):
+    saved=service.save(ADMIN,reviewed(service,{'id':'v1','team_id':'team-david'}))
+    job=saved['plan']['jobs'][0]
+    assert job['hours']==66
+    assert job['strip_hours']==6
+    assert job['build_hours']==60
+    assert job['strip_segments'][0]['date']==job['segments'][0]['date']
+    assert job['strip_segments'][0]['start_hour']==job['segments'][0]['start_hour']
+    assert job['strip_segments'][-1]['end_hour'] < job['segments'][-1]['end_hour']
+
+    settings=saved['settings'];settings['teams'][0]['strip_hours']=10
+    changed=service.save_settings(ADMIN,reviewed(service,settings=settings))
+    held=changed['plan']['jobs'][0]
+    assert held['strip_hours']==6
+    assert held['build_hours']==60
+
+    build_only=service.save(ADMIN,reviewed(service,{'id':'v1','team_id':'team-david','kind':'build'}))['plan']['jobs'][0]
+    assert build_only['strip_hours']==0
+    assert build_only['strip_segments']==[]
 
 
 def test_two_clients_cannot_reserve_same_snapshot(service):

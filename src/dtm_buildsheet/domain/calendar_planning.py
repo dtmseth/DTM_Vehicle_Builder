@@ -255,6 +255,37 @@ def _hours(spec, team):
     return team['strip_hours'] if kind == 'strip' else team['build_hours'] if kind == 'build' else team['build_hours'] + team['strip_hours']
 
 
+def _leading_segments(segments, share):
+    """Return the leading share of a reservation using its saved geometry."""
+    elapsed = sum(max(0.0, segment['end_hour'] - segment['start_hour']) for segment in segments)
+    remaining = elapsed * max(0.0, min(1.0, share))
+    result = []
+    for segment in segments:
+        if remaining <= 1e-7:
+            break
+        duration = max(0.0, segment['end_hour'] - segment['start_hour'])
+        used = min(duration, remaining)
+        if used:
+            result.append({**segment, 'end_hour': round(segment['start_hour'] + used, 4)})
+        remaining -= used
+    return result
+
+
+def _labor_breakdown(spec, team, hours, segments):
+    """Describe the strip-first labor split without changing reservation math."""
+    total = float(hours or 0)
+    kind = spec.get('kind', 'strip_build')
+    includes_strip = kind in ('strip', 'strip_build') or (
+        kind in ('service', 'offsite') and spec.get('include_strip')
+    )
+    strip = total if kind == 'strip' else min(float(team['strip_hours']), total) if includes_strip else 0.0
+    return {
+        'strip_hours': strip,
+        'build_hours': max(0.0, total - strip),
+        'strip_segments': _leading_segments(segments, strip / total if total else 0.0),
+    }
+
+
 def _blocked(record, kind):
     if not record or record.shop_status in ('in_progress', 'complete'):
         return []
@@ -401,6 +432,8 @@ def plan_calendar(records: list[VehicleOperations], settings: dict, saved: dict,
                 'saved': True, 'pinned': True, 'historical': historical,
                 'promised_start': spec.get('promised_start', ''), 'promised_ready': spec.get('promised_ready', ''),
                 'forecast_start': current['start'], 'forecast_ready': current['ready'], 'forecast_segments': current['segments'], 'conflicts': []}
+            if not {'strip_hours', 'build_hours', 'strip_segments'}.issubset(out):
+                out.update(_labor_breakdown(spec, team, out.get('hours'), out.get('segments', [])))
             if not historical and not (record and record.shop_status == 'complete'):
                 if record and not base['acceptance_confirmed']:
                     reason = 'Acceptance date needed' if not accepted else 'Acceptance no longer confirmed; review held booking'
@@ -512,7 +545,7 @@ def _scheduled_job(job, team, hours, start, rate, closed, settings, reasons, ori
     warnings = []
     if deadline and ready.date().isoformat() > deadline:
         warnings.append("Past delivery deadline")
-    return {"id": job["id"], "project_id": job["project"], "title": (r.title or r.vehicle_label) if r else spec["title"],
+    result = {"id": job["id"], "project_id": job["project"], "title": (r.title or r.vehicle_label) if r else spec["title"],
             "agency_name": r.agency_name if r else spec.get("agency_name", ""),
             "team_id": team["id"], "team_ids": team.get('team_ids',[team['id']]), "team_name": team["name"], "color": team["color"],
             "hours": hours, "kind": spec.get("kind", "strip_build"), "accepted_date": job["accepted"],
@@ -534,4 +567,6 @@ def _scheduled_job(job, team, hours, start, rate, closed, settings, reasons, ori
             "actual_start": r.shop_started_at if r else spec.get("actual_start", ""),
             "actual_finish": r.shop_completed_at if r else spec.get("actual_finish", ""),
             "actual_hours": spec.get("actual_hours"),
-            **(acceptance_details(r, spec) if r else {})}, end
+            **(acceptance_details(r, spec) if r else {})}
+    result.update(_labor_breakdown(spec, team, hours, segments))
+    return result, end

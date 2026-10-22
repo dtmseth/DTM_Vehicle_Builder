@@ -56,7 +56,7 @@
       </div><div id="calendar-board" class="calendar-board"></div></section>
     </div>
     <div id="calendar-attention" class="calendar-attention"></div>
-    <div class="calendar-key"><span><i class="calendar-key-waiting"></i>Waiting on parts or vehicle</span><span><i class="calendar-key-ready"></i>Parts and vehicle ready</span><span><i class="calendar-key-started"></i>Build in progress</span><span><i class="calendar-key-blackout"></i>Shop closed</span><span id="calendar-buffer"></span></div>
+    <div class="calendar-key"><span><i class="calendar-key-strip"></i>Strip first, then build</span><span><i class="calendar-key-waiting"></i>Waiting on parts or vehicle</span><span><i class="calendar-key-ready"></i>Parts and vehicle ready</span><span><i class="calendar-key-started"></i>Build in progress</span><span><i class="calendar-key-blackout"></i>Shop closed</span><span id="calendar-buffer"></span></div>
   </div>
   <div class="modal-overlay calendar-bubble-overlay" id="calendar-detail-overlay" hidden><section id="calendar-detail" class="modal calendar-detail" hidden role="dialog" aria-modal="true" aria-labelledby="calendar-detail-title" tabindex="-1"></section></div>
   <div class="modal-overlay calendar-bubble-overlay" id="calendar-choice-modal" role="dialog" aria-modal="true" aria-labelledby="calendar-choice-title" hidden><div class="modal calendar-detail"><h3 id="calendar-choice-title"></h3><p id="calendar-choice-message"></p><div class="modal-actions">${btn('Cancel','calendar-choice-cancel')}${btn('Continue','calendar-choice-accept',true)}</div></div></div>
@@ -273,6 +273,27 @@
     return {start:first+(hits[0].start_hour-8)/state.data.settings.hours_per_day,
       end:last+(hits[hits.length-1].end_hour-8)/state.data.settings.hours_per_day};
   }
+  function leadingSegments(segments,share){
+    let remaining=segments.reduce((sum,s)=>sum+Math.max(0,s.end_hour-s.start_hour),0)*Math.max(0,Math.min(1,share));
+    const result=[];
+    for(const segment of segments){
+      if(remaining<=.0001)break;
+      const duration=Math.max(0,segment.end_hour-segment.start_hour),used=Math.min(duration,remaining);
+      if(used)result.push({...segment,end_hour:segment.start_hour+used});
+      remaining-=used;
+    }
+    return result;
+  }
+  function laborBreakdown(job,segments){
+    const total=Number(job.hours)||0,team=state.data.settings?.teams?.find(t=>t.id===job.team_id);
+    const counted=job.kind==='strip'||job.kind==='strip_build'||(['service','offsite'].includes(job.kind)&&job.service_details?.requires_strip);
+    const fallback=job.kind==='strip'?total:counted?Math.min(Number(team?.strip_hours)||0,total):0;
+    const strip=Number.isFinite(Number(job.strip_hours))?Number(job.strip_hours):fallback;
+    const build=Number.isFinite(Number(job.build_hours))?Number(job.build_hours):Math.max(0,total-strip);
+    const stripSegments=Array.isArray(job.strip_segments)?job.strip_segments:leadingSegments(segments,strip/total);
+    return {strip,build,segments:stripSegments};
+  }
+  function laborNumber(value){return Number(value).toLocaleString(undefined,{maximumFractionDigits:2});}
   function bookingRows(entries,dates){
     const ends=[],rows=entries.map(entry=>({...entry,span:bookingSpan(entry.segments,dates)})).filter(entry=>entry.span)
       .sort((a,b)=>a.span.start-b.span.start||b.span.end-a.span.end||a.job.id.localeCompare(b.job.id));
@@ -342,6 +363,16 @@
     const {start,end}=span;
     b.style.setProperty('--calendar-left',`${start/dates.length*100}%`);
     b.style.setProperty('--calendar-width',`${(end-start)/dates.length*100}%`);
+    const labor=laborBreakdown(job,segments),stripSpan=labor.strip>0&&job.kind!=='checks'?bookingSpan(labor.segments,dates):null;
+    if(stripSpan){
+      const stripLeft=(stripSpan.start-start)/(end-start)*100,stripWidth=(stripSpan.end-stripSpan.start)/(end-start)*100;
+      b.className+=` calendar-has-strip${labor.build<=0?' calendar-strip-only':''}`;
+      const marker=document.createElement('span');marker.className=`calendar-strip-segment${waiting?' calendar-strip-waiting':''}`;marker.setAttribute('aria-hidden','true');
+      marker.style.setProperty('--calendar-strip-left',`${stripLeft}%`);
+      marker.style.setProperty('--calendar-strip-width',`${stripWidth}%`);
+      b.style.setProperty('--calendar-strip-end',`${stripLeft+stripWidth}%`);
+      const markerLabel=document.createElement('span');markerLabel.textContent=`${laborNumber(labor.strip)}h STRIP`;marker.append(markerLabel);b.append(marker);
+    }
     const top=document.createElement('strong');const name=document.createElement('span');name.textContent=`${job.historical?'✓ ':''}${job.calendar_label||job.title}`;top.append(name);
     if(!job.custom){const type=document.createElement('span');type.className=`project-type-badge project-type-badge-${projectTypeKey(job)}`;type.textContent=projectTypeLabel(job);top.append(type);}
     const vin=String(job.vin||'').trim(),vinEnding=!job.custom&&vin.length>=6?vin.slice(-6).toUpperCase():'';
@@ -355,9 +386,11 @@
       }
     }
     const milestone=job.kind==='checks'?'':job.final_finish_status==='delivered'?`Delivered${job.delivered_date?' · '+label(job.delivered_date):''}`:job.final_finish_status==='ready_for_delivery'?`Ready for delivery${job.ready_for_delivery_at?' · '+label(job.ready_for_delivery_at):''}`:job.shop_status==='complete'?`Build completed${job.shop_completed_at?' · '+label(job.shop_completed_at):''}`:'';
-    if(part){const sub=document.createElement('small');sub.textContent=milestone||`${kinds[job.kind]} · ${job.hours} labor hours · Build ends ${label(job.end)} · Ready ${label(job.ready)}${job.deadline?' · Deadline '+label(job.deadline):''}`;b.append(sub);}
+    const visibleLaborText=labor.strip>0?(labor.build>0?`${laborNumber(labor.build)}h build`:'Strip only'):`${laborNumber(job.hours)} labor hours`;
+    const accessibleLaborText=labor.strip>0?`${laborNumber(labor.strip)}h strip${labor.build>0?`, ${laborNumber(labor.build)}h build`:''}`:`${laborNumber(job.hours)} labor hours`;
+    if(part){const sub=document.createElement('small');sub.textContent=milestone||`${visibleLaborText} · Build ends ${label(job.end)} · Ready ${label(job.ready)}${job.deadline?' · Deadline '+label(job.deadline):''}`;b.append(sub);}
     else if(milestone)name.textContent+=` · ${milestone}`;
-    const description=`${job.title}, ${job.team_name}, starts ${dateTime(job.start)}, build ends ${dateTime(job.end)}, ready ${dateTime(job.ready)}${job.deadline?', Deadline '+label(job.deadline):''}${started?', Build in progress':''}${deliveryReady?job.final_finish_status==='delivered'?', Delivered':', Ready for delivery':''}${waiting?', Waiting on parts or vehicle':''}`;
+    const description=`${job.title}, ${job.team_name}, ${accessibleLaborText}, starts ${dateTime(job.start)}, build ends ${dateTime(job.end)}, ready ${dateTime(job.ready)}${job.deadline?', Deadline '+label(job.deadline):''}${started?', Build in progress':''}${deliveryReady?job.final_finish_status==='delivered'?', Delivered':', Ready for delivery':''}${waiting?', Waiting on parts or vehicle':''}`;
     b.setAttribute('aria-label',description+(vinEnding?', VIN ending '+vinEnding:'')+(milestone?'. '+milestone:''));b.title=description+(vinEnding?', VIN ending '+vinEnding:'')+(milestone?'. '+milestone:'')+(b.dataset.dropHint?'. '+b.dataset.dropHint:'');
     b.onclick=()=>openScheduledBuild(job);lane.append(b);
     b.oncontextmenu=event=>openCalendarMenu(event,job,b);
