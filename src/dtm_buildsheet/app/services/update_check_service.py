@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -7,10 +8,10 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
-from importlib.metadata import PackageNotFoundError, version as _pkg_version
 from pathlib import Path
 
 from ...storage.base import StorageProvider
+from ...version import get_app_version
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +45,7 @@ class UpdateInfo:
 
 def get_embedded_version() -> str:
     """Return the version baked into the installed package, or "0.0.0" in dev."""
-    try:
-        return _pkg_version("dtm-buildsheet")
-    except PackageNotFoundError:
-        return "0.0.0"
+    return get_app_version(default="0.0.0")
 
 
 def current_platform() -> str:
@@ -173,9 +171,136 @@ def _queued_installer_dir(paths) -> Path:
     return paths.workspace_dir / ".queued_installer"
 
 
+def _update_marker_path(paths) -> Path:
+    return _queued_installer_dir(paths) / "update-in-progress.json"
+
+
+def _process_is_running(pid: int) -> bool:
+    """Return whether *pid* still identifies a live process.
+
+    Windows does not provide ``kill(pid, 0)`` with Unix-compatible behavior,
+    so use the process handle API there.  This is deliberately local-only:
+    the marker is advisory UX state, not an authorization boundary.
+    """
+    if pid <= 0:
+        return False
+    if sys.platform.startswith("win"):
+        try:
+            import ctypes
+
+            process_query_limited_information = 0x1000
+            still_active = 259
+            handle = ctypes.windll.kernel32.OpenProcess(  # type: ignore[attr-defined]
+                process_query_limited_information, False, pid
+            )
+            if not handle:
+                return False
+            try:
+                exit_code = ctypes.c_ulong()
+                if not ctypes.windll.kernel32.GetExitCodeProcess(  # type: ignore[attr-defined]
+                    handle, ctypes.byref(exit_code)
+                ):
+                    return False
+                return exit_code.value == still_active
+            finally:
+                ctypes.windll.kernel32.CloseHandle(handle)  # type: ignore[attr-defined]
+        except Exception:
+            logger.exception("Could not inspect updater process %s", pid)
+            return False
+    try:
+        os.kill(pid, 0)
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def _record_update_process(
+    paths, installer: Path, process, *, relaunch: bool = True
+) -> None:
+    """Persist enough state for a second launch to explain what is happening."""
+    pid = int(getattr(process, "pid", 0) or 0)
+    if not sys.platform.startswith("win") or pid <= 0:
+        return
+    parsed = parse_release_filename(installer.name)
+    version = parsed[1] if parsed else ""
+    marker = _update_marker_path(paths)
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    temp = marker.with_suffix(".tmp")
+    temp.write_text(
+        json.dumps({
+            "pid": pid,
+            "version": version,
+            "filename": installer.name,
+            "started_at": time.time(),
+            "relaunch": relaunch,
+        }),
+        encoding="utf-8",
+    )
+    temp.replace(marker)
+
+
+def get_active_update(paths) -> dict | None:
+    """Return an active Windows installer marker, cleaning stale state.
+
+    The newly installed version can start from Inno Setup's ``[Run]`` section
+    just before the installer process itself exits.  Version comparison lets
+    that intended launch through while still blocking a user from starting the
+    older executable again during the replacement window.
+    """
+    marker = _update_marker_path(paths)
+    if not marker.is_file():
+        return None
+    try:
+        data = json.loads(marker.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("update marker must be an object")
+        pid = int(data.get("pid") or 0)
+        version = str(data.get("version") or "")
+        started_at = float(data.get("started_at") or 0)
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        _delete_quietly(marker)
+        return None
+    if version and parse_semver(version) <= parse_semver(get_embedded_version()):
+        _delete_quietly(marker)
+        return None
+    # Avoid a recycled Windows PID turning a long-abandoned marker into a
+    # permanent startup block. Real installs should finish within minutes.
+    if started_at <= 0 or time.time() - started_at > 30 * 60:
+        _delete_quietly(marker)
+        return None
+    if not _process_is_running(pid):
+        _delete_quietly(marker)
+        return None
+    return data
+
+
+def show_update_in_progress_notice(info: dict) -> None:
+    """Tell a Windows user why a second launch cannot open yet."""
+    if not sys.platform.startswith("win"):
+        return
+    version = str(info.get("version") or "").strip()
+    version_label = f"v{version}" if version else "the latest version"
+    if info.get("relaunch", True):
+        next_step = "DTM will start automatically when the update finishes."
+    else:
+        next_step = "Wait for it to finish, then open DTM again."
+    message = (
+        f"DTM Vehicle Builder is updating to {version_label}.\n\n"
+        f"The Windows installer is still working. {next_step}"
+    )
+    try:
+        import ctypes
+
+        ctypes.windll.user32.MessageBoxW(  # type: ignore[attr-defined]
+            None, message, "DTM Vehicle Builder update", 0x40
+        )
+    except Exception:
+        logger.exception("Could not show update-in-progress notice")
+
+
 def queue_installer_for_next_launch(local_path: Path, paths) -> Path:
     """Move a freshly-downloaded installer into the queue dir so the next
-    app launch (or an explicit Restart-now click) can run it silently.
+    app close (or an explicit Restart & Install click) can apply it.
 
     A single installer is queued at a time — any older queued file with a
     different name is removed first. Returns the queued path.
@@ -185,6 +310,10 @@ def queue_installer_for_next_launch(local_path: Path, paths) -> Path:
     # Drop older queued installers; only the newest should be present.
     for stale in queue_dir.iterdir():
         if stale.name == local_path.name:
+            continue
+        if parse_release_filename(stale.name) is None:
+            # Preserve updater coordination state and the most recent Inno
+            # log; only versioned installer artifacts compete for this slot.
             continue
         try:
             stale.unlink()
@@ -274,34 +403,108 @@ def _delete_quietly(path: Path) -> None:
         logger.exception("Could not remove stale queued installer %s", path)
 
 
-def _spawn_installer_silent(installer: Path) -> bool:
+def _spawn_installer_silent(
+    installer: Path, *, visible: bool = True, relaunch: bool = True
+) -> object | bool:
     """Platform-dispatching silent installer launcher.
 
-    Windows: Inno Setup /VERYSILENT — installer handles uninstall +
-    close-current-app via its InitializeSetup hook.
+    Windows: Inno Setup /SILENT for an explicit restart, or /VERYSILENT
+    when applying a ready update after a normal close.
     macOS: shell script that waits for the running app to exit, mounts
     the DMG, swaps the .app in place, strips quarantine, and relaunches.
 
     Returns True if the install process started without raising."""
     if sys.platform.startswith("win"):
-        return _spawn_installer_silent_windows(installer)
+        return _spawn_installer_silent_windows(
+            installer, visible=visible, relaunch=relaunch
+        )
     if sys.platform.startswith("darwin"):
         return _spawn_installer_silent_mac(installer)
     logger.warning("Silent install not supported on %s", sys.platform)
     return False
 
 
-def _spawn_installer_silent_windows(installer: Path) -> bool:
+def _write_windows_update_script(installer: Path) -> Path:
+    """Write the detached Windows handoff that waits for this app to exit."""
+    script_path = installer.parent / "run-windows-update.ps1"
+    script_path.write_text(
+        r'''param(
+    [Parameter(Mandatory = $true)][int]$WaitForPid,
+    [Parameter(Mandatory = $true)][string]$InstallerPath,
+    [Parameter(Mandatory = $true)][string]$LogPath,
+    [Parameter(Mandatory = $true)][ValidateSet('visible', 'background')][string]$Mode,
+    [Parameter(Mandatory = $true)][ValidateSet('0', '1')][string]$Relaunch
+)
+
+$deadline = [DateTime]::UtcNow.AddMinutes(2)
+while (Get-Process -Id $WaitForPid -ErrorAction SilentlyContinue) {
+    if ([DateTime]::UtcNow -ge $deadline) {
+        Add-Content -LiteralPath $LogPath -Value "Timed out waiting for DTM to close."
+        exit 1460
+    }
+    Start-Sleep -Milliseconds 200
+}
+
+try {
+    if ($Mode -eq 'visible') {
+        $displayArguments = '/SILENT'
+    } else {
+        $displayArguments = '/VERYSILENT /SUPPRESSMSGBOXES'
+    }
+    $installerArguments = $displayArguments + ' /NORESTART /CLOSEAPPLICATIONS /RELAUNCH=' + $Relaunch + ' /LOG="' + $LogPath + '"'
+    $installer = Start-Process -FilePath $InstallerPath -ArgumentList $installerArguments -PassThru -Wait
+    $exitCode = $installer.ExitCode
+} catch {
+    Add-Content -LiteralPath $LogPath -Value "Could not launch the DTM installer."
+    $exitCode = 1
+}
+
+Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue
+exit $exitCode
+''',
+        encoding="utf-8",
+    )
+    return script_path
+
+
+def _spawn_installer_silent_windows(
+    installer: Path, *, visible: bool = True, relaunch: bool = True
+) -> subprocess.Popen | bool:
+    """Schedule Inno Setup only after the current DTM process has exited.
+
+    Starting Inno before pywebview and Python finish shutting down leaves the
+    executable locked.  The detached PowerShell handoff waits on this PID,
+    then launches the requested unattended installer mode and remains alive
+    through completion so the in-progress marker stays meaningful.
+    """
     try:
-        subprocess.Popen([
-            str(installer),
-            "/VERYSILENT",
-            "/SUPPRESSMSGBOXES",
-            "/NORESTART",
-        ])
-        return True
+        script_path = _write_windows_update_script(installer)
+        return subprocess.Popen(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-NonInteractive",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-WindowStyle",
+                "Hidden",
+                "-File",
+                str(script_path),
+                "-WaitForPid",
+                str(os.getpid()),
+                "-InstallerPath",
+                str(installer),
+                "-LogPath",
+                str(installer.parent / "windows-update.log"),
+                "-Mode",
+                "visible" if visible else "background",
+                "-Relaunch",
+                "1" if relaunch else "0",
+            ],
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
     except Exception:
-        logger.exception("Could not launch queued installer %s", installer)
+        logger.exception("Could not schedule queued installer %s", installer)
         return False
 
 
@@ -438,10 +641,9 @@ echo "=== Done $(date) ==="
 
 def consume_queued_installer(paths) -> bool:
     """Boot-time hook: if a queued installer is present AND it's a newer
-    version than the one currently running, launch it silently and
+    version than the one currently running, launch it and
     return True. The caller is responsible for sys.exit'ing so the
-    installer's CloseApplications/InitializeSetup poll has a clean
-    target.
+    installer can replace the running executable cleanly.
 
     Critical version check: without it, every boot would re-launch the
     same installer that produced the version we just started, causing
@@ -472,14 +674,21 @@ def consume_queued_installer(paths) -> bool:
         "Consuming queued installer: %s (current=%s -> %s)",
         installer.name, current, queued_version,
     )
-    return _spawn_installer_silent(installer)
+    process = _spawn_installer_silent(installer)
+    if not process:
+        return False
+    _record_update_process(paths, installer, process)
+    return True
 
 
-def install_now(paths) -> dict:
-    """User-triggered install: launches the queued installer silently and
-    returns a status dict for the route layer. The route handler exits the
-    server process after a short delay so the installer's wait-for-close
-    actually succeeds."""
+def install_now(paths, *, visible: bool = True) -> dict:
+    """Launch the queued installer and return status to the caller.
+
+    Process shutdown belongs to the desktop window owner in ``server.main``.
+    Keeping it there lets the existing active-upload guard run and gives the
+    server, background workers, and webview a normal cleanup path instead of
+    terminating the process with ``os._exit``.
+    """
     installer = get_queued_installer(paths)
     if installer is None:
         return {"ok": False, "error": "No update queued"}
@@ -488,14 +697,13 @@ def install_now(paths) -> dict:
         if parse_semver(parsed[1]) <= parse_semver(get_embedded_version()):
             _delete_quietly(installer)
             return {"ok": False, "error": "Already up to date"}
-    ok = _spawn_installer_silent(installer)
-    if not ok:
+    relaunch = visible
+    process = _spawn_installer_silent(
+        installer, visible=visible, relaunch=relaunch
+    )
+    if not process:
         return {"ok": False, "error": "Could not launch installer"}
-    # Schedule a graceful exit shortly after the installer starts. We can
-    # rely on the installer's uninstall-poll to wait for the old version
-    # to fully close.
-    import threading
-    threading.Timer(1.5, lambda: os._exit(0)).start()  # type: ignore[name-defined]
+    _record_update_process(paths, installer, process, relaunch=relaunch)
     return {"ok": True, "filename": installer.name}
 
 

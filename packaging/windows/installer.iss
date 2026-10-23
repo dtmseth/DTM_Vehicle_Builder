@@ -2,7 +2,8 @@
 #define MyAppVersion GetEnv("APP_VERSION") != "" ? GetEnv("APP_VERSION") : "1.0.0"
 #define MyAppPublisher "DTM"
 #define MyAppExeName "DTM Vehicle Builder.exe"
-#define MyAppDir "..\..\dist\DTM Vehicle Builder"
+#define MyAppDir GetEnv("DTM_BUILD_APP_DIR") != "" ? GetEnv("DTM_BUILD_APP_DIR") : "..\..\dist\DTM Vehicle Builder"
+#define MyOutputDir GetEnv("DTM_BUILD_OUTPUT_DIR") != "" ? GetEnv("DTM_BUILD_OUTPUT_DIR") : "..\..\dist"
 #define MyIconFile "..\..\packaging\icons\app.ico"
 #define MyAppId "8F3A2B1C-9D4E-4F5A-8B7C-1D2E3F4A5B6C"
 
@@ -13,11 +14,16 @@ AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
-OutputDir=..\..\dist
+OutputDir={#MyOutputDir}
 OutputBaseFilename=DTM_Vehicle_Builder_Setup
 SetupIconFile={#MyIconFile}
+#if GetEnv("DTM_BUILD_FAST_COMPRESSION") == "1"
+Compression=lzma2/fast
+SolidCompression=no
+#else
 Compression=lzma
 SolidCompression=yes
+#endif
 WizardStyle=modern
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
@@ -31,14 +37,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [InstallDelete]
-; Force-wipe PyInstaller's _internal directory before copying new files. This
-; is what carries the dtm_buildsheet-{version}.dist-info/METADATA that
-; importlib.metadata reads — if an old .dist-info survives the upgrade
-; alongside the new one, get_embedded_version() returns the wrong number and
-; the update banner keeps pestering the user about an "available" version
-; they just installed. Running this between the uninstall poll loop and the
-; [Files] copy guarantees a clean slate regardless of what the old
-; uninstaller left behind.
+; Force-wipe PyInstaller's app-managed _internal directory before copying new
+; files. This prevents an over-install from retaining old Python modules,
+; resources, or the runtime build-version marker. User data lives elsewhere
+; and is not affected.
 Type: filesandordirs; Name: "{app}\_internal"
 
 [Files]
@@ -50,64 +52,17 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-; Auto-launch the new version after install, INCLUDING silent installs (the
-; auto-update path drives the installer in /VERYSILENT). Without dropping
-; skipifsilent, silent installs would replace the binaries but never bring
-; the app back up.
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall
+; The explicit Restart & Install path passes /RELAUNCH=1 and opens the new
+; version after showing progress. A ready update applied during a normal app
+; close passes /RELAUNCH=0, installs quietly, and respects the user's intent
+; to leave DTM closed.
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall; Check: ShouldRelaunchAfterInstall
 
 [Code]
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function GetUninstallString(): String;
-var
-  Key: String;
-  Str: String;
+function ShouldRelaunchAfterInstall(): Boolean;
 begin
-  Key := 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{#MyAppId}_is1';
-  Str := '';
-  if not RegQueryStringValue(HKCU, Key, 'UninstallString', Str) then
-    RegQueryStringValue(HKLM, Key, 'UninstallString', Str);
-  Result := Str;
-end;
-
-function IsAlreadyInstalled(): Boolean;
-begin
-  Result := GetUninstallString() <> '';
-end;
-
-// ── Uninstall previous version before installing ──────────────────────────────
-// Runs silently so the user sees a single smooth install experience.
-
-function InitializeSetup(): Boolean;
-var
-  UninstallExe: String;
-  ResultCode: Integer;
-  InstallDir: String;
-  WaitCount: Integer;
-begin
-  Result := True;
-  if IsAlreadyInstalled() then
-  begin
-    UninstallExe := RemoveQuotes(GetUninstallString());
-    Exec(UninstallExe, '/SILENT /SUPPRESSMSGBOXES /NORESTART', '', SW_HIDE,
-         ewWaitUntilTerminated, ResultCode);
-    // ewWaitUntilTerminated returns when the uninstaller process exits, but
-    // Inno Setup uninstallers fork a helper that finishes the work AFTER the
-    // main process exits (it has to delete unins000.exe itself). Without
-    // waiting for the install directory to actually empty out, the new
-    // install begins copying files while the old uninstall is still chewing
-    // on them — producing a Frankenstein with mixed-version .dist-info and
-    // a stale version string after over-installs.
-    InstallDir := ExpandConstant('{autopf}\{#MyAppName}');
-    for WaitCount := 1 to 60 do
-    begin
-      if not DirExists(InstallDir) then
-        Break;
-      Sleep(500);  // up to 30s total
-    end;
-  end;
+  Result := ExpandConstant('{param:RELAUNCH|1}') <> '0';
 end;
 
 // ── Wipe workspace bundled-data dirs before seeding fresh ones ────────────────

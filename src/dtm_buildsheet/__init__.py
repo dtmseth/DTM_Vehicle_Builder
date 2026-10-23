@@ -1,6 +1,6 @@
 """DTM Vehicle Builder application package."""
 
-from importlib.metadata import version, PackageNotFoundError
+from .version import get_app_version
 
 
 def run_gui(*args, **kwargs):
@@ -9,9 +9,6 @@ def run_gui(*args, **kwargs):
     from .gui_server import main
     return main(*args, **kwargs)
 
-try:
-    __version__ = version("dtm-buildsheet")
-except PackageNotFoundError:
-    __version__ = "dev"
+__version__ = get_app_version()
 
 __all__ = ["run_gui", "__version__"]

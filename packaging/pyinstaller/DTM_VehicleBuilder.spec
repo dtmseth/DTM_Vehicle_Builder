@@ -17,7 +17,15 @@ WIN_ICON = ICON_DIR / "app.ico"
 # Read version from pyproject.toml — single source of truth.
 _pyproject = ROOT / "pyproject.toml"
 _version_match = re.search(r'^version\s*=\s*"([^"]+)"', _pyproject.read_text(), re.MULTILINE)
-APP_VERSION = _version_match.group(1) if _version_match else "0.0.0"
+_source_version = _version_match.group(1) if _version_match else "0.0.0"
+_test_version = os.environ.get("DTM_BUILD_VERSION_OVERRIDE", "").strip()
+if _test_version and not re.fullmatch(r"\d+\.\d+\.\d+", _test_version):
+    raise ValueError("DTM_BUILD_VERSION_OVERRIDE must be a numeric MAJOR.MINOR.PATCH")
+APP_VERSION = _test_version or _source_version
+BUILD_WORK_DIR = Path(os.environ.get("DTM_BUILD_WORK_DIR", str(ROOT / "build")))
+BUILD_WORK_DIR.mkdir(parents=True, exist_ok=True)
+BUILD_VERSION_FILE = BUILD_WORK_DIR / "_build_version.txt"
+BUILD_VERSION_FILE.write_text(APP_VERSION, encoding="utf-8")
 
 # A stable Developer ID signature gives every released version the same macOS
 # designated requirement. That lets Keychain remember the user's MSAL access
@@ -33,8 +41,8 @@ def _windows_version_file(version: str) -> str | None:
         parts.append(0)
     major, minor, patch = parts[:3]
     version_tuple = (major, minor, patch, 0)
-    version_file = ROOT / "build" / "DTM_VehicleBuilder_version_info.txt"
-    version_file.parent.mkdir(exist_ok=True)
+    version_file = BUILD_WORK_DIR / "DTM_VehicleBuilder_version_info.txt"
+    version_file.parent.mkdir(parents=True, exist_ok=True)
     version_file.write_text(
         f"""# UTF-8
 VSVersionInfo(
@@ -75,6 +83,7 @@ VSVersionInfo(
 VERSION_FILE = _windows_version_file(APP_VERSION)
 
 datas = collect_data_files("dtm_buildsheet")
+datas += [(str(BUILD_VERSION_FILE), "dtm_buildsheet")]
 # `zoneinfo` imports ``tzdata.zoneinfo`` dynamically when the OS does not
 # provide an IANA timezone database (as on Windows). PyInstaller cannot infer
 # that import, and the database itself is package data, so bundle both

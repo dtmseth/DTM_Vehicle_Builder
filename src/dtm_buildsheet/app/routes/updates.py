@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler
+from typing import Callable
 
 from ...paths import AppPaths
 from ..adapters.wiring import get_active_bundle
@@ -11,6 +12,20 @@ from ..services.config_service import load_config_file, save_config_file
 from .http import send_json
 
 logger = logging.getLogger(__name__)
+
+_desktop_install_handler: Callable[[], dict] | None = None
+
+
+def set_desktop_install_handler(handler: Callable[[], dict] | None) -> None:
+    """Route HTTP fallback installs through the native shutdown controller."""
+    global _desktop_install_handler
+    _desktop_install_handler = handler
+
+
+def _install_now(paths: AppPaths) -> dict:
+    if _desktop_install_handler is not None:
+        return _desktop_install_handler()
+    return update_check_service.install_now(paths)
 
 
 def route_updates(
@@ -30,7 +45,7 @@ def route_updates(
         send_json(handler, _download(body, paths))
         return True
     if method == "POST" and path == "/api/update/install-now":
-        send_json(handler, update_check_service.install_now(paths))
+        send_json(handler, _install_now(paths))
         return True
     return False
 

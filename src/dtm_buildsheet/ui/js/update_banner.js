@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════
 // UPDATE BANNER — two modes:
-//   "restart" → background download is queued; one-click silent install
+//   "restart" → background download is queued; install on close or restart now
 //   "download" → manual fallback for the very first install or when the
 //                background download couldn't run (no cloud, etc.)
 // Re-polls every 60s so the queued installer is picked up shortly after
@@ -15,14 +15,20 @@
 
   let currentInfo = null;
   let mode = "download"; // "download" | "restart"
+  let hiddenReadyVersion = null;
+  let installing = false;
 
   function show(info, currentVersion, kind) {
     currentInfo = info;
     mode = kind || "download";
     if (mode === "restart") {
+      if (hiddenReadyVersion === info.version) {
+        hide();
+        return;
+      }
       text.textContent =
-        `Update v${info.version} ready — restart to install`;
-      downloadBtn.textContent = "Restart Now";
+        `Update v${info.version} ready — keep working; it will install quietly when you close DTM`;
+      downloadBtn.textContent = "Restart & Install";
     } else {
       text.textContent =
         `Update available — v${info.version}` +
@@ -39,6 +45,9 @@
   }
 
   async function poll() {
+    // Do not let the one-minute refresh overwrite the shutdown explanation
+    // while the native app is handing control to the Windows installer.
+    if (installing) return;
     // Single source of truth: cloud_status.update_state. The server tells
     // us whether to show "Restart Now" (ready), nothing (downloading or
     // up-to-date), or "Download" (manual fallback only — non-Windows or
@@ -86,16 +95,39 @@
     downloadBtn.disabled = true;
     const originalText = downloadBtn.textContent;
     if (mode === "restart") {
-      downloadBtn.textContent = "Installing…";
+      installing = true;
+      const confirmed = window.confirm(
+        `DTM Vehicle Builder will close completely, then install v${currentInfo.version}.\n\n` +
+        "Windows will show the installation progress after DTM exits. Do not reopen DTM while " +
+        "that window is active; DTM will reopen automatically when it finishes."
+      );
+      if (!confirmed) {
+        installing = false;
+        downloadBtn.disabled = false;
+        return;
+      }
+      downloadBtn.textContent = "Closing DTM…";
+      text.textContent = "Closing DTM completely. Installation will begin immediately afterward.";
+      const closeFallback = setTimeout(() => {
+        text.textContent =
+          "DTM is ready to update. If this window is still visible, close it normally; " +
+          "installation will begin as soon as DTM exits.";
+        downloadBtn.textContent = "Waiting for DTM to close…";
+      }, 4000);
       try {
-        await api("/api/update/install-now", {});
-        // The server.install_now spawns the installer silently and exits
-        // ~1.5s later. The webview will lose its socket; nothing more to
-        // do here — the new version will come up automatically when the
-        // installer's [Run] section fires.
-      } catch (_) {
-        // Connection dropping IS the expected case once the server
-        // exits. Swallow.
+        const res = window.pywebview?.api?.install_update
+          ? await window.pywebview.api.install_update()
+          : await api("/api/update/install-now", {});
+        if (!res?.ok) {
+          throw new Error(res?.error || "The updater could not start.");
+        }
+      } catch (error) {
+        clearTimeout(closeFallback);
+        installing = false;
+        downloadBtn.textContent = originalText;
+        downloadBtn.disabled = false;
+        text.textContent = `Update v${currentInfo.version} is ready. ` +
+          (error?.message || "The updater could not start.");
       }
       return;
     }
@@ -124,10 +156,16 @@
       hide();
       return;
     }
-    try {
-      await api("/api/update/dismiss", { version: currentInfo.version });
-    } catch (e) {
-      console.error("Dismiss failed:", e);
+    if (mode === "restart") {
+      // The installer is already downloaded. Hide the reminder for this app
+      // session only; the update will still install on a normal close.
+      hiddenReadyVersion = currentInfo.version;
+    } else {
+      try {
+        await api("/api/update/dismiss", { version: currentInfo.version });
+      } catch (e) {
+        console.error("Dismiss failed:", e);
+      }
     }
     hide();
   });

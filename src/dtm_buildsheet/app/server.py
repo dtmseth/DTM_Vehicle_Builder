@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import secrets
 import socket
 import threading
@@ -44,11 +45,10 @@ PORT = 7655
 _UI_FILE = Path(__file__).parent.parent / "ui" / "index.html"
 _UI_DIR = Path(__file__).parent.parent / "ui"
 
-try:
-    from importlib.metadata import version as _pkg_version
-    _APP_VERSION = f"v{_pkg_version('dtm-buildsheet')}"
-except Exception:
-    _APP_VERSION = "dev"
+from ..version import get_app_version
+
+_runtime_version = get_app_version()
+_APP_VERSION = "dev" if _runtime_version == "dev" else f"v{_runtime_version}"
 
 _MIME_TYPES = {
     ".css": "text/css; charset=utf-8",
@@ -815,14 +815,28 @@ def main(paths: AppPaths | None = None):
     if paths is not None:
         _setup_logging(active_paths.workspace_dir)
 
-    # Boot-time silent install: if last session queued an installer, run it
-    # now (Windows only) and exit so the installer's CloseApplications hook
-    # can replace our binaries cleanly. The installer auto-launches the new
-    # version when it finishes (see installer.iss [Run] section).
+    # If a user clicks the shortcut again while Windows is replacing the old
+    # version, explain the delay instead of falling through to a port error or
+    # starting another installer.  The completed version is allowed through
+    # even if Inno Setup's parent process has not quite exited yet.
     try:
         import sys as _sys
-        from .services.update_check_service import consume_queued_installer
-        if consume_queued_installer(active_paths):
+        from .services.update_check_service import (
+            consume_queued_installer,
+            get_active_update,
+            show_update_in_progress_notice,
+        )
+        active_update = get_active_update(active_paths)
+        if active_update:
+            show_update_in_progress_notice(active_update)
+            return
+
+        # Boot-time fallback: a queued installer normally runs when the user
+        # closes the desktop window.  If that did not happen (crash, power
+        # loss, or an older release), launch it now and exit.  Inno Setup
+        # displays progress and relaunches the new version when complete.
+        manual_updater_test = os.environ.get("DTM_UPDATER_TEST_MANUAL_ONLY") == "1"
+        if not manual_updater_test and consume_queued_installer(active_paths):
             logging.getLogger(__name__).info(
                 "Queued installer launched; exiting so it can replace this version"
             )
@@ -899,6 +913,56 @@ def main(paths: AppPaths | None = None):
             def __init__(self):
                 self.window = None
                 self.allow_close = threading.Event()
+                self.update_started = threading.Event()
+                self._update_lock = threading.Lock()
+                self._exit_watchdog = None
+
+            def _arm_update_exit_watchdog(self):
+                """Guarantee the old packaged process releases its executable."""
+                if self._exit_watchdog is not None:
+                    return
+
+                def _force_exit():
+                    logging.getLogger(__name__).warning(
+                        "Update shutdown exceeded 2.5 seconds; forcing old process exit"
+                    )
+                    os._exit(0)
+
+                self._exit_watchdog = threading.Timer(2.5, _force_exit)
+                self._exit_watchdog.daemon = True
+                self._exit_watchdog.start()
+
+            def _start_update(self, *, visible: bool = True):
+                """Start a queued update once, without bypassing shutdown guards."""
+                with self._update_lock:
+                    if self.update_started.is_set():
+                        return {"ok": True, "already_started": True}
+                    if has_active_uploads(active_paths):
+                        return {
+                            "ok": False,
+                            "error": (
+                                "Uploads are still in progress. Wait for them to finish "
+                                "before installing the update."
+                            ),
+                        }
+                    from .services.update_check_service import install_now
+
+                    result = install_now(active_paths, visible=visible)
+                    if result.get("ok"):
+                        self.update_started.set()
+                        self.allow_close.set()
+                        self._arm_update_exit_watchdog()
+                    return result
+
+            def install_update(self):
+                """Called by the update banner's explicit Restart & Install action."""
+                result = self._start_update()
+                if result.get("ok") and self.window is not None:
+                    # Destroy synchronously. On Windows this marshals the close
+                    # onto the WinForms UI thread; delaying it on a Timer proved
+                    # unreliable and left the updater waiting on this process.
+                    self.window.destroy()
+                return result
 
             def close_anyway(self):
                 self.allow_close.set()
@@ -909,6 +973,7 @@ def main(paths: AppPaths | None = None):
                 return True
 
         desktop_api = _DesktopUploadApi()
+        update_routes.set_desktop_install_handler(desktop_api.install_update)
         threading.Thread(target=server.serve_forever, daemon=True).start()
         _wait_for_server_ready(PORT)
         window = webview.create_window(
@@ -918,7 +983,22 @@ def main(paths: AppPaths | None = None):
         desktop_api.window = window
 
         def _guard_active_uploads():
-            if desktop_api.allow_close.is_set() or not has_active_uploads(active_paths):
+            if desktop_api.allow_close.is_set():
+                return True
+            if not has_active_uploads(active_paths):
+                # Windows updates install on a normal close, so users can keep
+                # working through several releases and apply only the newest
+                # queued version at the end of their session.
+                if _sys.platform.startswith("win"):
+                    from .services.update_check_service import get_pending_update_info
+
+                    if get_pending_update_info(active_paths):
+                        result = desktop_api._start_update(visible=False)
+                        if not result.get("ok"):
+                            logging.getLogger(__name__).error(
+                                "Could not start queued update during close: %s",
+                                result.get("error", "unknown error"),
+                            )
                 return True
             try:
                 window.run_js(
@@ -934,6 +1014,7 @@ def main(paths: AppPaths | None = None):
         try:
             webview.start()
         finally:
+            update_routes.set_desktop_install_handler(None)
             from .services.photo_gallery_service import shutdown_photo_gallery_workers
 
             shutdown_upload_manager(active_paths)

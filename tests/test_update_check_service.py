@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -265,6 +266,189 @@ def test_queue_installer_replaces_older_queued(tmp_path: Path, monkeypatch):
     assert (queue_dir / "DTM_Vehicle_Builder_Setup-2.2.4.exe").read_bytes() == b"NEWER"
 
 
+def test_queue_installer_preserves_updater_state_and_log(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    from dtm_buildsheet.app.services.update_check_service import (
+        queue_installer_for_next_launch,
+    )
+    paths = _paths_with_workspace(tmp_path)
+    queue_dir = paths.workspace_dir / ".queued_installer"
+    queue_dir.mkdir()
+    marker = queue_dir / "update-in-progress.json"
+    log = queue_dir / "windows-update.log"
+    marker.write_text("{}", encoding="utf-8")
+    log.write_text("previous run", encoding="utf-8")
+
+    src = tmp_path / "DTM_Vehicle_Builder_Setup-2.2.4.exe"
+    src.write_bytes(b"NEWER")
+    queue_installer_for_next_launch(src, paths)
+
+    assert marker.exists()
+    assert log.exists()
+
+
+def test_windows_installer_uses_visible_unattended_progress(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.os.getpid",
+        lambda: 2468,
+    )
+    process = SimpleNamespace(pid=4321)
+    calls = []
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.subprocess.Popen",
+        lambda args, **kwargs: calls.append((args, kwargs)) or process,
+    )
+    from dtm_buildsheet.app.services.update_check_service import (
+        _spawn_installer_silent_windows,
+    )
+
+    installer = tmp_path / "DTM_Vehicle_Builder_Setup-2.2.4.exe"
+    assert _spawn_installer_silent_windows(installer) is process
+    assert len(calls) == 1
+    args, options = calls[0]
+    assert args[:8] == [
+        "powershell.exe",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-WindowStyle",
+        "Hidden",
+        "-File",
+    ]
+    script = Path(args[8])
+    assert script.is_file()
+    assert args[9:] == [
+        "-WaitForPid",
+        "2468",
+        "-InstallerPath",
+        str(installer),
+        "-LogPath",
+        str(tmp_path / "windows-update.log"),
+        "-Mode",
+        "visible",
+        "-Relaunch",
+        "1",
+    ]
+    assert "creationflags" in options
+    script_text = script.read_text(encoding="utf-8")
+    assert "while (Get-Process -Id $WaitForPid" in script_text
+    assert "Start-Process -FilePath $InstallerPath" in script_text
+    assert "'/SILENT'" in script_text
+    assert "'/VERYSILENT /SUPPRESSMSGBOXES'" in script_text
+
+
+def test_windows_installer_can_run_quietly_without_relaunch(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.os.getpid",
+        lambda: 2468,
+    )
+    process = SimpleNamespace(pid=4321)
+    calls = []
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.subprocess.Popen",
+        lambda args, **kwargs: calls.append((args, kwargs)) or process,
+    )
+    from dtm_buildsheet.app.services.update_check_service import (
+        _spawn_installer_silent_windows,
+    )
+
+    installer = tmp_path / "DTM_Vehicle_Builder_Setup-2.2.4.exe"
+    assert _spawn_installer_silent_windows(
+        installer, visible=False, relaunch=False
+    ) is process
+    args, options = calls[0]
+    assert args[-4:] == ["-Mode", "background", "-Relaunch", "0"]
+    assert "creationflags" in options
+
+
+def test_active_update_marker_blocks_old_version_and_allows_new_version(
+    tmp_path: Path, monkeypatch
+):
+    monkeypatch.setattr("sys.platform", "win32")
+    from dtm_buildsheet.app.services import update_check_service as service
+
+    paths = _paths_with_workspace(tmp_path)
+    installer = tmp_path / "DTM_Vehicle_Builder_Setup-2.2.4.exe"
+    process = SimpleNamespace(pid=4321)
+    monkeypatch.setattr(service, "_process_is_running", lambda pid: pid == 4321)
+    monkeypatch.setattr(service, "get_embedded_version", lambda: "2.2.3")
+
+    service._record_update_process(paths, installer, process)
+    active = service.get_active_update(paths)
+    assert active is not None
+    assert active["version"] == "2.2.4"
+
+    # Inno Setup starts the completed build just before its own process exits.
+    # The target version must clear the marker and open normally.
+    monkeypatch.setattr(service, "get_embedded_version", lambda: "2.2.4")
+    assert service.get_active_update(paths) is None
+    assert not service._update_marker_path(paths).exists()
+
+
+def test_install_now_records_updater_without_forcing_process_exit(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    from dtm_buildsheet.app.services import update_check_service as service
+
+    paths = _paths_with_workspace(tmp_path)
+    src = tmp_path / "DTM_Vehicle_Builder_Setup-2.2.4.exe"
+    src.write_bytes(b"INSTALLER")
+    service.queue_installer_for_next_launch(src, paths)
+    process = SimpleNamespace(pid=4321)
+    monkeypatch.setattr(service, "get_embedded_version", lambda: "2.2.3")
+    launch_options = []
+    monkeypatch.setattr(
+        service,
+        "_spawn_installer_silent",
+        lambda installer, **kwargs: launch_options.append(kwargs) or process,
+    )
+    monkeypatch.setattr(
+        service.os,
+        "_exit",
+        lambda code: pytest.fail(f"install_now forced process exit {code}"),
+    )
+
+    result = service.install_now(paths, visible=False)
+
+    assert result["ok"] is True
+    assert launch_options == [{"visible": False, "relaunch": False}]
+    marker = service._update_marker_path(paths)
+    assert marker.is_file()
+    assert marker.read_text(encoding="utf-8").find('"relaunch": false') >= 0
+
+
+def test_http_install_fallback_uses_desktop_shutdown_handler(tmp_path: Path):
+    from dtm_buildsheet.app.routes import updates as update_routes
+
+    paths = _paths_with_workspace(tmp_path)
+    calls = []
+    update_routes.set_desktop_install_handler(
+        lambda: calls.append("desktop") or {"ok": True}
+    )
+    try:
+        assert update_routes._install_now(paths) == {"ok": True}
+    finally:
+        update_routes.set_desktop_install_handler(None)
+
+    assert calls == ["desktop"]
+
+
+def test_dead_update_process_clears_marker_for_retry(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    from dtm_buildsheet.app.services import update_check_service as service
+
+    paths = _paths_with_workspace(tmp_path)
+    installer = tmp_path / "DTM_Vehicle_Builder_Setup-2.2.4.exe"
+    service._record_update_process(paths, installer, SimpleNamespace(pid=4321))
+    monkeypatch.setattr(service, "get_embedded_version", lambda: "2.2.3")
+    monkeypatch.setattr(service, "_process_is_running", lambda pid: False)
+
+    assert service.get_active_update(paths) is None
+    assert not service._update_marker_path(paths).exists()
+
+
 def test_get_pending_update_info_reports_version(tmp_path: Path, monkeypatch):
     monkeypatch.setattr("sys.platform", "win32")
     monkeypatch.setattr(
@@ -290,6 +474,17 @@ def test_get_pending_update_info_returns_none_when_empty(tmp_path: Path, monkeyp
     assert get_pending_update_info(paths) is None
 
 
+def test_packaged_build_version_overrides_installed_metadata(tmp_path: Path, monkeypatch):
+    from dtm_buildsheet import version as version_module
+
+    marker = tmp_path / "_build_version.txt"
+    marker.write_text("3.15.3", encoding="utf-8")
+    monkeypatch.setattr(version_module, "_BUILD_VERSION_FILE", marker)
+    monkeypatch.setattr(version_module, "package_version", lambda name: "3.15.1")
+
+    assert version_module.get_app_version() == "3.15.3"
+
+
 def test_consume_queued_installer_skips_same_version(tmp_path: Path, monkeypatch):
     """Regression: v2.2.4 hit an install loop because consume_queued_installer
     re-ran the SAME installer on every boot, even after the install completed.
@@ -303,7 +498,7 @@ def test_consume_queued_installer_skips_same_version(tmp_path: Path, monkeypatch
     spawned = []
     monkeypatch.setattr(
         "dtm_buildsheet.app.services.update_check_service._spawn_installer_silent",
-        lambda installer: spawned.append(str(installer)) or True,
+        lambda installer, **kwargs: spawned.append(str(installer)) or True,
     )
     from dtm_buildsheet.app.services.update_check_service import (
         consume_queued_installer,
@@ -330,7 +525,7 @@ def test_consume_queued_installer_runs_when_newer(tmp_path: Path, monkeypatch):
     spawned = []
     monkeypatch.setattr(
         "dtm_buildsheet.app.services.update_check_service._spawn_installer_silent",
-        lambda installer: spawned.append(str(installer)) or True,
+        lambda installer, **kwargs: spawned.append(str(installer)) or True,
     )
     from dtm_buildsheet.app.services.update_check_service import (
         consume_queued_installer,

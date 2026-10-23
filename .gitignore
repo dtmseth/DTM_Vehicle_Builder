@@ -1,4 +1,6 @@
 .venv/
+.venv-win/
+.venv-win-x64/
 venv/
 .claude/
 __pycache__/
