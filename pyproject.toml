@@ -11,7 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
   "lxml>=6.1,<7",
   "openpyxl>=3.1,<4",
-  "Pillow>=12.3,<13",
+  "Pillow>=13.0,<14",
   "pillow-heif>=1.1,<2",
   "PyMuPDF>=1.27,<2",
   "python-pptx>=1.0,<2",
@@ -19,6 +19,7 @@ dependencies = [
   "msal>=1.37,<2",
   "msal-extensions>=1.1,<2",
   "cryptography>=50,<51",
+  "certifi>=2026.5.20",
   "requests>=2.31,<3",
   # Windows does not ship the IANA zoneinfo database used by the calendar.
   # Keep this a runtime dependency so frozen Windows builds have a portable

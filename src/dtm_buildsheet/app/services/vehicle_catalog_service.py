@@ -12,7 +12,7 @@ from pathlib import Path
 from urllib.parse import quote, urlparse
 from urllib.request import Request, urlopen
 
-from requests.certs import where as requests_ca_bundle
+from certifi import where as certifi_ca_bundle
 
 from ...storage.local import LocalStorageProvider
 
@@ -29,7 +29,7 @@ _CACHE: dict[str, tuple[float, list[dict]]] = {}
 _CACHE_LOCK = threading.Lock()
 _REFRESHING: set[tuple[str, str]] = set()
 _log = logging.getLogger(__name__)
-_HTTPS_CONTEXT = ssl.create_default_context(cafile=requests_ca_bundle())
+_HTTPS_CONTEXT = ssl.create_default_context(cafile=certifi_ca_bundle())
 
 _AUTOMOTIVE_TYPES = {
     "Passenger Car": "Car",
