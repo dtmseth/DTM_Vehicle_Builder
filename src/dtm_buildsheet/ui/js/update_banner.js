@@ -106,14 +106,15 @@
         downloadBtn.disabled = false;
         return;
       }
-      downloadBtn.textContent = "Closing DTM…";
-      text.textContent = "Closing DTM completely. Installation will begin immediately afterward.";
+      downloadBtn.textContent = "Preparing update…";
+      text.textContent =
+        "Opening update progress. DTM will close only after that window is visible.";
       const closeFallback = setTimeout(() => {
         text.textContent =
-          "DTM is ready to update. If this window is still visible, close it normally; " +
-          "installation will begin as soon as DTM exits.";
-        downloadBtn.textContent = "Waiting for DTM to close…";
-      }, 4000);
+          "Windows is taking longer to prepare the update window. Keep DTM open; " +
+          "it will close automatically when the progress window is ready.";
+        downloadBtn.textContent = "Still preparing…";
+      }, 5000);
       try {
         const res = window.pywebview?.api?.install_update
           ? await window.pywebview.api.install_update()

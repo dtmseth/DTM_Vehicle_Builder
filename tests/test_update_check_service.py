@@ -339,12 +339,13 @@ def test_windows_installer_uses_visible_unattended_progress(tmp_path: Path, monk
     assert "Start-Process -FilePath $InstallerPath" in script_text
     assert "Show-ProgressWindow" in script_text
     assert "ProgressBarStyle]::Marquee" in script_text
-    assert "Test-InstallerWindowVisible" in script_text
+    assert "Test-DtmWindowVisible" in script_text
     assert "Closing DTM safely..." in script_text
-    assert "Windows is preparing the installer..." in script_text
-    assert "Windows is still verifying the installer" in script_text
+    assert "Installing the update. This can take up to a minute..." in script_text
+    assert "Installing updated files..." in script_text
+    assert "Finishing the installation..." in script_text
+    assert "Update installed. Starting DTM Vehicle Builder..." in script_text
     assert "Set-Content -LiteralPath $ReadyPath" in script_text
-    assert "'/SILENT'" in script_text
     assert "'/VERYSILENT /SUPPRESSMSGBOXES'" in script_text
 
 
@@ -393,9 +394,22 @@ def test_windows_handoff_ready_signal_keeps_app_visible_until_progress_window(
 
     monkeypatch.setattr(service.time, "sleep", show_progress_window)
 
-    service._wait_for_windows_handoff_ready(process, ready_path, timeout=1)
+    assert service._wait_for_windows_handoff_ready(process, ready_path, timeout=1)
 
     assert not ready_path.exists()
+
+
+def test_windows_handoff_failure_keeps_main_app_open(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    from dtm_buildsheet.app.services import update_check_service as service
+
+    process = SimpleNamespace(pid=4321, terminate=lambda: None)
+    monkeypatch.setattr(service.subprocess, "Popen", lambda *_args, **_kwargs: process)
+    monkeypatch.setattr(service, "_wait_for_windows_handoff_ready", lambda *_args: False)
+
+    installer = tmp_path / "DTM_Vehicle_Builder_Setup-2.2.4.exe"
+
+    assert service._spawn_installer_silent_windows(installer) is False
 
 
 def test_active_update_marker_blocks_old_version_and_allows_new_version(

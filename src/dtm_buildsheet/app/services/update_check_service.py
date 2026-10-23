@@ -427,9 +427,9 @@ def _spawn_installer_silent(
 def _write_windows_update_script(installer: Path) -> Path:
     """Write the detached Windows handoff that waits for this app to exit.
 
-    Explicit restarts show a small independent progress window immediately.
-    It bridges the otherwise blank interval between the pywebview window
-    closing and Inno Setup finishing its own extraction/security checks.
+    Explicit restarts use one independent progress window for the complete
+    handoff, silent install, and relaunch.  The app does not close until that
+    window confirms it is visible.
     """
     script_path = installer.parent / "run-windows-update.ps1"
     script_path.write_text(
@@ -471,19 +471,11 @@ function Close-ProgressWindow {
     }
 }
 
-function Test-InstallerWindowVisible([System.Diagnostics.Process]$InstallerProcess) {
-    try {
-        $InstallerProcess.Refresh()
-        if ($InstallerProcess.MainWindowHandle -ne 0) {
+function Test-DtmWindowVisible {
+    foreach ($candidate in (Get-Process -Name 'DTM Vehicle Builder' -ErrorAction SilentlyContinue)) {
+        if ($candidate.MainWindowHandle -ne 0) {
             return $true
         }
-        foreach ($candidate in (Get-Process -ErrorAction SilentlyContinue)) {
-            if ($candidate.MainWindowTitle -like 'Setup - DTM Vehicle Builder*') {
-                return $true
-            }
-        }
-    } catch {
-        return $false
     }
     return $false
 }
@@ -536,13 +528,22 @@ function Show-ProgressWindow {
         $script:ProgressForm = $null
     }
 
-    # The app waits briefly for this signal, so its full window remains on
-    # screen until the independent progress window is actually ready.
-    Set-Content -LiteralPath $ReadyPath -Value 'ready' -Encoding ASCII -Force
 }
 
 if ($Mode -eq 'visible') {
     Show-ProgressWindow
+    if (
+        $null -eq $script:ProgressForm -or
+        -not $script:ProgressForm.IsHandleCreated -or
+        -not $script:ProgressForm.Visible
+    ) {
+        Write-UpdateLog 'The update progress window did not become visible.'
+        exit 2
+    }
+    # Give Windows one paint cycle before authorizing the app to disappear.
+    Start-Sleep -Milliseconds 150
+    Pump-ProgressWindow
+    Set-Content -LiteralPath $ReadyPath -Value 'ready' -Encoding ASCII -Force
 }
 
 $deadline = [DateTime]::UtcNow.AddMinutes(2)
@@ -565,29 +566,25 @@ while (Get-Process -Id $WaitForPid -ErrorAction SilentlyContinue) {
 }
 
 try {
+    $displayArguments = '/VERYSILENT /SUPPRESSMSGBOXES'
     if ($Mode -eq 'visible') {
-        $displayArguments = '/SILENT'
-        Set-ProgressStatus 'DTM is closed. Windows is preparing the installer...'
-        if ($null -ne $script:ProgressForm) {
-            # Let the real installer take the foreground as soon as it appears.
-            $script:ProgressForm.TopMost = $false
-        }
-    } else {
-        $displayArguments = '/VERYSILENT /SUPPRESSMSGBOXES'
+        Set-ProgressStatus 'Installing the update. This can take up to a minute...'
     }
     $installerArguments = $displayArguments + ' /NORESTART /CLOSEAPPLICATIONS /RELAUNCH=' + $Relaunch + ' /LOG="' + $LogPath + '"'
     $installer = Start-Process -FilePath $InstallerPath -ArgumentList $installerArguments -PassThru
     if ($Mode -eq 'visible') {
-        $preparingSince = [DateTime]::UtcNow
-        $longWaitShown = $false
+        $installStarted = [DateTime]::UtcNow
+        $installingFilesShown = $false
+        $finishingShown = $false
         while (-not $installer.HasExited) {
-            if (Test-InstallerWindowVisible $installer) {
-                Close-ProgressWindow
-                break
+            $elapsed = ([DateTime]::UtcNow - $installStarted).TotalSeconds
+            if (-not $installingFilesShown -and $elapsed -ge 8) {
+                Set-ProgressStatus 'Installing updated files...'
+                $installingFilesShown = $true
             }
-            if (-not $longWaitShown -and ([DateTime]::UtcNow - $preparingSince).TotalSeconds -ge 8) {
-                Set-ProgressStatus 'Windows is still verifying the installer. Please keep waiting...'
-                $longWaitShown = $true
+            if (-not $finishingShown -and $elapsed -ge 30) {
+                Set-ProgressStatus 'Finishing the installation...'
+                $finishingShown = $true
             }
             Pump-ProgressWindow
             Start-Sleep -Milliseconds 100
@@ -595,6 +592,24 @@ try {
     }
     $installer.WaitForExit()
     $exitCode = $installer.ExitCode
+    if ($Mode -eq 'visible' -and $exitCode -eq 0 -and $Relaunch -eq '1') {
+        Set-ProgressStatus 'Update installed. Starting DTM Vehicle Builder...'
+        $startupDeadline = [DateTime]::UtcNow.AddMinutes(2)
+        while ([DateTime]::UtcNow -lt $startupDeadline) {
+            if (Test-DtmWindowVisible) {
+                break
+            }
+            Pump-ProgressWindow
+            Start-Sleep -Milliseconds 100
+        }
+        if (-not (Test-DtmWindowVisible)) {
+            Set-ProgressStatus 'The update is installed, but DTM did not reopen automatically.'
+            [System.Windows.Forms.MessageBox]::Show(
+                'The update finished, but DTM did not reopen automatically. Open DTM Vehicle Builder from your shortcut.',
+                'DTM Vehicle Builder update'
+            ) | Out-Null
+        }
+    }
 } catch {
     Write-UpdateLog 'Could not launch the DTM installer.'
     Set-ProgressStatus 'The Windows installer could not start.'
@@ -618,19 +633,20 @@ exit $exitCode
 
 
 def _wait_for_windows_handoff_ready(
-    process: subprocess.Popen, ready_path: Path, *, timeout: float = 5.0
-) -> None:
+    process: subprocess.Popen, ready_path: Path, *, timeout: float = 30.0
+) -> bool:
     """Keep the app visible until the detached progress UI is on screen."""
     if not hasattr(process, "poll"):
-        return
+        return True
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if ready_path.is_file():
             _delete_quietly(ready_path)
-            return
+            return True
         if process.poll() is not None:
-            return
+            return False
         time.sleep(0.05)
+    return False
 
 
 def _spawn_installer_silent_windows(
@@ -673,8 +689,13 @@ def _spawn_installer_silent_windows(
             ],
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
-        if visible:
-            _wait_for_windows_handoff_ready(process, ready_path)
+        if visible and not _wait_for_windows_handoff_ready(process, ready_path):
+            logger.error("Windows update progress window did not become ready")
+            try:
+                process.terminate()
+            except Exception:
+                logger.exception("Could not stop failed Windows updater handoff")
+            return False
         return process
     except Exception:
         logger.exception("Could not schedule queued installer %s", installer)
