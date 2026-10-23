@@ -1,0 +1,68 @@
+name: Build Windows Updater Test Kit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-kit:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: Choose disposable versions
+        id: versions
+        shell: pwsh
+        run: |
+          $ProjectText = Get-Content "pyproject.toml" -Raw
+          if ($ProjectText -notmatch '(?m)^version\s*=\s*"(\d+)\.(\d+)\.(\d+)"') {
+            throw "Could not read the app version."
+          }
+          $Major = [int]$Matches[1]
+          $Minor = [int]$Matches[2]
+          $Patch = [int]$Matches[3]
+          "first=$Major.$Minor.$($Patch + 1)" >> $env:GITHUB_OUTPUT
+          "second=$Major.$Minor.$($Patch + 2)" >> $env:GITHUB_OUTPUT
+
+      - name: Build disposable installers
+        shell: pwsh
+        run: |
+          $PythonPath = (Get-Command python.exe).Source
+          $InnoCompiler = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          $BuildRoot = Join-Path $env:RUNNER_TEMP "dtm-updater-test"
+          ./packaging/build_windows.ps1 `
+            -TestVersion "${{ steps.versions.outputs.first }}" `
+            -PythonPath $PythonPath `
+            -InnoCompiler $InnoCompiler `
+            -BuildRoot $BuildRoot `
+            -FastCompression
+          ./packaging/build_windows.ps1 `
+            -TestVersion "${{ steps.versions.outputs.second }}" `
+            -PythonPath $PythonPath `
+            -InnoCompiler $InnoCompiler `
+            -BuildRoot $BuildRoot `
+            -InstallerOnly `
+            -FastCompression
+
+          $Kit = Join-Path $env:RUNNER_TEMP "DTM-Updater-Progress-Test"
+          New-Item -ItemType Directory -Force $Kit | Out-Null
+          Copy-Item (Join-Path $BuildRoot "dist\DTM_Vehicle_Builder_Setup-${{ steps.versions.outputs.first }}.exe") $Kit
+          Copy-Item (Join-Path $BuildRoot "dist\DTM_Vehicle_Builder_Setup-${{ steps.versions.outputs.second }}.exe") $Kit
+          Copy-Item "packaging\run_prebuilt_windows_updater_test.cmd" $Kit
+          Copy-Item "packaging\run_prebuilt_windows_updater_test.ps1" $Kit
+          "DTM_TEST_KIT=$Kit" >> $env:GITHUB_ENV
+
+      - name: Upload test kit
+        uses: actions/upload-artifact@v7
+        with:
+          name: DTM-Updater-Progress-Test
+          path: ${{ env.DTM_TEST_KIT }}
+          retention-days: 7
+          if-no-files-found: error

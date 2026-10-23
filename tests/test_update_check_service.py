@@ -330,11 +330,20 @@ def test_windows_installer_uses_visible_unattended_progress(tmp_path: Path, monk
         "visible",
         "-Relaunch",
         "1",
+        "-ReadyPath",
+        str(tmp_path / "windows-update-window-ready"),
     ]
     assert "creationflags" in options
     script_text = script.read_text(encoding="utf-8")
     assert "while (Get-Process -Id $WaitForPid" in script_text
     assert "Start-Process -FilePath $InstallerPath" in script_text
+    assert "Show-ProgressWindow" in script_text
+    assert "ProgressBarStyle]::Marquee" in script_text
+    assert "Test-InstallerWindowVisible" in script_text
+    assert "Closing DTM safely..." in script_text
+    assert "Windows is preparing the installer..." in script_text
+    assert "Windows is still verifying the installer" in script_text
+    assert "Set-Content -LiteralPath $ReadyPath" in script_text
     assert "'/SILENT'" in script_text
     assert "'/VERYSILENT /SUPPRESSMSGBOXES'" in script_text
 
@@ -360,8 +369,33 @@ def test_windows_installer_can_run_quietly_without_relaunch(tmp_path: Path, monk
         installer, visible=False, relaunch=False
     ) is process
     args, options = calls[0]
-    assert args[-4:] == ["-Mode", "background", "-Relaunch", "0"]
+    assert args[-6:] == [
+        "-Mode",
+        "background",
+        "-Relaunch",
+        "0",
+        "-ReadyPath",
+        str(tmp_path / "windows-update-window-ready"),
+    ]
     assert "creationflags" in options
+
+
+def test_windows_handoff_ready_signal_keeps_app_visible_until_progress_window(
+    tmp_path: Path, monkeypatch
+):
+    from dtm_buildsheet.app.services import update_check_service as service
+
+    ready_path = tmp_path / "windows-update-window-ready"
+    process = SimpleNamespace(poll=lambda: None)
+
+    def show_progress_window(_seconds):
+        ready_path.write_text("ready", encoding="ascii")
+
+    monkeypatch.setattr(service.time, "sleep", show_progress_window)
+
+    service._wait_for_windows_handoff_ready(process, ready_path, timeout=1)
+
+    assert not ready_path.exists()
 
 
 def test_active_update_marker_blocks_old_version_and_allows_new_version(

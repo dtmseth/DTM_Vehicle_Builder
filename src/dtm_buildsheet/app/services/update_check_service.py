@@ -425,7 +425,12 @@ def _spawn_installer_silent(
 
 
 def _write_windows_update_script(installer: Path) -> Path:
-    """Write the detached Windows handoff that waits for this app to exit."""
+    """Write the detached Windows handoff that waits for this app to exit.
+
+    Explicit restarts show a small independent progress window immediately.
+    It bridges the otherwise blank interval between the pywebview window
+    closing and Inno Setup finishing its own extraction/security checks.
+    """
     script_path = installer.parent / "run-windows-update.ps1"
     script_path.write_text(
         r'''param(
@@ -433,38 +438,199 @@ def _write_windows_update_script(installer: Path) -> Path:
     [Parameter(Mandatory = $true)][string]$InstallerPath,
     [Parameter(Mandatory = $true)][string]$LogPath,
     [Parameter(Mandatory = $true)][ValidateSet('visible', 'background')][string]$Mode,
-    [Parameter(Mandatory = $true)][ValidateSet('0', '1')][string]$Relaunch
+    [Parameter(Mandatory = $true)][ValidateSet('0', '1')][string]$Relaunch,
+    [Parameter(Mandatory = $true)][string]$ReadyPath
 )
+
+$script:ProgressForm = $null
+$script:StatusLabel = $null
+
+function Write-UpdateLog([string]$Message) {
+    Add-Content -LiteralPath $LogPath -Value $Message -ErrorAction SilentlyContinue
+}
+
+function Pump-ProgressWindow {
+    if ($null -ne $script:ProgressForm) {
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+}
+
+function Set-ProgressStatus([string]$Message) {
+    if ($null -ne $script:StatusLabel) {
+        $script:StatusLabel.Text = $Message
+        $script:ProgressForm.Refresh()
+        Pump-ProgressWindow
+    }
+}
+
+function Close-ProgressWindow {
+    if ($null -ne $script:ProgressForm) {
+        $script:ProgressForm.Close()
+        $script:ProgressForm.Dispose()
+        $script:ProgressForm = $null
+    }
+}
+
+function Test-InstallerWindowVisible([System.Diagnostics.Process]$InstallerProcess) {
+    try {
+        $InstallerProcess.Refresh()
+        if ($InstallerProcess.MainWindowHandle -ne 0) {
+            return $true
+        }
+        foreach ($candidate in (Get-Process -ErrorAction SilentlyContinue)) {
+            if ($candidate.MainWindowTitle -like 'Setup - DTM Vehicle Builder*') {
+                return $true
+            }
+        }
+    } catch {
+        return $false
+    }
+    return $false
+}
+
+function Show-ProgressWindow {
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -AssemblyName System.Drawing
+        [System.Windows.Forms.Application]::EnableVisualStyles()
+
+        $script:ProgressForm = New-Object System.Windows.Forms.Form
+        $script:ProgressForm.Text = 'Updating DTM Vehicle Builder'
+        $script:ProgressForm.ClientSize = New-Object System.Drawing.Size(470, 128)
+        $script:ProgressForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+        $script:ProgressForm.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+        $script:ProgressForm.MaximizeBox = $false
+        $script:ProgressForm.MinimizeBox = $false
+        $script:ProgressForm.ControlBox = $false
+        $script:ProgressForm.ShowInTaskbar = $true
+        $script:ProgressForm.TopMost = $true
+
+        $heading = New-Object System.Windows.Forms.Label
+        $heading.AutoSize = $false
+        $heading.Location = New-Object System.Drawing.Point(22, 18)
+        $heading.Size = New-Object System.Drawing.Size(426, 24)
+        $heading.Font = New-Object System.Drawing.Font('Segoe UI', 11, [System.Drawing.FontStyle]::Bold)
+        $heading.Text = 'Installing the DTM update'
+
+        $script:StatusLabel = New-Object System.Windows.Forms.Label
+        $script:StatusLabel.AutoSize = $false
+        $script:StatusLabel.Location = New-Object System.Drawing.Point(22, 48)
+        $script:StatusLabel.Size = New-Object System.Drawing.Size(426, 22)
+        $script:StatusLabel.Font = New-Object System.Drawing.Font('Segoe UI', 9)
+        $script:StatusLabel.Text = 'Closing DTM safely...'
+
+        $progress = New-Object System.Windows.Forms.ProgressBar
+        $progress.Location = New-Object System.Drawing.Point(22, 82)
+        $progress.Size = New-Object System.Drawing.Size(426, 18)
+        $progress.Style = [System.Windows.Forms.ProgressBarStyle]::Marquee
+        $progress.MarqueeAnimationSpeed = 24
+
+        $script:ProgressForm.Controls.Add($heading)
+        $script:ProgressForm.Controls.Add($script:StatusLabel)
+        $script:ProgressForm.Controls.Add($progress)
+        $script:ProgressForm.Show()
+        $script:ProgressForm.Activate()
+        Pump-ProgressWindow
+    } catch {
+        Write-UpdateLog 'Could not display the update handoff window.'
+        $script:ProgressForm = $null
+    }
+
+    # The app waits briefly for this signal, so its full window remains on
+    # screen until the independent progress window is actually ready.
+    Set-Content -LiteralPath $ReadyPath -Value 'ready' -Encoding ASCII -Force
+}
+
+if ($Mode -eq 'visible') {
+    Show-ProgressWindow
+}
 
 $deadline = [DateTime]::UtcNow.AddMinutes(2)
 while (Get-Process -Id $WaitForPid -ErrorAction SilentlyContinue) {
     if ([DateTime]::UtcNow -ge $deadline) {
-        Add-Content -LiteralPath $LogPath -Value "Timed out waiting for DTM to close."
+        Write-UpdateLog 'Timed out waiting for DTM to close.'
+        Set-ProgressStatus 'DTM could not close automatically. Please close it and try again.'
+        if ($Mode -eq 'visible') {
+            [System.Windows.Forms.MessageBox]::Show(
+                'DTM could not close automatically. Please close it and try the update again.',
+                'DTM Vehicle Builder update'
+            ) | Out-Null
+        }
+        Close-ProgressWindow
+        Remove-Item -LiteralPath $ReadyPath -Force -ErrorAction SilentlyContinue
         exit 1460
     }
-    Start-Sleep -Milliseconds 200
+    Pump-ProgressWindow
+    Start-Sleep -Milliseconds 100
 }
 
 try {
     if ($Mode -eq 'visible') {
         $displayArguments = '/SILENT'
+        Set-ProgressStatus 'DTM is closed. Windows is preparing the installer...'
+        if ($null -ne $script:ProgressForm) {
+            # Let the real installer take the foreground as soon as it appears.
+            $script:ProgressForm.TopMost = $false
+        }
     } else {
         $displayArguments = '/VERYSILENT /SUPPRESSMSGBOXES'
     }
     $installerArguments = $displayArguments + ' /NORESTART /CLOSEAPPLICATIONS /RELAUNCH=' + $Relaunch + ' /LOG="' + $LogPath + '"'
-    $installer = Start-Process -FilePath $InstallerPath -ArgumentList $installerArguments -PassThru -Wait
+    $installer = Start-Process -FilePath $InstallerPath -ArgumentList $installerArguments -PassThru
+    if ($Mode -eq 'visible') {
+        $preparingSince = [DateTime]::UtcNow
+        $longWaitShown = $false
+        while (-not $installer.HasExited) {
+            if (Test-InstallerWindowVisible $installer) {
+                Close-ProgressWindow
+                break
+            }
+            if (-not $longWaitShown -and ([DateTime]::UtcNow - $preparingSince).TotalSeconds -ge 8) {
+                Set-ProgressStatus 'Windows is still verifying the installer. Please keep waiting...'
+                $longWaitShown = $true
+            }
+            Pump-ProgressWindow
+            Start-Sleep -Milliseconds 100
+        }
+    }
+    $installer.WaitForExit()
     $exitCode = $installer.ExitCode
 } catch {
-    Add-Content -LiteralPath $LogPath -Value "Could not launch the DTM installer."
+    Write-UpdateLog 'Could not launch the DTM installer.'
+    Set-ProgressStatus 'The Windows installer could not start.'
+    if ($Mode -eq 'visible') {
+        [System.Windows.Forms.MessageBox]::Show(
+            'The Windows installer could not start. Reopen DTM and try the update again.',
+            'DTM Vehicle Builder update'
+        ) | Out-Null
+    }
     $exitCode = 1
 }
 
+Close-ProgressWindow
+Remove-Item -LiteralPath $ReadyPath -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue
 exit $exitCode
 ''',
         encoding="utf-8",
     )
     return script_path
+
+
+def _wait_for_windows_handoff_ready(
+    process: subprocess.Popen, ready_path: Path, *, timeout: float = 5.0
+) -> None:
+    """Keep the app visible until the detached progress UI is on screen."""
+    if not hasattr(process, "poll"):
+        return
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if ready_path.is_file():
+            _delete_quietly(ready_path)
+            return
+        if process.poll() is not None:
+            return
+        time.sleep(0.05)
 
 
 def _spawn_installer_silent_windows(
@@ -479,7 +645,9 @@ def _spawn_installer_silent_windows(
     """
     try:
         script_path = _write_windows_update_script(installer)
-        return subprocess.Popen(
+        ready_path = installer.parent / "windows-update-window-ready"
+        ready_path.unlink(missing_ok=True)
+        process = subprocess.Popen(
             [
                 "powershell.exe",
                 "-NoProfile",
@@ -500,9 +668,14 @@ def _spawn_installer_silent_windows(
                 "visible" if visible else "background",
                 "-Relaunch",
                 "1" if relaunch else "0",
+                "-ReadyPath",
+                str(ready_path),
             ],
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
+        if visible:
+            _wait_for_windows_handoff_ready(process, ready_path)
+        return process
     except Exception:
         logger.exception("Could not schedule queued installer %s", installer)
         return False
