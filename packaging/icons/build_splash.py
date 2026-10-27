@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,49 +40,39 @@ def _font(size: int, *, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFon
     return ImageFont.load_default()
 
 
-def _photo_background(source: Image.Image, *, equipment: bool) -> Image.Image:
-    """Compose an exact photo with a logo-safe left region."""
-    background = ImageOps.fit(
+def _photo_background(source: Image.Image) -> Image.Image:
+    """Fade one untouched photo into a clean logo-safe charcoal field."""
+    background = Image.new("RGBA", (WIDTH, HEIGHT))
+    background_pixels = background.load()
+    for y in range(HEIGHT):
+        vertical = y / max(HEIGHT - 1, 1)
+        for x in range(WIDTH):
+            horizontal = x / max(WIDTH - 1, 1)
+            shade = round(26 - (10 * vertical) - (4 * horizontal))
+            background_pixels[x, y] = (shade, shade + 2, shade + 4, 255)
+
+    sharp = ImageOps.fit(
         source,
-        (WIDTH, HEIGHT),
+        (WIDTH - PHOTO_LEFT, HEIGHT),
         method=Image.Resampling.LANCZOS,
         centering=(0.5, 0.5),
-    ).filter(ImageFilter.GaussianBlur(12))
-    background = ImageEnhance.Brightness(background).enhance(0.72).convert("RGBA")
+    ).convert("RGBA")
+    sharp_layer = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
+    sharp_layer.alpha_composite(sharp, (PHOTO_LEFT, 0))
 
-    if equipment:
-        sharp = ImageOps.fit(
-            source,
-            (WIDTH, HEIGHT),
-            method=Image.Resampling.LANCZOS,
-            centering=(0.5, 0.5),
-        ).convert("RGBA")
-        background = Image.blend(background, sharp, 0.88)
-    else:
-        sharp = ImageOps.fit(
-            source,
-            (WIDTH - PHOTO_LEFT, HEIGHT),
-            method=Image.Resampling.LANCZOS,
-            centering=(0.5, 0.5),
-        ).convert("RGBA")
-        sharp_layer = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
-        sharp_layer.alpha_composite(sharp, (PHOTO_LEFT, 0))
-
-        mask = Image.new("L", (WIDTH, HEIGHT), 0)
-        mask_pixels = mask.load()
-        fade_start, fade_end = 245, 455
-        for x in range(WIDTH):
-            if x <= fade_start:
-                alpha = 0
-            elif x >= fade_end:
-                alpha = 255
-            else:
-                alpha = round(255 * (x - fade_start) / (fade_end - fade_start))
-            for y in range(HEIGHT):
-                mask_pixels[x, y] = alpha
-        background = Image.composite(sharp_layer, background, mask)
-
-    return ImageEnhance.Contrast(background).enhance(1.03)
+    mask = Image.new("L", (WIDTH, HEIGHT), 0)
+    mask_pixels = mask.load()
+    fade_start, fade_end = PHOTO_LEFT, 445
+    for x in range(WIDTH):
+        if x <= fade_start:
+            alpha = 0
+        elif x >= fade_end:
+            alpha = 255
+        else:
+            alpha = round(255 * (x - fade_start) / (fade_end - fade_start))
+        for y in range(HEIGHT):
+            mask_pixels[x, y] = alpha
+    return Image.composite(sharp_layer, background, mask)
 
 
 def _add_legibility_gradients(image: Image.Image) -> None:
@@ -129,7 +119,7 @@ def _add_branding(image: Image.Image) -> None:
 def build() -> None:
     for index, source_path in enumerate(SOURCES, start=1):
         source = Image.open(source_path).convert("RGB")
-        splash = _photo_background(source, equipment=index == 3)
+        splash = _photo_background(source)
         _add_legibility_gradients(splash)
         _add_branding(splash)
         splash.convert("RGB").save(
