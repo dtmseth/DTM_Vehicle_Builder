@@ -26,6 +26,9 @@ def test_windows_borderless_startup_launcher_is_built_and_used_by_shortcuts():
     build_script = (ROOT / "packaging" / "build_windows.ps1").read_text(
         encoding="utf-8"
     )
+    release_workflow = (ROOT / ".github" / "workflows" / "build.yml").read_text(
+        encoding="utf-8"
+    )
     installer = (ROOT / "packaging" / "windows" / "installer.iss").read_text(
         encoding="utf-8"
     )
@@ -38,6 +41,7 @@ def test_windows_borderless_startup_launcher_is_built_and_used_by_shortcuts():
 
     assert (ROOT / "packaging" / "icons" / "splash.png").is_file()
     assert "Build-StartupLauncher" in build_script
+    assert "./packaging/build_windows.ps1" in release_workflow
     assert 'Filename: "{app}\\{#MyLauncherExeName}"' in installer
     assert 'Filename: "{app}\\{#MyAppExeName}"' in installer
     assert "Check: ShouldCreateDesktopShortcut" in installer

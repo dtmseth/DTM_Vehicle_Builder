@@ -220,21 +220,16 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install dependencies
-        run: pip install -e ".[packaging-win]"
-
-      - name: Set version env
+      # Keep production releases on the same path exercised by the disposable
+      # updater kit. This also compiles the native startup launcher before Inno
+      # packages the app, which a direct PyInstaller/ISCC sequence would omit.
+      - name: Build Windows app and installer
+        shell: pwsh
         run: |
-          echo "APP_VERSION=${{ needs.version.outputs.version }}" >> $env:GITHUB_ENV
-
-      - name: Build app
-        run: python -m PyInstaller --clean -y packaging/pyinstaller/DTM_VehicleBuilder.spec
-
-      - name: Build installer
-        run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" packaging/windows/installer.iss
-        env:
-          APP_VERSION: ${{ needs.version.outputs.version }}
+          $PythonPath = (Get-Command python.exe).Source
+          ./packaging/build_windows.ps1 `
+            -PythonPath $PythonPath `
+            -InnoCompiler "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 
       - uses: actions/upload-artifact@v7
         with:
