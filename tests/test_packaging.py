@@ -40,6 +40,8 @@ def test_windows_borderless_startup_launcher_is_built_and_used_by_shortcuts():
     assert "Build-StartupLauncher" in build_script
     assert 'Filename: "{app}\\{#MyLauncherExeName}"' in installer
     assert 'Filename: "{app}\\{#MyAppExeName}"' in installer
+    assert "Check: ShouldCreateDesktopShortcut" in installer
+    assert "FileExists(ExpandConstant('{autodesktop}\\{#MyAppName}.lnk'))" in installer
     assert "FormBorderStyle = FormBorderStyle.None" in launcher
     assert "ShowInTaskbar = false" in launcher
     assert 'EnvironmentVariables["DTM_STARTUP_SPLASH_STATUS_FILE"]' in launcher

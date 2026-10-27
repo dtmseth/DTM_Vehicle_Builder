@@ -88,6 +88,17 @@ if (!$AppReady) {
     throw "DTM $FirstVersion did not finish opening within one minute."
 }
 
+$DesktopShortcut = Join-Path ([Environment]::GetFolderPath("Desktop")) "DTM Vehicle Builder.lnk"
+if (Test-Path $DesktopShortcut) {
+    $ShortcutTarget = (New-Object -ComObject WScript.Shell).CreateShortcut(
+        $DesktopShortcut
+    ).TargetPath
+    if ((Split-Path $ShortcutTarget -Leaf) -ne "DTM Vehicle Builder Launcher.exe") {
+        throw "The existing DTM desktop shortcut was not updated to use the startup splash."
+    }
+    Write-Host "Verified that the existing desktop shortcut uses the startup splash."
+}
+
 Copy-Item $SecondInstaller.FullName (Join-Path $Queue $SecondInstaller.Name) -Force
 
 Write-Host ""
@@ -97,7 +108,7 @@ Write-Host "2. Click Restart & Install."
 Write-Host "3. Confirm the small DTM progress window appears before the main app closes."
 Write-Host "4. Confirm it remains for the entire install; no separate installer window should appear."
 Write-Host "5. Confirm v$SecondVersion opens without a second startup splash."
-Write-Host "6. Close DTM normally, then reopen it from its desktop shortcut."
+Write-Host "6. Close DTM normally, then reopen it from its desktop or Start menu shortcut."
 Write-Host "7. Confirm the borderless branded splash appears immediately, shows changing text,"
 Write-Host "   and closes only when DTM is fully visible. It should have no title bar or buttons."
 Write-Host ""

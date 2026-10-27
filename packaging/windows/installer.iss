@@ -53,7 +53,9 @@ Source: "{#MyAppDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs c
 ; does not show a second startup splash after the update-progress window.
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyLauncherExeName}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyLauncherExeName}"; Tasks: desktopicon
+; Preserve the user's desktop-icon choice on a new install, but always repair
+; an existing shortcut left by an older version so it uses the splash launcher.
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyLauncherExeName}"; Check: ShouldCreateDesktopShortcut
 
 [Run]
 ; The explicit Restart & Install path passes /RELAUNCH=1 and opens the new
@@ -63,6 +65,12 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyLauncherExeName}"; Task
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall; Check: ShouldRelaunchAfterInstall
 
 [Code]
+
+function ShouldCreateDesktopShortcut(): Boolean;
+begin
+  Result := WizardIsTaskSelected('desktopicon') or
+    FileExists(ExpandConstant('{autodesktop}\{#MyAppName}.lnk'));
+end;
 
 function ShouldRelaunchAfterInstall(): Boolean;
 begin

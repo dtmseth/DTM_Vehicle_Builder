@@ -38,7 +38,7 @@ namespace DTMStartup
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
             TopMost = true;
-            BackColor = Color.FromArgb(22, 29, 77);
+            BackColor = Color.FromArgb(36, 39, 44);
             BackgroundImage = LoadSplashImage();
             BackgroundImageLayout = ImageLayout.None;
 

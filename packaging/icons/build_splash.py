@@ -30,12 +30,27 @@ def build() -> None:
     width, height = 560, 300
     image = Image.new("RGBA", (width, height))
     pixels = image.load()
-    top = (22, 29, 77)
-    bottom = (30, 39, 97)
+    # A neutral graphite gradient keeps the established DTM mark prominent
+    # without giving the small startup window a dated, saturated-blue cast.
+    top_left = (67, 70, 75)
+    top_right = (43, 46, 51)
+    bottom_left = (38, 41, 46)
+    bottom_right = (24, 26, 30)
     for y in range(height):
-        amount = y / max(height - 1, 1)
-        color = tuple(round(a + (b - a) * amount) for a, b in zip(top, bottom))
+        vertical = y / max(height - 1, 1)
         for x in range(width):
+            horizontal = x / max(width - 1, 1)
+            upper = tuple(
+                round(a + (b - a) * horizontal)
+                for a, b in zip(top_left, top_right)
+            )
+            lower = tuple(
+                round(a + (b - a) * horizontal)
+                for a, b in zip(bottom_left, bottom_right)
+            )
+            color = tuple(
+                round(a + (b - a) * vertical) for a, b in zip(upper, lower)
+            )
             pixels[x, y] = (*color, 255)
 
     logo = Image.open(SOURCE_LOGO).convert("RGBA")
@@ -53,7 +68,7 @@ def build() -> None:
         font=title_font,
         fill=(255, 255, 255, 255),
         stroke_width=1,
-        stroke_fill=(12, 17, 48, 255),
+        stroke_fill=(18, 20, 23, 255),
     )
     draw.rounded_rectangle((30, 239, width - 30, 242), radius=2, fill=(200, 169, 81, 255))
     image.convert("RGB").save(OUTPUT, "PNG", optimize=True)
