@@ -63,6 +63,8 @@ def test_windows_borderless_startup_launcher_is_built_and_used_by_shortcuts():
     assert "startup-splash-index.txt" in launcher
     assert '"Vehicle Builder  " + ReadInstalledVersion()' in launcher
     assert '"_build_version.txt"' in launcher
+    assert "28.0f, FontStyle.Bold, GraphicsUnit.Pixel" in launcher
+    assert "18.0f, FontStyle.Regular, GraphicsUnit.Pixel" in launcher
     assert "SetCurrentProcessExplicitAppUserModelID(AppUserModelId)" in launcher
     assert 'EnvironmentVariables["DTM_STARTUP_SPLASH_STATUS_FILE"]' in launcher
     assert 'AppUserModelID: "{#MyAppUserModelId}"' in installer

@@ -60,9 +60,13 @@ namespace DTMStartup
             productLabel.AutoSize = false;
             productLabel.BackColor = Color.Transparent;
             productLabel.ForeColor = Color.FromArgb(248, 249, 251);
-            productLabel.Font = new Font("Segoe UI Semibold", 20.0f, FontStyle.Bold);
-            productLabel.Location = new Point(46, 416);
-            productLabel.Size = new Size(700, 42);
+            // Pixel units keep Windows/Parallels DPI scaling from enlarging the
+            // glyphs beyond this fixed photographic canvas and clipping them.
+            productLabel.Font = new Font(
+                "Segoe UI Semibold", 28.0f, FontStyle.Bold, GraphicsUnit.Pixel
+            );
+            productLabel.Location = new Point(46, 404);
+            productLabel.Size = new Size(700, 56);
             productLabel.Text = "Vehicle Builder  " + ReadInstalledVersion();
             productLabel.TextAlign = ContentAlignment.MiddleLeft;
             Controls.Add(productLabel);
@@ -71,8 +75,10 @@ namespace DTMStartup
             statusLabel.AutoSize = false;
             statusLabel.BackColor = Color.Transparent;
             statusLabel.ForeColor = Color.FromArgb(224, 227, 235);
-            statusLabel.Font = new Font("Segoe UI", 13.0f, FontStyle.Regular);
-            statusLabel.Location = new Point(46, 464);
+            statusLabel.Font = new Font(
+                "Segoe UI", 18.0f, FontStyle.Regular, GraphicsUnit.Pixel
+            );
+            statusLabel.Location = new Point(46, 466);
             statusLabel.Size = new Size(820, 42);
             statusLabel.Text = "Starting DTM Vehicle Builder...";
             statusLabel.TextAlign = ContentAlignment.MiddleLeft;
