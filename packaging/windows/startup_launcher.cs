@@ -26,6 +26,7 @@ namespace DTMStartup
     internal sealed class StartupForm : Form
     {
         private const string ReadySignal = "__DTM_READY__";
+        private const int SplashCount = 6;
         private readonly Label statusLabel;
         private readonly Timer statusTimer;
         private Process appProcess;
@@ -33,7 +34,7 @@ namespace DTMStartup
 
         internal StartupForm()
         {
-            ClientSize = new Size(560, 300);
+            ClientSize = new Size(960, 540);
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
@@ -52,9 +53,9 @@ namespace DTMStartup
             statusLabel.AutoSize = false;
             statusLabel.BackColor = Color.Transparent;
             statusLabel.ForeColor = Color.FromArgb(242, 244, 251);
-            statusLabel.Font = new Font("Segoe UI", 10.0f, FontStyle.Regular);
-            statusLabel.Location = new Point(30, 252);
-            statusLabel.Size = new Size(500, 32);
+            statusLabel.Font = new Font("Segoe UI", 11.0f, FontStyle.Regular);
+            statusLabel.Location = new Point(46, 478);
+            statusLabel.Size = new Size(700, 34);
             statusLabel.Text = "Starting DTM Vehicle Builder...";
             statusLabel.TextAlign = ContentAlignment.MiddleLeft;
             Controls.Add(statusLabel);
@@ -68,8 +69,9 @@ namespace DTMStartup
 
         private static Image LoadSplashImage()
         {
+            string resourceName = "DTMStartupSplash" + (NextSplashIndex() + 1).ToString();
             using (Stream stream = Assembly.GetExecutingAssembly()
-                .GetManifestResourceStream("DTMStartupSplash"))
+                .GetManifestResourceStream(resourceName))
             {
                 if (stream == null)
                 {
@@ -79,6 +81,31 @@ namespace DTMStartup
                 {
                     return new Bitmap(source);
                 }
+            }
+        }
+
+        private static int NextSplashIndex()
+        {
+            try
+            {
+                string stateDirectory = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "DTM Vehicle Builder"
+                );
+                Directory.CreateDirectory(stateDirectory);
+                string stateFile = Path.Combine(stateDirectory, "startup-splash-index.txt");
+                int previous = -1;
+                if (File.Exists(stateFile))
+                {
+                    Int32.TryParse(File.ReadAllText(stateFile).Trim(), out previous);
+                }
+                int next = (Math.Max(previous, -1) + 1) % SplashCount;
+                File.WriteAllText(stateFile, next.ToString());
+                return next;
+            }
+            catch
+            {
+                return (int)(DateTime.UtcNow.Ticks % SplashCount);
             }
         }
 

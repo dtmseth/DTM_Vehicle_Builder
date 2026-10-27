@@ -5,6 +5,8 @@ from pathlib import Path
 import tomllib
 from types import SimpleNamespace
 
+from PIL import Image
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,7 +41,12 @@ def test_windows_borderless_startup_launcher_is_built_and_used_by_shortcuts():
         encoding="utf-8"
     )
 
-    assert (ROOT / "packaging" / "icons" / "splash.png").is_file()
+    splash_images = [
+        ROOT / "packaging" / "icons" / f"splash-{index}.jpg"
+        for index in range(1, 7)
+    ]
+    assert all(path.is_file() for path in splash_images)
+    assert all(Image.open(path).size == (960, 540) for path in splash_images)
     assert "Build-StartupLauncher" in build_script
     assert "./packaging/build_windows.ps1" in release_workflow
     assert 'Filename: "{app}\\{#MyLauncherExeName}"' in installer
@@ -48,6 +55,9 @@ def test_windows_borderless_startup_launcher_is_built_and_used_by_shortcuts():
     assert "FileExists(ExpandConstant('{autodesktop}\\{#MyAppName}.lnk'))" in installer
     assert "FormBorderStyle = FormBorderStyle.None" in launcher
     assert "ShowInTaskbar = false" in launcher
+    assert "ClientSize = new Size(960, 540)" in launcher
+    assert "private const int SplashCount = 6" in launcher
+    assert "startup-splash-index.txt" in launcher
     assert 'EnvironmentVariables["DTM_STARTUP_SPLASH_STATUS_FILE"]' in launcher
     assert "window.events.loaded += _finish_startup_splash" in server
     assert "hidden=startup_splash_active()" in server

@@ -115,10 +115,17 @@ function Build-StartupLauncher {
     }
 
     $LauncherSource = Join-Path (Get-Location) "packaging\windows\startup_launcher.cs"
-    $SplashImage = Join-Path (Get-Location) "packaging\icons\splash.png"
+    $SplashImages = @(1..6 | ForEach-Object {
+        Join-Path (Get-Location) "packaging\icons\splash-$_.jpg"
+    })
+    foreach ($SplashImage in $SplashImages) {
+        if (!(Test-Path $SplashImage)) {
+            throw "A rotating Windows splash image is missing: $SplashImage"
+        }
+    }
     $LauncherIcon = Join-Path (Get-Location) "packaging\icons\app.ico"
     $LauncherOutput = Join-Path $AppDirectory "DTM Vehicle Builder Launcher.exe"
-    & $Compiler @(
+    $CompilerArguments = @(
         "/nologo",
         "/target:winexe",
         "/optimize+",
@@ -126,10 +133,13 @@ function Build-StartupLauncher {
         "/reference:System.Drawing.dll",
         "/reference:System.Windows.Forms.dll",
         "/win32icon:$LauncherIcon",
-        "/resource:$SplashImage,DTMStartupSplash",
-        "/out:$LauncherOutput",
-        $LauncherSource
+        "/out:$LauncherOutput"
     )
+    for ($Index = 1; $Index -le $SplashImages.Count; $Index++) {
+        $CompilerArguments += "/resource:$($SplashImages[$Index - 1]),DTMStartupSplash$Index"
+    }
+    $CompilerArguments += $LauncherSource
+    & $Compiler @CompilerArguments
     if ($LASTEXITCODE -ne 0 -or !(Test-Path $LauncherOutput)) {
         throw "Could not build the Windows startup launcher."
     }
