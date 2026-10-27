@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageOps
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,22 +22,6 @@ SOURCES = (
 
 WIDTH, HEIGHT = 960, 540
 PHOTO_LEFT = 240
-
-
-def _font(size: int, *, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    names = (
-        "/System/Library/Fonts/Supplemental/Arial Bold.ttf" if bold
-        else "/System/Library/Fonts/Supplemental/Arial.ttf",
-        "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold
-        else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    )
-    for name in names:
-        try:
-            return ImageFont.truetype(name, size)
-        except OSError:
-            continue
-    return ImageFont.load_default()
 
 
 def _photo_background(source: Image.Image) -> Image.Image:
@@ -99,21 +83,6 @@ def _add_branding(image: Image.Image) -> None:
     logo = Image.open(SOURCE_LOGO).convert("RGBA")
     logo.thumbnail((350, 145), Image.Resampling.LANCZOS)
     image.alpha_composite(logo, (44, 48))
-
-    draw = ImageDraw.Draw(image)
-    title = "VEHICLE BUILDER"
-    title_font = _font(30, bold=True)
-    title_box = draw.textbbox((0, 0), title, font=title_font)
-    title_width = title_box[2] - title_box[0]
-    draw.text(
-        (44 + (350 - title_width) // 2, 198),
-        title,
-        font=title_font,
-        fill=(248, 249, 251, 255),
-        stroke_width=1,
-        stroke_fill=(9, 11, 14, 210),
-    )
-    draw.rounded_rectangle((44, 244, 394, 248), radius=2, fill=(210, 174, 76, 255))
 
 
 def build() -> None:

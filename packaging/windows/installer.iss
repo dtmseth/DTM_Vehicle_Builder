@@ -3,6 +3,7 @@
 #define MyAppPublisher "DTM"
 #define MyAppExeName "DTM Vehicle Builder.exe"
 #define MyLauncherExeName "DTM Vehicle Builder Launcher.exe"
+#define MyAppUserModelId "DTM.VehicleBuilder"
 #define MyAppDir GetEnv("DTM_BUILD_APP_DIR") != "" ? GetEnv("DTM_BUILD_APP_DIR") : "..\..\dist\DTM Vehicle Builder"
 #define MyOutputDir GetEnv("DTM_BUILD_OUTPUT_DIR") != "" ? GetEnv("DTM_BUILD_OUTPUT_DIR") : "..\..\dist"
 #define MyIconFile "..\..\packaging\icons\app.ico"
@@ -51,11 +52,11 @@ Source: "{#MyAppDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs c
 ; Normal user launches go through the instant borderless splash. The updater's
 ; [Run] entry below intentionally starts the real app directly so an update
 ; does not show a second startup splash after the update-progress window.
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyLauncherExeName}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyLauncherExeName}"; AppUserModelID: "{#MyAppUserModelId}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 ; Preserve the user's desktop-icon choice on a new install, but always repair
 ; an existing shortcut left by an older version so it uses the splash launcher.
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyLauncherExeName}"; Check: ShouldCreateDesktopShortcut
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyLauncherExeName}"; AppUserModelID: "{#MyAppUserModelId}"; Check: ShouldCreateDesktopShortcut
 
 [Run]
 ; The explicit Restart & Install path passes /RELAUNCH=1 and opens the new

@@ -10,13 +10,19 @@ namespace DTMStartup
 {
     internal static class Program
     {
+        private const string AppUserModelId = "DTM.VehicleBuilder";
+
         [DllImport("user32.dll")]
         private static extern bool SetProcessDPIAware();
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        private static extern uint SetCurrentProcessExplicitAppUserModelID(string appId);
 
         [STAThread]
         private static void Main()
         {
             try { SetProcessDPIAware(); } catch { }
+            try { SetCurrentProcessExplicitAppUserModelID(AppUserModelId); } catch { }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new StartupForm());
@@ -27,6 +33,7 @@ namespace DTMStartup
     {
         private const string ReadySignal = "__DTM_READY__";
         private const int SplashCount = 6;
+        private readonly Label productLabel;
         private readonly Label statusLabel;
         private readonly Timer statusTimer;
         private Process appProcess;
@@ -49,13 +56,24 @@ namespace DTMStartup
                 area.Top + Math.Max(0, (area.Height - Height) / 2)
             );
 
+            productLabel = new Label();
+            productLabel.AutoSize = false;
+            productLabel.BackColor = Color.Transparent;
+            productLabel.ForeColor = Color.FromArgb(248, 249, 251);
+            productLabel.Font = new Font("Segoe UI Semibold", 20.0f, FontStyle.Bold);
+            productLabel.Location = new Point(46, 416);
+            productLabel.Size = new Size(700, 42);
+            productLabel.Text = "Vehicle Builder  " + ReadInstalledVersion();
+            productLabel.TextAlign = ContentAlignment.MiddleLeft;
+            Controls.Add(productLabel);
+
             statusLabel = new Label();
             statusLabel.AutoSize = false;
             statusLabel.BackColor = Color.Transparent;
-            statusLabel.ForeColor = Color.FromArgb(242, 244, 251);
-            statusLabel.Font = new Font("Segoe UI", 11.0f, FontStyle.Regular);
-            statusLabel.Location = new Point(46, 478);
-            statusLabel.Size = new Size(700, 34);
+            statusLabel.ForeColor = Color.FromArgb(224, 227, 235);
+            statusLabel.Font = new Font("Segoe UI", 13.0f, FontStyle.Regular);
+            statusLabel.Location = new Point(46, 464);
+            statusLabel.Size = new Size(820, 42);
             statusLabel.Text = "Starting DTM Vehicle Builder...";
             statusLabel.TextAlign = ContentAlignment.MiddleLeft;
             Controls.Add(statusLabel);
@@ -65,6 +83,26 @@ namespace DTMStartup
             statusTimer.Tick += CheckStartupStatus;
             Shown += StartApplication;
             FormClosed += Cleanup;
+        }
+
+        private static string ReadInstalledVersion()
+        {
+            try
+            {
+                string versionPath = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "_internal",
+                    "dtm_buildsheet",
+                    "_build_version.txt"
+                );
+                string version = File.ReadAllText(versionPath).Trim();
+                if (!String.IsNullOrEmpty(version))
+                {
+                    return "v" + version;
+                }
+            }
+            catch { }
+            return "";
         }
 
         private static Image LoadSplashImage()

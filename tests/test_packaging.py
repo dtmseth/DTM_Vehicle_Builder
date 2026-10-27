@@ -37,6 +37,9 @@ def test_windows_borderless_startup_launcher_is_built_and_used_by_shortcuts():
     launcher = (ROOT / "packaging" / "windows" / "startup_launcher.cs").read_text(
         encoding="utf-8"
     )
+    entrypoint = (ROOT / "packaging" / "pyinstaller" / "launch_gui.py").read_text(
+        encoding="utf-8"
+    )
     server = (ROOT / "src" / "dtm_buildsheet" / "app" / "server.py").read_text(
         encoding="utf-8"
     )
@@ -58,7 +61,12 @@ def test_windows_borderless_startup_launcher_is_built_and_used_by_shortcuts():
     assert "ClientSize = new Size(960, 540)" in launcher
     assert "private const int SplashCount = 6" in launcher
     assert "startup-splash-index.txt" in launcher
+    assert '"Vehicle Builder  " + ReadInstalledVersion()' in launcher
+    assert '"_build_version.txt"' in launcher
+    assert "SetCurrentProcessExplicitAppUserModelID(AppUserModelId)" in launcher
     assert 'EnvironmentVariables["DTM_STARTUP_SPLASH_STATUS_FILE"]' in launcher
+    assert 'AppUserModelID: "{#MyAppUserModelId}"' in installer
+    assert 'SetCurrentProcessExplicitAppUserModelID(\n            "DTM.VehicleBuilder"' in entrypoint
     assert "window.events.loaded += _finish_startup_splash" in server
     assert "hidden=startup_splash_active()" in server
 
