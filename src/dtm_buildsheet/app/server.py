@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from ..paths import AppPaths, ensure_workspace
+from ..startup_splash import close_startup_splash, update_startup_status
 from .routes import agencies as agency_routes
 from .routes import sales_reps as sales_rep_routes
 from .services import agency_service, sales_rep_service
@@ -809,6 +810,7 @@ def _periodic_sync_loop(active_paths: AppPaths) -> None:
 
 
 def main(paths: AppPaths | None = None):
+    update_startup_status("Preparing your workspace...")
     if paths is None:
         _setup_logging(AppPaths().workspace_dir)
     active_paths = paths or ensure_workspace()
@@ -828,6 +830,7 @@ def main(paths: AppPaths | None = None):
         )
         active_update = get_active_update(active_paths)
         if active_update:
+            close_startup_splash()
             show_update_in_progress_notice(active_update)
             return
 
@@ -849,6 +852,7 @@ def main(paths: AppPaths | None = None):
         )
 
     Handler.paths = active_paths
+    update_startup_status("Loading local data...")
 
     from .services.upload_service import (
         acknowledge_completed_uploads,
@@ -897,6 +901,7 @@ def main(paths: AppPaths | None = None):
             f"Port {PORT} is already in use. Close the other app instance and try again."
         )
 
+    update_startup_status("Starting DTM services...")
     server = create_http_server(active_paths)
     # A completion badge is session-level information. Jobs remain in the
     # manager history, but a badge from a previous app run should not linger.
@@ -976,11 +981,19 @@ def main(paths: AppPaths | None = None):
         update_routes.set_desktop_install_handler(desktop_api.install_update)
         threading.Thread(target=server.serve_forever, daemon=True).start()
         _wait_for_server_ready(PORT)
+        update_startup_status("Opening DTM Vehicle Builder...")
         window = webview.create_window(
             "DTM Vehicle Builder", url, width=1280, height=800, min_size=(900, 600),
             js_api=desktop_api,
         )
         desktop_api.window = window
+
+        def _finish_startup_splash():
+            close_startup_splash(window)
+
+        # loaded fires after the page and pywebview's native JS bridge are
+        # ready, rather than merely when an empty native window exists.
+        window.events.loaded += _finish_startup_splash
 
         def _guard_active_uploads():
             if desktop_api.allow_close.is_set():
@@ -1023,6 +1036,7 @@ def main(paths: AppPaths | None = None):
             server.shutdown()
             server.server_close()
     except ImportError:
+        close_startup_splash()
         print("Press Ctrl-C to quit.\n")
         threading.Thread(
             target=lambda: (time.sleep(0.4), webbrowser.open(url)), daemon=True

@@ -60,6 +60,7 @@ Remove-Item Env:DTM_CLOUD -ErrorAction SilentlyContinue
 
 Write-Host ""
 Write-Host "Installing disposable DTM $FirstVersion..."
+Write-Host "Watch for the branded DTM startup splash and changing status text."
 $Install = Start-Process -FilePath $FirstInstaller.FullName -ArgumentList @(
     "/SILENT", "/NORESTART", "/CLOSEAPPLICATIONS", "/RELAUNCH=1"
 ) -PassThru
@@ -95,6 +96,7 @@ Write-Host "1. Wait up to one minute for the update banner in DTM."
 Write-Host "2. Click Restart & Install."
 Write-Host "3. Confirm the small DTM progress window appears before the main app closes."
 Write-Host "4. Confirm it remains for the entire install; no separate installer window should appear."
-Write-Host "5. Confirm it shows that DTM is starting, then closes when v$SecondVersion appears."
+Write-Host "5. Confirm the branded startup splash covers the final app startup."
+Write-Host "6. Confirm the splash closes only when v$SecondVersion is fully visible."
 Write-Host ""
 Write-Host "Keep Windows security enabled. Restore your Parallels snapshot when finished."
