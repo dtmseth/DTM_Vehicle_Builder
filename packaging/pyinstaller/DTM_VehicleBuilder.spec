@@ -13,7 +13,6 @@ APP_NAME = "DTM Vehicle Builder"
 ICON_DIR = ROOT / "packaging" / "icons"
 MAC_ICON = ICON_DIR / "app.icns"
 WIN_ICON = ICON_DIR / "app.ico"
-WIN_SPLASH = ICON_DIR / "splash.png"
 
 # Read version from pyproject.toml — single source of truth.
 _pyproject = ROOT / "pyproject.toml"
@@ -138,31 +137,10 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
-# PyInstaller's bootloader splash appears before Python imports finish, which
-# covers the otherwise unexplained startup delay on slower Windows machines.
-# The feature is incompatible with macOS, so the Mac bundle is unchanged.
-splash = None
-if _sys.platform == "win32" and WIN_SPLASH.exists():
-    splash = Splash(
-        str(WIN_SPLASH),
-        binaries=a.binaries,
-        datas=a.datas,
-        text_pos=(30, 270),
-        text_size=11,
-        text_font="Segoe UI",
-        text_color="#f2f4fb",
-        text_default="Starting DTM Vehicle Builder...",
-        always_on_top=True,
-        center="active",
-    )
-
-exe_inputs = [pyz]
-if splash is not None:
-    exe_inputs.append(splash)
-exe_inputs.extend([a.scripts, []])
-
 exe = EXE(
-    *exe_inputs,
+    pyz,
+    a.scripts,
+    [],
     exclude_binaries=True,
     name=APP_NAME,
     debug=False,
@@ -180,13 +158,10 @@ exe = EXE(
     version=VERSION_FILE,
 )
 
-collect_inputs = [exe]
-if splash is not None:
-    collect_inputs.append(splash.binaries)
-collect_inputs.extend([a.binaries, a.datas])
-
 coll = COLLECT(
-    *collect_inputs,
+    exe,
+    a.binaries,
+    a.datas,
     strip=False,
     upx=False,
     upx_exclude=[],

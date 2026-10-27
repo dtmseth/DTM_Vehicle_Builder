@@ -13,7 +13,11 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from ..paths import AppPaths, ensure_workspace
-from ..startup_splash import close_startup_splash, update_startup_status
+from ..startup_splash import (
+    close_startup_splash,
+    startup_splash_active,
+    update_startup_status,
+)
 from .routes import agencies as agency_routes
 from .routes import sales_reps as sales_rep_routes
 from .services import agency_service, sales_rep_service
@@ -985,6 +989,10 @@ def main(paths: AppPaths | None = None):
         window = webview.create_window(
             "DTM Vehicle Builder", url, width=1280, height=800, min_size=(900, 600),
             js_api=desktop_api,
+            # When a normal shortcut launch owns the borderless splash, keep
+            # pywebview's empty native form hidden until the page is ready.
+            # Installer relaunches bypass the splash and retain normal startup.
+            hidden=startup_splash_active(),
         )
         desktop_api.window = window
 

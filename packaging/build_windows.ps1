@@ -100,6 +100,41 @@ function Set-PackagedVersion {
     [System.IO.File]::WriteAllText($BuildVersionFile, $Version, $Utf8WithoutBom)
 }
 
+function Build-StartupLauncher {
+    param([string]$AppDirectory)
+
+    $CompilerCandidates = @(
+        "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe",
+        "$env:WINDIR\Microsoft.NET\Framework\v4.0.30319\csc.exe"
+    )
+    $Compiler = $CompilerCandidates |
+        Where-Object { Test-Path $_ } |
+        Select-Object -First 1
+    if (!$Compiler) {
+        throw "The Windows C# compiler required for the startup launcher was not found."
+    }
+
+    $LauncherSource = Join-Path (Get-Location) "packaging\windows\startup_launcher.cs"
+    $SplashImage = Join-Path (Get-Location) "packaging\icons\splash.png"
+    $LauncherIcon = Join-Path (Get-Location) "packaging\icons\app.ico"
+    $LauncherOutput = Join-Path $AppDirectory "DTM Vehicle Builder Launcher.exe"
+    & $Compiler @(
+        "/nologo",
+        "/target:winexe",
+        "/optimize+",
+        "/platform:anycpu",
+        "/reference:System.Drawing.dll",
+        "/reference:System.Windows.Forms.dll",
+        "/win32icon:$LauncherIcon",
+        "/resource:$SplashImage,DTMStartupSplash",
+        "/out:$LauncherOutput",
+        $LauncherSource
+    )
+    if ($LASTEXITCODE -ne 0 -or !(Test-Path $LauncherOutput)) {
+        throw "Could not build the Windows startup launcher."
+    }
+}
+
 try {
     $env:DTM_BUILD_WORK_DIR = $WorkPath
     $env:DTM_BUILD_APP_DIR = Join-Path $DistPath "DTM Vehicle Builder"
@@ -122,8 +157,12 @@ try {
         if ($LASTEXITCODE -ne 0) {
             throw "PyInstaller could not build the Windows application."
         }
-    } elseif (!(Test-Path (Join-Path $env:DTM_BUILD_APP_DIR "DTM Vehicle Builder.exe"))) {
-        throw "The packaged Windows application is missing; a full build is required first."
+        Build-StartupLauncher -AppDirectory $env:DTM_BUILD_APP_DIR
+    } elseif (
+        !(Test-Path (Join-Path $env:DTM_BUILD_APP_DIR "DTM Vehicle Builder.exe")) -or
+        !(Test-Path (Join-Path $env:DTM_BUILD_APP_DIR "DTM Vehicle Builder Launcher.exe"))
+    ) {
+        throw "The packaged Windows application or startup launcher is missing; a full build is required first."
     }
 
     if ($TestVersion) {

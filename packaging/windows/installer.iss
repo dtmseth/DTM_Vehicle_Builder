@@ -2,6 +2,7 @@
 #define MyAppVersion GetEnv("APP_VERSION") != "" ? GetEnv("APP_VERSION") : "1.0.0"
 #define MyAppPublisher "DTM"
 #define MyAppExeName "DTM Vehicle Builder.exe"
+#define MyLauncherExeName "DTM Vehicle Builder Launcher.exe"
 #define MyAppDir GetEnv("DTM_BUILD_APP_DIR") != "" ? GetEnv("DTM_BUILD_APP_DIR") : "..\..\dist\DTM Vehicle Builder"
 #define MyOutputDir GetEnv("DTM_BUILD_OUTPUT_DIR") != "" ? GetEnv("DTM_BUILD_OUTPUT_DIR") : "..\..\dist"
 #define MyIconFile "..\..\packaging\icons\app.ico"
@@ -47,9 +48,12 @@ Type: filesandordirs; Name: "{app}\_internal"
 Source: "{#MyAppDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+; Normal user launches go through the instant borderless splash. The updater's
+; [Run] entry below intentionally starts the real app directly so an update
+; does not show a second startup splash after the update-progress window.
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyLauncherExeName}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyLauncherExeName}"; Tasks: desktopicon
 
 [Run]
 ; The explicit Restart & Install path passes /RELAUNCH=1 and opens the new
