@@ -147,7 +147,7 @@ Customer-label and Part-brand choices come from Shopmonkey's live list APIs. Sav
 provider IDs and canonical names; hosted pricing matches the IDs, with exact-name matching only as a
 compatibility path for the original test configuration.
 
-The five-minute `shopmonkey-reconcile` scheduled function is a bounded safety net for missed
+The hourly `shopmonkey-reconcile` scheduled function is a bounded safety net for missed
 events. It pages from the tail of Shopmonkey's order list, checks only recently changed orders,
 and refuses to use pricing-matrix metadata as evidence that a price is automatic. The public,
 data-free `shopmonkey-health` endpoint fails closed when configuration, credentials, or recent

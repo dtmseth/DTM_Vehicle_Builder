@@ -3,7 +3,7 @@
 const { connectLambda } = require("@netlify/blobs");
 const { loadConfig, loadHealth } = require("../../lib/shopmonkey-pricing");
 
-const MAX_RECONCILE_AGE_SECONDS = 12 * 60;
+const MAX_RECONCILE_AGE_SECONDS = 75 * 60;
 
 function response(statusCode, payload) {
   return {

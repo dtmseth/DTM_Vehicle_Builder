@@ -8,7 +8,7 @@
   node_bundler = "esbuild"
 
 [functions."shopmonkey-reconcile"]
-  schedule = "*/5 * * * *"
+  schedule = "@hourly"
 
 [[headers]]
   for = "/*"

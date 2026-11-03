@@ -179,6 +179,12 @@ test("health fails closed until reconciliation is current", async () => {
     const before = await healthModule.handler({ httpMethod: "GET" });
     assert.equal(before.statusCode, 503);
     await pricing.recordHealth({
+      last_reconcile_success_at: new Date((NOW - (76 * 60)) * 1000).toISOString(),
+      last_api_check_ok: true,
+    });
+    const stale = await healthModule.handler({ httpMethod: "GET" });
+    assert.equal(stale.statusCode, 503);
+    await pricing.recordHealth({
       last_reconcile_success_at: new Date((NOW - 60) * 1000).toISOString(),
       last_api_check_ok: true,
     });
