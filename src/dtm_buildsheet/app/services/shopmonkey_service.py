@@ -13,10 +13,12 @@ import uuid
 from collections import defaultdict
 from datetime import datetime, timezone
 
-import requests
-
 from ...paths import AppPaths
-from ..adapters.shopmonkey.api_client import ShopmonkeyApiClient, ShopmonkeyApiError
+from ..adapters.shopmonkey.api_client import (
+    ShopmonkeyApiClient,
+    ShopmonkeyApiError,
+    request_json_document,
+)
 from ..adapters.shopmonkey.credential_store import ShopmonkeyCredentialStore
 from . import agency_service
 
@@ -172,55 +174,50 @@ def _pricing_management_request(method: str, payload: dict | None = None) -> tup
     if payload is not None:
         headers["Content-Type"] = "application/json"
     try:
-        response = requests.request(
+        status_code, document = request_json_document(
             method.upper(),
             _PRICING_ADMIN_URL,
             headers=headers,
             data=body or None,
             timeout=_PRICING_TIMEOUT_SECONDS,
         )
-    except Exception:  # noqa: BLE001 - provider exception text may expose request details
+    except ShopmonkeyApiError:
         return 503, {
             "ok": False,
             "error": "pricing_host_unavailable",
             "detail": "The hosted pricing service could not be reached.",
         }
-    try:
-        document = response.json()
-    except Exception:  # noqa: BLE001 - never surface provider response text
-        document = {}
-    if not isinstance(document, dict):
-        document = {}
-    if response.status_code == 401:
+    if status_code == 401:
         return 401, {
             "ok": False,
             "error": "pricing_auth_mismatch",
             "detail": "The Builder and hosted pricing service do not have the same Shopmonkey API key.",
         }
-    if response.status_code == 409:
+    if status_code == 409:
         return 409, {
             "ok": False,
             "error": "pricing_config_conflict",
             "detail": "Pricing settings changed elsewhere. Reload them before saving.",
             "config": document.get("config") if isinstance(document.get("config"), dict) else {},
         }
-    if not 200 <= response.status_code < 300:
-        return response.status_code, {
+    if not 200 <= status_code < 300:
+        return status_code, {
             "ok": False,
             "error": str(document.get("error") or "pricing_host_unavailable"),
             "detail": "The hosted pricing service rejected the settings.",
             "errors": document.get("errors") if isinstance(document.get("errors"), list) else [],
         }
-    return response.status_code, document
+    return status_code, document
 
 
 def _hosted_pricing_health() -> dict:
     try:
-        response = requests.get(_PRICING_HEALTH_URL, timeout=_PRICING_TIMEOUT_SECONDS)
-        document = response.json()
-    except Exception:  # noqa: BLE001 - keep external failure details private
-        return {"ok": False, "status": "health_unavailable"}
-    if not isinstance(document, dict):
+        _status_code, document = request_json_document(
+            "GET",
+            _PRICING_HEALTH_URL,
+            timeout=_PRICING_TIMEOUT_SECONDS,
+        )
+    except ShopmonkeyApiError:
         return {"ok": False, "status": "health_unavailable"}
     return document
 

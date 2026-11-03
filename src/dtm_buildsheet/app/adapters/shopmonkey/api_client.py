@@ -31,6 +31,32 @@ class ShopmonkeyApiError(RuntimeError):
         self.retry_after = retry_after
 
 
+def request_json_document(
+    method: str,
+    url: str,
+    *,
+    headers: dict[str, str] | None = None,
+    data: bytes | None = None,
+    timeout: int = _HTTP_TIMEOUT,
+) -> tuple[int, dict]:
+    """Perform bounded hosted-provider I/O behind the adapter boundary."""
+    try:
+        response = requests.request(
+            method,
+            url,
+            headers=headers,
+            data=data,
+            timeout=timeout,
+        )
+    except Exception:  # noqa: BLE001 - transport text may contain request details
+        raise ShopmonkeyApiError("request_failed") from None
+    try:
+        document = response.json()
+    except Exception:  # noqa: BLE001 - callers map malformed provider responses safely
+        document = {}
+    return response.status_code, document if isinstance(document, dict) else {}
+
+
 class ShopmonkeyApiClient:
     def __init__(self, *, api_key: str) -> None:
         self._api_key = str(api_key or "").strip()

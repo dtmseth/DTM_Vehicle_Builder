@@ -221,7 +221,8 @@ class TestSlotRelativePositions:
     # vertical mirror
     def test_vertical_mirror_two_slots_reflect_across_image_center(self):
         pos = slot_relative_positions("vertical_mirror", 2, 0.72, 0.3, h_spacing=0.05)
-        assert pos == pytest.approx([(0.72, 0.3), (0.72, 0.7)])
+        assert pos[0] == pytest.approx((0.72, 0.3))
+        assert pos[1] == pytest.approx((0.72, 0.7))
 
     def test_vertical_mirror_uses_v_spacing_when_anchor_is_centered(self):
         pos = slot_relative_positions(
@@ -288,7 +289,5 @@ class TestSlotRelativePositions:
             anchor_x=0.3, anchor_y=0.5, group_h_spacing=0.05,
             item_h_spacing=0.02,
         )
-        assert positions == pytest.approx([
-            (0.29, 0.5), (0.31, 0.5),
-            (0.69, 0.5), (0.71, 0.5),
-        ])
+        assert [x for x, _ in positions] == pytest.approx([0.29, 0.31, 0.69, 0.71])
+        assert [y for _, y in positions] == pytest.approx([0.5, 0.5, 0.5, 0.5])

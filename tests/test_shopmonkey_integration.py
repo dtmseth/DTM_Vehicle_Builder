@@ -231,12 +231,12 @@ def test_hosted_pricing_save_is_hmac_signed_without_sending_api_key(monkeypatch,
             hmac.new(b"shopmonkey-secret", message, hashlib.sha256).digest()
         ).decode("ascii")
         assert hmac.compare_digest(headers["X-DTM-Signature"], expected)
-        return _Response({
+        return 200, {
             "ok": True,
             "config": {"revision": "new-revision", "mode": "test"},
-        })
+        }
 
-    monkeypatch.setattr(service.requests, "request", fake_request)
+    monkeypatch.setattr(service, "request_json_document", fake_request)
     result = service.save_pricing_settings(
         {"mode": "test", "customer_types": [], "rules": []}, "old-revision"
     )
