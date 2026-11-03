@@ -96,6 +96,7 @@ function _ptCollectUnits() {
         return {
         ...existing,
         individual_id:        ir.dataset.iid,
+        source_used_vehicle_id: existing.source_used_vehicle_id || "",
         unit_number:          ir.querySelector(".ind-unit-number")?.value.trim()    || "",
         year:                 ir.querySelector(".ind-year")?.value.trim()           || identity.model_year || "",
         make:                 identity.make || vm.make  || "",
@@ -388,6 +389,7 @@ function _ptBuildPayload() {
       draft_id:      u.draft_id || null,
       individuals:   u.individuals.map(ind => ({
         individual_id:        ind.individual_id,
+        source_used_vehicle_id: ind.source_used_vehicle_id || "",
         previous_build:       ind.previous_build || {},
         unit_number:          ind.unit_number          || "",
         year:                 ind.year                 || "",

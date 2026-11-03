@@ -14,6 +14,7 @@ ProjectRecord                        workspace/projects/{project_id}/project.jso
               └── draft_id ──────►  BuildDraft    workspace/drafts/{draft_id}.json
                                     (parts list + vehicle info + unit notes + shared project note + overrides)
               ├── output_path ───►  local .pptx conversion artifact / exported .pdf
+              ├── source_used_vehicle_id ─► UsedVehicle workspace/used_vehicles/{id}.json
               └── folder item IDs ► durable Company/Shop physical-vehicle package identity
 ```
 
@@ -30,6 +31,9 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 | Presets | `workspace/presets/*.json` (bundled app) or `resources/presets/` (dev) — synced from SharePoint `/Settings/presets/` | `app/services/preset_service.py` |
 | Agencies (per-record) | `workspace/agencies/{agency_id}.json` — synced from SharePoint `/Settings/agencies/` | `app/services/agency_service.py` |
 | Sales reps (per-record) | `workspace/sales_reps/{rep_id}.json` — synced from SharePoint `/Settings/sales_reps/` | `app/services/sales_rep_service.py` |
+| Canonical used vehicles | `workspace/used_vehicles/{used_vehicle_id}.json` — synced from SharePoint `/Used Vehicles/Record Data/` | `app/services/used_vehicle_service.py` |
+| Buyback/sale records | `workspace/vehicle_sales/{record_id}.json` | `app/services/vehicle_sale_service.py` |
+| Strip records and PDFs | `workspace/strip_documentation/{record_id}.json` and `workspace/output/strip_documentation/` — synced under `/Strip Documentation/` | `app/services/strip_documentation_service.py` |
 | Generated outputs | Timestamped local files in `workspace/output/`; PDF-only cloud distribution | `generation_service.py`, `export_service.py`, `company_vehicle_folder_service.py`, `shop_publication_service.py` |
 
 ---
@@ -47,6 +51,9 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 | List/save/discover/import/remove references | `GET/POST /api/project/{id}/references/*` | `reference_photo_service.py`, `reference_library_service.py` |
 | Reconcile direct project-folder photo uploads | `POST /api/project/{id}/photo-gallery` with `discover_folder` | `project_photo_folder_service.py`, `photo_gallery_service.py` |
 | Finalize/reopen vehicle | `GET/POST /api/project/{id}/unit/{uid}/individual/{iid}/finalization/*` | `finalization_service.py` → `shop_publication_service.py` |
+| Suggest/link/update used vehicles | `GET/POST /api/used-vehicles/*` | `used_vehicle_service.py` |
+| Buyback/sale records | `GET/POST /api/vehicle-sales/*` | `vehicle_sale_service.py` |
+| Strip intake and technician documentation | `GET/POST /api/strip-documentation/*` | `strip_documentation_service.py` |
 
 ---
 

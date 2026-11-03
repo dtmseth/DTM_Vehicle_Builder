@@ -120,7 +120,7 @@ async function loadTemplateInfo(){
       el.style.color = "var(--muted)";
     } else {
       el.textContent = "Template file not found";
-      el.style.color = "#b71c1c";
+      el.style.color = "var(--danger-text)";
     }
   } catch(e){ el.textContent = ""; }
 }
@@ -505,9 +505,9 @@ function _renderUpdateStateRow(state){
   let txt = "", color = "var(--muted)", title = "";
   switch(state.state){
     case "ready":
-      txt = `🔄 Update v${state.ready_version} downloaded — restart to install`;
+      txt = `🔄 Update v${state.ready_version} downloaded — installs when you close DTM`;
       color = "var(--green, #166534)";
-      title = "Click Restart Now in the banner above (or close and reopen the app) to apply.";
+      title = "Keep working, close DTM normally when finished, or use Restart & Install in the banner above.";
       break;
     case "downloading":
       txt = `⬇️ Downloading v${state.downloading_version}…`;

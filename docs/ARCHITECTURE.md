@@ -135,6 +135,24 @@ elif path == "/api/foo":
         self._send(404, b"Not found", "text/plain")
 ```
 
+## Hosted Shopmonkey Pricing Boundary
+
+Shopmonkey pricing is intentionally independent of the desktop process. Shopmonkey sends signed
+Order INSERT/UPDATE events to the Netlify `shopmonkey-webhook` function, which reads server-side
+rules from a site-wide Netlify Blob store and applies only automatic part-line prices. Builder's
+Settings UI edits those hosted rules through `shopmonkey-pricing-admin`; the desktop signs each
+management request with the keychain-held Shopmonkey API key, but never transmits the key itself.
+Optimistic revisions and conditional Blob writes reject concurrent edits.
+Customer-label and Part-brand choices come from Shopmonkey's live list APIs. Saved rules retain the
+provider IDs and canonical names; hosted pricing matches the IDs, with exact-name matching only as a
+compatibility path for the original test configuration.
+
+The five-minute `shopmonkey-reconcile` scheduled function is a bounded safety net for missed
+events. It pages from the tail of Shopmonkey's order list, checks only recently changed orders,
+and refuses to use pricing-matrix metadata as evidence that a price is automatic. The public,
+data-free `shopmonkey-health` endpoint fails closed when configuration, credentials, or recent
+reconciliation are unavailable. Provider credentials and webhook bodies are never logged.
+
 ## JS Patterns
 
 **`api()` helper** (`ui/js/api.js`):

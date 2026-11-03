@@ -40,10 +40,33 @@ def required_capabilities(method: str, raw_path: str) -> frozenset[Capability]:
     if path.startswith("/api/quickbooks/"):
         return _quickbooks_capabilities(method, path)
 
+    if path.startswith("/api/shopmonkey/"):
+        return _shopmonkey_capabilities(method, path)
+
     # Buyback / sale records contain purchase and buyer information.  Staff
     # and Admin both have projects.edit; Shop deliberately does not.
     if path.startswith("/api/vehicle-sales"):
         return frozenset({Capability.PROJECTS_EDIT})
+
+    if path.startswith("/api/used-vehicles"):
+        if method == "GET" or path in {
+            "/api/used-vehicles/suggest",
+            "/api/used-vehicles/build-suggestions",
+        }:
+            return frozenset({Capability.PROJECTS_VIEW})
+        return frozenset({Capability.PROJECTS_EDIT})
+
+    # Strip documentation is used by office staff and by shop technicians.
+    # Either role may create the record and document the physical work.
+    if path in {
+        "/api/strip-documentation/begin-technician",
+        "/api/strip-documentation/save-technician",
+    }:
+        return frozenset({Capability.COMPLETED_MEDIA_UPLOAD})
+    if path in {"/api/strip-documentation/save", "/api/strip-documentation/save-intake"}:
+        return frozenset({Capability.PROJECTS_EDIT})
+    if path.startswith("/api/strip-documentation"):
+        return frozenset({Capability.PROJECTS_EDIT, Capability.COMPLETED_MEDIA_UPLOAD})
 
     if method == "GET":
         if path == "/api/uploads/status":
@@ -145,3 +168,16 @@ def _quickbooks_capabilities(method: str, path: str) -> frozenset[Capability]:
     if method in {"GET", "POST"}:
         return frozenset({Capability.ESTIMATES_MANAGE, Capability.SETTINGS_ADVANCED_MANAGE})
     return frozenset({Capability.SETTINGS_ADVANCED_MANAGE})
+
+
+def _shopmonkey_capabilities(method: str, path: str) -> frozenset[Capability]:
+    """Keep provider credentials admin-only while staff can review cleanup data."""
+    if method == "POST" and path in {
+        "/api/shopmonkey/connect",
+        "/api/shopmonkey/disconnect",
+        "/api/shopmonkey/pricing/save",
+        "/api/shopmonkey/inventory/snapshot",
+        "/api/shopmonkey/inventory/estimate-line-breaks",
+    }:
+        return frozenset({Capability.SETTINGS_ADVANCED_MANAGE})
+    return frozenset({Capability.SETTINGS_GENERAL_MANAGE})

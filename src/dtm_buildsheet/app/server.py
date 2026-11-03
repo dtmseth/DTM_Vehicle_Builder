@@ -37,12 +37,15 @@ from .routes import photo_gallery as photo_gallery_routes
 from .routes import presets as preset_routes
 from .routes import projects as project_routes
 from .routes import quickbooks as quickbooks_routes
+from .routes import shopmonkey as shopmonkey_routes
 from .routes import templates as template_routes
 from .routes import updates as update_routes
 from .routes import uploads as upload_routes
 from .routes import validation as validation_routes
 from .routes import vehicle_catalog as vehicle_catalog_routes
 from .routes import vehicle_sales as vehicle_sales_routes
+from .routes import used_vehicles as used_vehicles_routes
+from .routes import strip_documentation as strip_documentation_routes
 from .services.template_service import pick_folder as _pick_folder
 from .services.request_access_service import authorize_request
 
@@ -145,11 +148,24 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith("/api/quickbooks/"):
             if not quickbooks_routes.route_quickbooks(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path.startswith(shopmonkey_routes.ROUTE_PREFIX):
+            if not shopmonkey_routes.route_shopmonkey(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
         elif path.startswith(vehicle_catalog_routes.ROUTE_PREFIX):
             if not vehicle_catalog_routes.route_vehicle_catalog(self, "GET", path):
                 self._send(404, b"Not found", "text/plain")
+        elif path.startswith(used_vehicles_routes.ROUTE_PREFIX):
+            if not used_vehicles_routes.route_used_vehicles(
+                self, "GET", path, {}, self.paths,
+            ):
+                self._send(404, b"Not found", "text/plain")
         elif path.startswith(vehicle_sales_routes.ROUTE_PREFIX):
             if not vehicle_sales_routes.route_vehicle_sales(
+                self, "GET", path, {}, self.paths,
+            ):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith(strip_documentation_routes.ROUTE_PREFIX):
+            if not strip_documentation_routes.route_strip_documentation(
                 self, "GET", path, {}, self.paths,
             ):
                 self._send(404, b"Not found", "text/plain")
@@ -245,8 +261,21 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith("/api/quickbooks/"):
             if not quickbooks_routes.route_quickbooks(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path.startswith(shopmonkey_routes.ROUTE_PREFIX):
+            if not shopmonkey_routes.route_shopmonkey(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith(used_vehicles_routes.ROUTE_PREFIX):
+            if not used_vehicles_routes.route_used_vehicles(
+                self, "POST", path, body, self.paths,
+            ):
+                self._send(404, b"Not found", "text/plain")
         elif path.startswith(vehicle_sales_routes.ROUTE_PREFIX):
             if not vehicle_sales_routes.route_vehicle_sales(
+                self, "POST", path, body, self.paths,
+            ):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith(strip_documentation_routes.ROUTE_PREFIX):
+            if not strip_documentation_routes.route_strip_documentation(
                 self, "POST", path, body, self.paths,
             ):
                 self._send(404, b"Not found", "text/plain")
@@ -328,10 +357,12 @@ class Handler(BaseHTTPRequestHandler):
         decision = authorize_request(method, path)
         if decision.allowed:
             return True
+        external_connection = path.startswith(("/api/quickbooks/", "/api/shopmonkey/"))
         self._send(
             decision.status,
             json.dumps({"ok": False, "error": decision.error}).encode("utf-8"),
             "application/json",
+            cache_control="no-store" if external_connection else None,
         )
         return False
 
@@ -802,6 +833,15 @@ def _periodic_sync_loop(active_paths: AppPaths) -> None:
         first = False
         try:
             run_sync_now(active_paths, quiet=True)
+            if is_first:
+                from .services.used_vehicle_service import migrate_legacy_projects
+
+                migration = migrate_legacy_projects(active_paths)
+                if migration["vehicles"]:
+                    logger.info(
+                        "Migrated %d existing vehicles across %d projects",
+                        migration["vehicles"], migration["projects"],
+                    )
         except Exception:
             logger.exception("Periodic sync iteration failed; will retry in %ds",
                              _PERIODIC_SYNC_INTERVAL_SECONDS)

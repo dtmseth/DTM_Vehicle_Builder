@@ -1,8 +1,14 @@
 {
   "name": "dtm-qb-relay",
   "version": "1.0.0",
-  "description": "QuickBooks OAuth redirect relay for DTM Vehicle Builder",
+  "description": "Server-side provider functions for DTM Vehicle Builder",
   "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@netlify/blobs": "11.1.7"
+  },
   "engines": {
     "node": ">=18"
   }

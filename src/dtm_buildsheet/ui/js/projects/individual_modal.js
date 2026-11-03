@@ -8,6 +8,7 @@ let _ptQuoteEditorNeedsReconcile = false;
 let _ptIndModalDirty = false;
 let _ptIndModalDirtyWired = false;
 let _ptIndModalBuybackRevision = 0;
+let _ptUsedVehicleSuggestions = [];
 
 function _ptQuoteMatchLabel(ref) {
   if (ref.match_status === "linked") {
@@ -189,6 +190,67 @@ function _ptFillIndModal(unit, ind, title) {
   $("ind-edit-existing-unit-number").value = ind.existing_unit_number || "";
   $("ind-edit-existing-vin").value  = ind.existing_vin         || "";
   $("ind-edit-notes").value         = ind.notes                || "";
+  _PT.indModalUsedVehicleId = ind.source_used_vehicle_id || "";
+}
+
+function _ptUsedVehicleLabel(record) {
+  const vehicle = [record.vehicle_year, record.vehicle_make, record.vehicle_model].filter(Boolean).join(" ");
+  const identity = [record.vin ? `VIN ${record.vin}` : "", record.unit_number ? `Unit ${record.unit_number}` : ""].filter(Boolean).join(" · ");
+  return [identity, vehicle].filter(Boolean).join(" — ") || "Used vehicle details incomplete";
+}
+
+async function _ptLoadIndModalUsedVehicles(project, ind) {
+  const select = $("ind-edit-used-vehicle");
+  const help = $("ind-edit-used-vehicle-help");
+  if (!select) return;
+  select.disabled = true;
+  select.innerHTML = `<option value="">Checking saved used vehicles…</option>`;
+  try {
+    const result = await api("/api/used-vehicles/suggest", {
+      agency_name: project?.customer?.agency || $("proj-agency")?.value || "",
+      vin: ind?.existing_vin || "",
+      unit_number: ind?.existing_unit_number || "",
+    });
+    if (!result?.ok) throw new Error(result?.error || "Used vehicles could not be loaded");
+    _ptUsedVehicleSuggestions = result.records || [];
+    if (_PT.indModalUsedVehicleId && !_ptUsedVehicleSuggestions.some(record => record.used_vehicle_id === _PT.indModalUsedVehicleId)) {
+      const all = await api("/api/used-vehicles");
+      const linked = (all?.records || []).find(record => record.used_vehicle_id === _PT.indModalUsedVehicleId);
+      if (linked) _ptUsedVehicleSuggestions.unshift(linked);
+    }
+    select.innerHTML = `<option value="">Enter a new used vehicle below</option>${_ptUsedVehicleSuggestions.map(record => {
+      const reasons = (record.match_reasons || []).join(" + ");
+      return `<option value="${esc(record.used_vehicle_id)}">${esc(_ptUsedVehicleLabel(record))}${reasons ? ` (${esc(reasons)})` : ""}</option>`;
+    }).join("")}`;
+    select.value = _PT.indModalUsedVehicleId;
+    select.disabled = !_ptCanEditProjects();
+    if (help) help.textContent = _ptUsedVehicleSuggestions.length
+      ? "Select the known vehicle to reuse its saved details, or enter a new vehicle below. Agency matches require your confirmation."
+      : "No saved vehicle matches this agency yet. Enter the vehicle below and DTM will create its reusable record.";
+  } catch (_) {
+    select.innerHTML = `<option value="">Enter a new used vehicle below</option>`;
+    select.disabled = !_ptCanEditProjects();
+    if (help) help.textContent = "Saved used vehicles are unavailable right now. You can still enter the vehicle details below.";
+  }
+}
+
+function _ptWireUsedVehicleSelector() {
+  const select = $("ind-edit-used-vehicle");
+  if (!select || select.dataset.wired) return;
+  select.dataset.wired = "true";
+  select.addEventListener("change", () => {
+    _PT.indModalUsedVehicleId = select.value;
+    const record = _ptUsedVehicleSuggestions.find(item => item.used_vehicle_id === select.value);
+    if (record) {
+      $("ind-edit-existing-year").value = record.vehicle_year || "";
+      $("ind-edit-existing-make").value = record.vehicle_make || "";
+      $("ind-edit-existing-model").value = record.vehicle_model || "";
+      $("ind-edit-existing-color").value = record.vehicle_color || "";
+      $("ind-edit-existing-unit-number").value = record.unit_number || "";
+      $("ind-edit-existing-vin").value = record.vin || "";
+    }
+    _ptIndModalDirty = true;
+  });
 }
 
 function _ptWireIndModalDirtyState() {
@@ -282,6 +344,7 @@ function _ptApplyIndModalFields(unit, ind) {
   ind.existing_color       = $("ind-edit-existing-color").value.trim();
   ind.existing_unit_number = $("ind-edit-existing-unit-number").value.trim();
   ind.existing_vin         = $("ind-edit-existing-vin").value.trim();
+  ind.source_used_vehicle_id = _PT.indModalUsedVehicleId || "";
   ind.notes                = $("ind-edit-notes").value.trim();
   ind.quote_references     = _ptQuoteEditorRefs.map(ref => ({...ref}));
 }
@@ -314,10 +377,13 @@ window.PT_openIndModal = function (uid, indIdx) {
   const ind = u.individuals[indIdx];
   if (!ind) return;
   _ptFillIndModal(u, ind, _ptUnitLabel(u, ind, indIdx));
+  _ptWireUsedVehicleSelector();
+  _ptLoadIndModalUsedVehicles({customer: {agency: $("proj-agency")?.value || ""}}, ind);
   _ptSetIndividualModalReadOnly(false);
   _ptPrepareQuoteEditor(ind, false);
   _ptRenderIndModalSelector(u, ind.individual_id);
   $("ind-edit-buyback").hidden = true;
+  $("ind-edit-strip-documentation").hidden = true;
   const setupSec = $("ind-modal-setup-section");
   if (setupSec) setupSec.hidden = true;
   $("ind-edit-modal-status").textContent = "";
@@ -343,12 +409,16 @@ window.PT_openDetailIndModal = function (projectId, unitId, individualId) {
   _PT.viewProject        = project;
   const indIdx = unit.individuals.indexOf(ind);
   _ptFillIndModal(unit, ind, _ptUnitLabel(unit, ind, indIdx));
+  _ptWireUsedVehicleSelector();
+  _ptLoadIndModalUsedVehicles(project, ind);
   const readOnly = !_ptCanEditProjects();
   _ptSetIndividualModalReadOnly(readOnly);
   _ptPrepareQuoteEditor(ind, readOnly);
   _ptRenderIndModalSelector(unit, individualId);
   const setupSec = $("ind-modal-setup-section");
   if (setupSec) setupSec.hidden = !_ptCanEditProjects();
+  const stripSection = $("ind-edit-strip-documentation");
+  if (stripSection) stripSection.hidden = !_ptCanManageStripDocumentation();
   $("ind-edit-modal-status").textContent = "";
   _ptWireIndModalDirtyState();
   _ptIndModalDirty = false;
@@ -395,6 +465,17 @@ window.PT_openIndModalVehicleSale = async function () {
   if (_ptIndModalDirty && !(await _ptSaveDetailIndModal(false))) return;
   else if ($("ind-edit-modal")?.classList.contains("open")) PT_closeIndModal();
   await PT_openVehicleSale(projectId, unitId, individualId);
+};
+
+window.PT_openIndModalStripDocumentation = async function () {
+  if (!_PT.indModalFromDetail || !_ptCanManageStripDocumentation()) return;
+  const projectId = _PT.viewProject?.project_id;
+  const unitId = _PT.indModalUnitId;
+  const individualId = _PT.indModalIndId;
+  if (!projectId || !unitId || !individualId) return;
+  if (_ptIndModalDirty && _ptCanEditProjects() && !(await _ptSaveDetailIndModal(false))) return;
+  if ($("ind-edit-modal")?.classList.contains("open")) PT_closeIndModal();
+  await window.DTMStripDocumentation?.fromProject(projectId, unitId, individualId);
 };
 
 window.PT_saveIndModal = function () {

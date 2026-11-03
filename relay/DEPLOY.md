@@ -1,4 +1,4 @@
-# QuickBooks OAuth Relay and Token Broker — Deployment Guide
+# Provider Relay, Token Broker, and Shopmonkey Webhook — Deployment Guide
 
 Intuit Production keys require an **HTTPS redirect URI on a real domain** — `localhost` is not accepted. The callback function immediately 302s to the local DTM Vehicle Builder server. A second stateless function performs token exchange/refresh/revoke so the Intuit client secret is never embedded in the desktop installer. Neither function stores or logs tokens or request bodies.
 
@@ -14,7 +14,9 @@ Intuit → https://your-relay-url/qb-callback?code=...&state=...&realmId=...
 
 ## Option A — Netlify (Recommended)
 
-Netlify's free tier is more than enough. You can deploy from this repo or drag-drop a folder.
+Use a paid Netlify plan with automatic credit recharge for production pricing automation. A Free
+plan can pause the entire site when its monthly credits are exhausted, which would stop both webhook
+pricing and scheduled reconciliation. You can deploy from this repo or drag-drop a folder.
 
 The verified production site is `https://dtmvehiclebuilder.netlify.app`.
 
@@ -50,6 +52,44 @@ In Netlify → Site configuration → Environment variables, add:
 
 Mark the secret as a secret value. Never put it in `netlify.toml`, a local `.env`, a build command,
 or the repository. Trigger a new production deploy after changing an environment variable.
+
+### Shopmonkey hosted pricing automation
+
+The Shopmonkey endpoint is:
+
+```
+https://dtmvehiclebuilder.netlify.app/.netlify/functions/shopmonkey-webhook
+```
+
+Add the following protected environment variables in Netlify before enabling the webhook:
+
+| Variable | Value |
+|---|---|
+| `SHOPMONKEY_API_KEY` | The Shopmonkey API key; secret value |
+| `SHOPMONKEY_WEBHOOK_SECRET` | A random shared secret entered identically in Shopmonkey; secret value |
+| `SHOPMONKEY_PRICING_TEST_ORDER_ID` | Optional fallback order UUID until hosted settings are first saved |
+
+In Shopmonkey Settings → Webhooks, subscribe this endpoint only to **Order INSERT** and
+**Order UPDATE** events. The function verifies Shopmonkey's v3 HMAC signature and timestamp,
+deduplicates warm-instance deliveries, and performs idempotent line-price updates. Hosted settings
+are stored in the site-wide `shopmonkey-pricing` Netlify Blob store and edited from Builder through
+an API-key-HMAC-authenticated management function. Settings select real Customer labels and Part
+brands from Shopmonkey and retain their stable IDs. They define one rule per brand/customer-type
+pair, using inventory Retail or Cost with a discount or markup. The hosted service matches IDs;
+names are stored only for display and legacy compatibility.
+
+Custom-price protection is mandatory. Authorized, invoiced, read-only, unclassified, ambiguously
+classified, unknown-brand, missing-price, and manually priced lines are skipped. A scheduled
+`shopmonkey-reconcile` function runs every five minutes and safely rechecks recent orders without
+trusting pricing-matrix metadata. Configure external uptime monitoring against:
+
+```
+https://dtmvehiclebuilder.netlify.app/.netlify/functions/shopmonkey-health
+```
+
+The health endpoint returns `200` only when hosted configuration is persisted, pricing is enabled,
+credentials are present, and the scheduled reconciliation has completed successfully within the
+last 12 minutes. It returns no customer, order, part, credential, or webhook data.
 
 ### Redirect URI to register in Intuit
 

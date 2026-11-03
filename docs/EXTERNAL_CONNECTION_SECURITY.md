@@ -78,6 +78,7 @@ remain mandatory. Hosted compliance remains **unverified** until isolated platfo
 | Microsoft 365 / SharePoint | OAuth 2.0 via MSAL + OS keychain | ✅ Compliant |
 | GitHub | GitHub Actions secrets (server-side only) | ✅ Compliant |
 | QuickBooks Online | OAuth 2.0; per-user tokens in OS keychain; app secret in stateless Netlify broker environment | ✅ Compliant |
+| Shopmonkey | API key in desktop OS keychain and protected Netlify environment; signed webhooks and HMAC-signed hosted settings | ✅ Compliant |
 | NHTSA vPIC / Products | Public read-only HTTPS APIs; no credentials | ✅ Compliant |
 
 ## Credential Storage

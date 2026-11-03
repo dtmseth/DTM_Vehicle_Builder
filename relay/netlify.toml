@@ -3,8 +3,12 @@
   publish   = "public"
 
 [functions]
-  # No bundler needed — plain CommonJS with no dependencies.
-  node_bundler = "nft"
+  # Netlify's standard bundler also enables its runtime feature injection
+  # (including the Lambda-compatible Netlify Blobs context).
+  node_bundler = "esbuild"
+
+[functions."shopmonkey-reconcile"]
+  schedule = "*/5 * * * *"
 
 [[headers]]
   for = "/*"

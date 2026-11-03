@@ -1,0 +1,1 @@
+"""Shopmonkey REST API adapter."""

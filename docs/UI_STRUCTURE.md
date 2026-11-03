@@ -3,6 +3,12 @@
 Server: `app/server.py` on `127.0.0.1:7655`. UI: `src/dtm_buildsheet/ui/` — single-page
 app served as static files.
 
+The Connections/user modal theme control is available to every role. `ui/js/theme.js` applies the locally persisted
+`light` or `dark` choice before stylesheets load; `ui/theme.css` owns theme palette overrides. Dark
+mode uses the Shopmonkey pricing workspace's navy/slate/blue visual language. The Shopmonkey
+workspace itself follows the selected theme. Vehicle diagrams, output previews, and product-color
+swatches keep their real presentation colors rather than inheriting the application theme.
+
 ## Tab layout
 
 Four workspace families: **Projects**, **Calendar**, **Operations**, and **Settings**. Operations is hidden until
@@ -155,7 +161,7 @@ PowerPoint edits.
 
 Two header tabs: **General** and **Advanced**, each with their own outer stabs.
 
-**General Settings**: `projects-defaults | agencies | sales-reps | presets | quickbooks`
+**General Settings**: `projects-defaults | agencies | sales-reps | presets | shopmonkey | quickbooks`
 
 **Advanced Settings**: `placements | sizes | part-manager | vehicles | workbook-tools`
 

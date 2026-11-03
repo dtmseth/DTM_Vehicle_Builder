@@ -373,6 +373,7 @@ function _ptCollectEditUnits() {
         return {
           ...existing,
           individual_id:        iid,
+          source_used_vehicle_id: existing.source_used_vehicle_id || "",
           unit_number:          ir.querySelector(".ind-unit-number")?.value.trim()    || "",
           year:                 ir.querySelector(".ind-year")?.value.trim()           || identity.model_year || "",
           make:                 identity.make || vm.make  || existing.make  || "",
@@ -555,7 +556,7 @@ function _ptOfferFinalizedRequirementsResolution(result, statusEl, saveButton) {
     return false;
   }
 
-  statusEl.style.background = "#fff7df";
+  statusEl.style.background = "var(--warning-bg)";
   statusEl.style.color = "var(--navy)";
   const message = document.createElement("span");
   message.textContent = `${result.error} Any published Shop package for those designs will be withdrawn until it is reviewed and finalized again.`;
@@ -590,7 +591,7 @@ function _ptOfferFinalizedRequirementsResolution(result, statusEl, saveButton) {
     } catch (error) {
       const text = error?.message || "Could not reopen finalized designs";
       toast(text, "error");
-      statusEl.style.background = "#fdecea";
+      statusEl.style.background = "var(--danger-bg)";
       statusEl.style.color = "var(--red)";
       message.textContent = `❌ ${text}. Your edits are still on screen.`;
       action.disabled = false;
@@ -607,7 +608,7 @@ window.PT_saveEditForm = async function () {
   if (savBtn) savBtn.disabled = true;
   if (statusEl) {
     statusEl.style.display = "block";
-    statusEl.style.background = "#f0f4ff";
+    statusEl.style.background = "var(--surface-3)";
     statusEl.style.color = "var(--navy)";
     statusEl.textContent = "Saving…";
   }
@@ -686,7 +687,7 @@ window.PT_saveEditForm = async function () {
       const msg = res.error || "Save failed";
       toast(msg, "error");
       if (statusEl) {
-        statusEl.style.background = "#fdecea";
+        statusEl.style.background = "var(--danger-bg)";
         statusEl.style.color = "var(--red)";
         statusEl.textContent = "❌ " + msg;
       }
@@ -696,7 +697,7 @@ window.PT_saveEditForm = async function () {
     const msg = e.message || "Unexpected error";
     toast(msg, "error");
     if (statusEl) {
-      statusEl.style.background = "#fdecea";
+      statusEl.style.background = "var(--danger-bg)";
       statusEl.style.color = "var(--red)";
       statusEl.textContent = "❌ " + msg;
     }

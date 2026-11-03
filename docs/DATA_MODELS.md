@@ -83,6 +83,7 @@ layout. The codec translates a layout-only legacy unit into `source="legacy"` au
 @dataclass
 class IndividualUnit:
     individual_id: str         # durable identity; never derive associations from unit number
+    source_used_vehicle_id: str = ""  # internal FK to a physical donor/used vehicle
     unit_number: str = ""
     vin: str = ""              # actual VIN; sole VIN used for current identity/naming
     existing_year: str = ""    # optional replaced-vehicle display metadata
@@ -151,12 +152,39 @@ can provide acceptance evidence to every current vehicle in the project.
 Past photo records use the same `IndividualUnit` fields as current work. `vin` always means the
 actual vehicle being built and is the only VIN eligible for current card identity, folders,
 filenames, or QBO names. The `existing_*` fields are editable, round-trip-safe metadata for the
-vehicle being replaced; generated output may show them only in the dedicated **Existing Vehicle**
-card. Older clients that omit those optional keys preserve stored values, while an explicit empty
+vehicle being replaced and are a compatibility projection of the canonical used-vehicle record
+selected by `source_used_vehicle_id`; generated output may show them only in the dedicated
+**Existing Vehicle** card. The opaque ID is never shown to users, who identify the physical vehicle
+by VIN. Older clients that omit those optional keys preserve stored values, while an explicit empty
 value clears one. Folder item IDs remain the stable identity when readable fields change. A current
 vehicle without an actual unit number or VIN uses a display/folder-only `Pending ID` derived from
 `individual_id`; the placeholder is not separately persisted and disappears when a real identifier
 is added.
+
+## UsedVehicle record
+
+One physical donor, trade-in, returned, or purchased vehicle owns one internal `used_vehicle_id` in
+`workspace/used_vehicles/{used_vehicle_id}.json`, mirrored to SharePoint under
+`Used Vehicles/Record Data`. Its readable identity contains agency, year, make, model, color, unit
+number, and VIN; plate information is intentionally not stored. Exact 17-character VIN matches may
+be joined automatically. Same-agency and unit matches are suggestions only and require a user to
+confirm the relationship.
+
+The record keeps three facts independent:
+
+- `purchase_status`: `unknown`, `purchased_by_dtm`, or `returned_to_owner`
+- `equipment_transfer_status`: `unknown`, `not_linked`, or `linked`; a linked record resolves to a
+  specific project/build vehicle through its `IndividualUnit.source_used_vehicle_id`
+- `strip_requirement`: `undetermined`, `required`, or `not_required`, with `strip_status` tracking
+  `not_started`, `in_progress`, `documented`, or `not_required`
+
+Creating a buyback infers `purchased_by_dtm`. Entering or selecting an existing vehicle on a new
+build infers an equipment-transfer link and requires strip documentation. Opening Strip
+Documentation also infers that stripping is required. Other facts remain unresolved until the user
+answers them. A no-transfer purchase can independently be marked strip-not-required with a reason.
+After the initial cloud sync, an idempotent startup migration creates these canonical records and
+links for legacy projects that already contain `existing_*` details; exact full VINs merge with an
+already-known buyback vehicle, while incomplete/nonmatching vehicles remain distinct.
 
 ## ProjectRecord
 

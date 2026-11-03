@@ -61,8 +61,13 @@ _INDIVIDUAL_OPERATIONAL_FIELDS = (
 
 _OPTIONAL_EXISTING_VEHICLE_FIELDS = (
     "existing_year", "existing_make", "existing_model", "existing_color", "existing_build_type",
-    "existing_unit_number", "existing_vin", "previous_build",
+    "existing_unit_number", "existing_vin", "source_used_vehicle_id", "previous_build",
     "quote_references",
+)
+
+_EXISTING_VEHICLE_CLEAR_FIELDS = (
+    "existing_year", "existing_make", "existing_model", "existing_build_type",
+    "existing_unit_number", "existing_vin",
 )
 
 _QUOTE_REFERENCE_QB_FIELDS = (
@@ -384,7 +389,13 @@ def _preserve_server_owned_build_state(
             # fields. Preserve a saved value only when the key was omitted;
             # an explicit empty value remains a valid user-requested clear.
             raw_individual = raw_individuals.get(incoming_individual.individual_id, {})
+            explicitly_cleared_existing_vehicle = all(
+                field in raw_individual and not str(raw_individual.get(field) or "").strip()
+                for field in _EXISTING_VEHICLE_CLEAR_FIELDS
+            )
             for field in _OPTIONAL_EXISTING_VEHICLE_FIELDS:
+                if field == "source_used_vehicle_id" and explicitly_cleared_existing_vehicle:
+                    continue
                 if field not in raw_individual:
                     setattr(incoming_individual, field, getattr(old_individual, field))
             old_references = {
@@ -1365,6 +1376,13 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 if merge_error is not None:
                     return merge_error
                 project = creation_conflict
+
+        # Existing/trade-in fields remain visible for compatibility, but one
+        # canonical used-vehicle record owns their cross-workflow identity.
+        # Reconcile only after validation/conflict resolution so a rejected
+        # project payload cannot create an orphaned used-vehicle record.
+        from .used_vehicle_service import reconcile_project
+        reconcile_project(project, paths)
 
         from .vehicle_folder_provisioning_service import (
             mark_project_folder_provisioning_pending,

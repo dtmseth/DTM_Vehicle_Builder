@@ -24,10 +24,11 @@ from typing import Any
 import fitz
 from PIL import Image
 
-from ...inputs.project_entry import list_projects, load_project
+from ...inputs.project_entry import list_projects, load_project, save_project
 from ...paths import AppPaths
 from ..adapters import wiring
 from ..adapters.cloud.graph_drive_gateway import GraphDriveGateway
+from . import used_vehicle_service
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ _publish_lock = threading.RLock()
 _deleted_record_ids: set[str] = set()
 
 _STRING_FIELDS = (
-    "record_year", "prepared_by", "project_agency", "project_id", "unit_id",
+    "record_year", "prepared_by", "used_vehicle_id", "project_agency", "project_id", "unit_id",
     "individual_id", "existing_vehicle_link", "vehicle_unit_number", "date_received", "purchased_from",
     "vehicle_year", "vehicle_make", "vehicle_model", "vehicle_color", "vin",
     "odometer", "purchase_amount", "purchase_via", "purchase_via_other",
@@ -157,6 +158,19 @@ def _normalize_record(payload: dict[str, Any], *, existing: dict[str, Any] | Non
     return record
 
 
+def _has_used_vehicle_identity(record: dict[str, Any]) -> bool:
+    """Avoid creating canonical records for untouched blank buyback forms."""
+    if len(_normalized_vin(record.get("vin"))) == 17:
+        return True
+    agency = str(record.get("purchased_from") or record.get("project_agency") or "").strip()
+    unit_number = str(record.get("vehicle_unit_number") or "").strip()
+    described_vehicle = all(
+        str(record.get(field) or "").strip()
+        for field in ("vehicle_year", "vehicle_make", "vehicle_model")
+    )
+    return bool(agency and (unit_number or described_vehicle))
+
+
 def _write_record(paths: AppPaths, record: dict[str, Any]) -> None:
     target = _record_path(paths, record["record_id"])
     temporary = target.with_suffix(".json.tmp")
@@ -240,6 +254,12 @@ def list_records(paths: AppPaths, *, sync_cloud: bool = True) -> dict[str, Any]:
     if sync_cloud:
         _sync_from_cloud(paths)
     records = _load_local_records(paths)
+    for index, record in enumerate(records):
+        if (
+            not str(record.get("used_vehicle_id") or "").strip()
+            and _has_used_vehicle_identity(record)
+        ):
+            records[index] = save_record(record, paths, publish=False)["record"]
     for record in records:
         if not str(record.get("vehicle_unit_number") or "").strip():
             record["vehicle_unit_number"] = _legacy_unit_number(record.get("existing_vehicle_link"))
@@ -271,11 +291,30 @@ def find_record_for_vehicle(
     individual_key = str(individual_id or "").strip()
     if not project_key or not individual_key:
         return None
+    source_used_vehicle_id = ""
+    try:
+        project = load_project(project_key, paths)
+        source_used_vehicle_id = next(
+            (
+                individual.source_used_vehicle_id
+                for unit in project.build_units
+                for individual in unit.individuals
+                if individual.individual_id == individual_key
+            ),
+            "",
+        )
+    except (FileNotFoundError, ValueError):
+        pass
     return next(
         (
             record for record in _load_local_records(paths)
-            if record.get("project_id") == project_key
-            and record.get("individual_id") == individual_key
+            if (
+                source_used_vehicle_id
+                and record.get("used_vehicle_id") == source_used_vehicle_id
+            ) or (
+                record.get("project_id") == project_key
+                and record.get("individual_id") == individual_key
+            )
         ),
         None,
     )
@@ -366,12 +405,21 @@ def record_for_vehicle(project_id: str, unit_id: str, individual_id: str, paths:
     )
     if unit is None or individual is None:
         raise ValueError("Existing vehicle could not be found")
+    prior_used_vehicle_id = individual.source_used_vehicle_id
+    used_vehicle = used_vehicle_service.ensure_for_project_vehicle(
+        project, unit, individual, paths,
+    )
+    if used_vehicle is None:
+        raise ValueError("Enter the existing vehicle details before creating a buyback record")
+    if individual.source_used_vehicle_id != prior_used_vehicle_id:
+        save_project(project, paths)
     quote = next(
         (ref.quote_number for ref in individual.quote_references if ref.state == "current" and ref.quote_number),
         project.customer.quote_number,
     )
     linked_values = {
         "project_agency": project.customer.agency,
+        "used_vehicle_id": used_vehicle["used_vehicle_id"],
         "project_id": project_id,
         "unit_id": unit_id,
         "individual_id": individual_id,
@@ -414,6 +462,19 @@ def save_record(payload: dict[str, Any], paths: AppPaths, *, publish: bool = Tru
         except FileNotFoundError:
             existing = None
         record = _normalize_record(payload, existing=existing)
+        if record.get("used_vehicle_id") or _has_used_vehicle_identity(record):
+            used_vehicle = used_vehicle_service.ensure_record({
+                "used_vehicle_id": record.get("used_vehicle_id"),
+                "agency_name": record.get("purchased_from") or record.get("project_agency"),
+                "vehicle_year": record.get("vehicle_year"),
+                "vehicle_make": record.get("vehicle_make"),
+                "vehicle_model": record.get("vehicle_model"),
+                "vehicle_color": record.get("vehicle_color"),
+                "unit_number": record.get("vehicle_unit_number"),
+                "vin": record.get("vin"),
+                "purchase_status": "purchased_by_dtm",
+            }, paths, publish=publish)
+            record["used_vehicle_id"] = used_vehicle["used_vehicle_id"]
         target = _pdf_path(paths, record)
         record["pdf_path"] = str(target)
         record["sharepoint_pdf_path"] = (

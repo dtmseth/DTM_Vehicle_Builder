@@ -217,7 +217,7 @@ function _meSupplyLabel(record) {
 
 function _meStatusRowStyle(part) {
   return _meSupplyFromRecord(part).supplyType === "customer_supplied"
-    ? ' style="background:#fff3e0"' : ' style="background:#eaf4fd"';
+    ? ' style="background:var(--warning-bg)"' : ' style="background:var(--surface-3)"';
 }
 
 function _meDisplayName(part) {

@@ -81,6 +81,7 @@ where = ["src"]
 dtm_buildsheet = [
   "ui/index.html",
   "ui/styles.css",
+  "ui/theme.css",
   "ui/calendar.css",
   "ui/js/*.js",
   "ui/js/projects/*.js",
@@ -92,6 +93,7 @@ dtm_buildsheet = [
   "resources/templates/*.pptx",
   "resources/templates/*.xlsx",
   "resources/assets/**/*",
+  "resources/fonts/**/*",
 ]
 
 # ---------------------------------------------------------------------------

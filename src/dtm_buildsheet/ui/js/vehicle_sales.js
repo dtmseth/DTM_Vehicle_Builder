@@ -8,6 +8,8 @@ let _vehicleSalesWired = false;
 let _vehicleSaleMatchTimer = null;
 let _vehicleSaleMatchRevision = 0;
 let _vehicleSaleMatches = [];
+let _vehicleSaleUsedVehicle = null;
+let _vehicleSaleRelationshipRevision = 0;
 
 function _vehicleSaleCloseDeleteModal() {
   $("vehicle-sales-delete-modal")?.classList.remove("open");
@@ -138,7 +140,78 @@ function _vehicleSaleOpenEditor(record) {
   $("vehicle-sales-link-label").textContent = [record.project_agency, record.vehicle_unit_number ? `Unit ${record.vehicle_unit_number}` : ""].filter(Boolean).join(" · ") || "Existing vehicle";
   _vehicleSaleSetSaveState("Saved", "saved");
   _vehicleSaleScheduleMatch({immediate: true});
+  _vehicleSaleLoadRelationships(record);
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function _vehicleSaleBuildOptionValue(build) {
+  return [build.project_id, build.unit_id, build.individual_id].join("|");
+}
+
+function _vehicleSaleRenderRelationshipState(record, builds = []) {
+  _vehicleSaleUsedVehicle = record || null;
+  const strip = $("vehicle-sales-strip-requirement");
+  const reasonShell = $("vehicle-sales-strip-reason-shell");
+  const reason = $("vehicle-sales-strip-reason");
+  const transfer = $("vehicle-sales-transfer-build");
+  if (strip) strip.value = record?.strip_requirement || "undetermined";
+  if (reasonShell) reasonShell.hidden = strip?.value !== "not_required";
+  if (reason) reason.value = record?.strip_not_required_reason || "";
+  if ($("vehicle-sales-strip-documentation")) {
+    $("vehicle-sales-strip-documentation").hidden = strip?.value === "not_required";
+  }
+  if (!transfer) return;
+  const linked = record?.transfer_links || [];
+  transfer.innerHTML = [
+    `<option value="">Not answered yet</option>`,
+    `<option value="__not_linked__">No equipment transfer</option>`,
+    ...builds.map(build => {
+      const label = [
+        `${build.project_agency || "Agency"} ${build.project_year || ""}`.trim(),
+        build.build_type || "Build",
+        build.unit_number ? `Unit ${build.unit_number}` : build.vin ? `VIN …${String(build.vin).slice(-6)}` : "Vehicle",
+      ].join(" · ");
+      return `<option value="${esc(_vehicleSaleBuildOptionValue(build))}">${esc(label)}</option>`;
+    }),
+  ].join("");
+  const current = linked[0];
+  if (current) transfer.value = _vehicleSaleBuildOptionValue(current);
+  else if (record?.equipment_transfer_status === "not_linked") transfer.value = "__not_linked__";
+  else transfer.value = "";
+  if (strip) strip.disabled = !record?.used_vehicle_id || Boolean(current);
+  if (reason) reason.disabled = !record?.used_vehicle_id;
+  transfer.disabled = !record?.used_vehicle_id;
+}
+
+async function _vehicleSaleLoadRelationships(record) {
+  const revision = ++_vehicleSaleRelationshipRevision;
+  try {
+    const [usedResult, buildsResult] = await Promise.all([
+      api("/api/used-vehicles"),
+      api("/api/used-vehicles/build-suggestions", {
+        agency_name: record.purchased_from || record.project_agency || "",
+      }),
+    ]);
+    if (revision !== _vehicleSaleRelationshipRevision) return;
+    const usedVehicle = (usedResult?.records || []).find(item => item.used_vehicle_id === record.used_vehicle_id);
+    _vehicleSaleRenderRelationshipState(usedVehicle, buildsResult?.builds || []);
+  } catch (_) {
+    if (revision === _vehicleSaleRelationshipRevision) _vehicleSaleRenderRelationshipState(null, []);
+  }
+}
+
+async function _vehicleSaleUpdateRelationships(changes) {
+  if (!_vehicleSaleActive?.used_vehicle_id) return;
+  try {
+    const result = await api("/api/used-vehicles/relationships", {
+      used_vehicle_id: _vehicleSaleActive.used_vehicle_id,
+      ...changes,
+    });
+    if (!result?.ok) throw new Error(result?.error || "Relationship could not be saved");
+    _vehicleSaleUsedVehicle = {...(_vehicleSaleUsedVehicle || {}), ...result.record};
+  } catch (error) {
+    toast(error?.message || "Used vehicle relationship could not be saved", "error");
+  }
 }
 
 function _vehicleSaleCollect() {
@@ -187,7 +260,7 @@ function _vehicleSaleRenderMatches(matches) {
   assistant.hidden = false;
   _vehicleSaleMatches = matches;
   if (!matches.length) {
-    status.textContent = "No previous build matched this VIN or agency and unit number.";
+    status.textContent = "No saved used vehicle or previous build matched these details.";
     results.replaceChildren();
     return;
   }
@@ -220,7 +293,7 @@ function _vehicleSaleScheduleMatch({immediate = false} = {}) {
   const agency = String(_vehicleSaleField("purchased_from")?.value || "").trim();
   const unitNumber = String(_vehicleSaleField("vehicle_unit_number")?.value || "").trim();
   const vinKey = vin.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  if (vinKey.length < 8 && !(agency && unitNumber)) {
+  if (vinKey.length < 8 && !agency) {
     _vehicleSaleHideMatches();
     return;
   }
@@ -230,22 +303,48 @@ function _vehicleSaleScheduleMatch({immediate = false} = {}) {
     const status = $("vehicle-sales-match-status");
     if (assistant && status) {
       assistant.hidden = false;
-      status.textContent = "Checking previous builds…";
+      status.textContent = "Checking saved vehicles and previous builds…";
     }
     try {
-      const result = await api("/api/vehicle-sales/matches", {
-        vin,
-        agency,
-        unit_number: unitNumber,
-        exclude_project_id: _vehicleSaleActive?.project_id || "",
-      });
+      const [projectResult, usedResult] = await Promise.all([
+        api("/api/vehicle-sales/matches", {
+          vin,
+          agency,
+          unit_number: unitNumber,
+          exclude_project_id: _vehicleSaleActive?.project_id || "",
+        }),
+        api("/api/used-vehicles/suggest", {
+          agency_name: agency,
+          vin,
+          unit_number: unitNumber,
+        }),
+      ]);
       if (revision !== _vehicleSaleMatchRevision) return;
-      if (!result?.ok) throw new Error(result?.error || "Vehicle matching failed");
-      _vehicleSaleRenderMatches(result.matches || []);
+      if (!projectResult?.ok || !usedResult?.ok) throw new Error("Vehicle matching failed");
+      const knownVehicles = (usedResult.records || [])
+        .filter(record => record.used_vehicle_id !== _vehicleSaleActive?.used_vehicle_id)
+        .map(record => ({
+          used_vehicle_id: record.used_vehicle_id,
+          project_agency: record.agency_name,
+          vehicle_unit_number: record.unit_number,
+          vehicle_year: record.vehicle_year,
+          vehicle_make: record.vehicle_make,
+          vehicle_model: record.vehicle_model,
+          vehicle_color: record.vehicle_color,
+          vin: record.vin,
+          project_status: "Saved used vehicle",
+          build_type: record.equipment_transfer_status === "linked" ? "Linked to build" : "",
+          match_reasons: record.match_reasons || [],
+        }));
+      const knownVins = new Set(knownVehicles.map(record => String(record.vin || "").toUpperCase()).filter(Boolean));
+      const projectMatches = (projectResult.matches || []).filter(record => (
+        !record.vin || !knownVins.has(String(record.vin).toUpperCase())
+      ));
+      _vehicleSaleRenderMatches([...knownVehicles, ...projectMatches]);
     } catch (_) {
       if (revision !== _vehicleSaleMatchRevision || !assistant || !status) return;
       assistant.hidden = false;
-      status.textContent = "Previous builds could not be checked right now.";
+      status.textContent = "Saved vehicles could not be checked right now.";
       $("vehicle-sales-match-results")?.replaceChildren();
     }
   };
@@ -256,6 +355,9 @@ function _vehicleSaleScheduleMatch({immediate = false} = {}) {
 function _vehicleSaleUseMatch(index) {
   const match = _vehicleSaleMatches[index];
   if (!match) return;
+  if (match.used_vehicle_id && _vehicleSaleActive) {
+    _vehicleSaleActive.used_vehicle_id = match.used_vehicle_id;
+  }
   const values = {
     purchased_from: match.project_agency,
     vehicle_unit_number: match.vehicle_unit_number,
@@ -282,6 +384,7 @@ function _vehicleSaleQueueSave({ immediate = false } = {}) {
     const snapshot = _vehicleSaleCollect();
     _vehicleSaleSetSaveState("Saving & updating PDF…", "saving");
     _vehicleSaleSaveQueue = _vehicleSaleSaveQueue.catch(() => {}).then(async () => {
+      const priorUsedVehicleId = _vehicleSaleActive?.used_vehicle_id || "";
       const result = await api("/api/vehicle-sales/save", snapshot);
       if (!result?.ok) throw new Error(result?.error || "Vehicle record could not be saved");
       _vehicleSaleActive = result.record;
@@ -289,6 +392,9 @@ function _vehicleSaleQueueSave({ immediate = false } = {}) {
       if (index >= 0) _vehicleSaleRecords[index] = result.record;
       else _vehicleSaleRecords.unshift(result.record);
       _vehicleSaleSetSaveState(result.sync_started ? "Saved · SharePoint syncing" : "Saved locally", "saved");
+      if (result.record.used_vehicle_id !== priorUsedVehicleId) {
+        _vehicleSaleLoadRelationships(result.record);
+      }
       return result;
     }).catch(error => {
       console.error("Vehicle sale save failed", error);
@@ -377,6 +483,47 @@ function _vehicleSaleWire() {
       _vehicleSaleScheduleMatch();
     }
   });
+  $("vehicle-sales-strip-requirement")?.addEventListener("change", async event => {
+    const value = event.currentTarget.value;
+    $("vehicle-sales-strip-reason-shell").hidden = value !== "not_required";
+    $("vehicle-sales-strip-documentation").hidden = value === "not_required";
+    await _vehicleSaleUpdateRelationships({
+      strip_requirement: value,
+      strip_not_required_reason: value === "not_required" ? $("vehicle-sales-strip-reason").value.trim() : "",
+    });
+  });
+  $("vehicle-sales-strip-reason")?.addEventListener("change", event => {
+    _vehicleSaleUpdateRelationships({
+      strip_requirement: "not_required",
+      strip_not_required_reason: event.currentTarget.value.trim(),
+    });
+  });
+  $("vehicle-sales-transfer-build")?.addEventListener("change", async event => {
+    const value = event.currentTarget.value;
+    if (!value) {
+      await _vehicleSaleUpdateRelationships({equipment_transfer_status: "unknown"});
+      return;
+    }
+    if (value === "__not_linked__") {
+      await _vehicleSaleUpdateRelationships({equipment_transfer_status: "not_linked"});
+      await _vehicleSaleLoadRelationships(_vehicleSaleActive);
+      return;
+    }
+    const [projectId, unitId, individualId] = value.split("|");
+    try {
+      const result = await api("/api/used-vehicles/link-build", {
+        used_vehicle_id: _vehicleSaleActive.used_vehicle_id,
+        project_id: projectId,
+        unit_id: unitId,
+        individual_id: individualId,
+      });
+      if (!result?.ok) throw new Error(result?.error || "Build could not be linked");
+      toast("Used vehicle linked to the selected build", "success");
+      await _vehicleSaleLoadRelationships(_vehicleSaleActive);
+    } catch (error) {
+      toast(error?.message || "Build could not be linked", "error");
+    }
+  });
   const purchasedFrom = $("vehicle-sales-purchased-from");
   const purchasedFromSuggestions = $("vehicle-sales-purchased-from-suggestions");
   if (purchasedFrom && purchasedFromSuggestions) {
@@ -422,6 +569,15 @@ function _vehicleSaleWire() {
     } finally {
       button.disabled = false;
       button.textContent = originalText;
+    }
+  });
+  $("vehicle-sales-strip-documentation")?.addEventListener("click", async () => {
+    if (!_vehicleSaleActive) return;
+    try {
+      await _vehicleSaleEnsureSaved();
+      await window.DTMStripDocumentation?.fromSale(_vehicleSaleActive.record_id);
+    } catch (error) {
+      toast(error?.message || "Strip documentation could not be opened", "error");
     }
   });
   $("vehicle-sales-open-folder")?.addEventListener("click", async () => {

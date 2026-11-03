@@ -70,3 +70,9 @@ tools/qb_match_proposals.md
 
 # Historical documentation
 docs/archive/
+
+# Local Netlify folder
+.netlify
+
+# Local spreadsheet/QBO research scratchpad; may contain generated customer data.
+.codex_spreadsheet_work/

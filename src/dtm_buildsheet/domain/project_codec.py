@@ -171,6 +171,7 @@ def individual_unit_from_dict(d: Any) -> IndividualUnit:
     draft_id = d.get("draft_id")
     return IndividualUnit(
         individual_id=ind_id,
+        source_used_vehicle_id=str(d.get("source_used_vehicle_id", "") or "").strip(),
         previous_build={str(k): str(v) for k, v in (d.get("previous_build") or {}).items()} if isinstance(d.get("previous_build", {}), dict) else {},
         unit_number=str(d.get("unit_number", "")),
         year=str(d.get("year", "")),

@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="dtm-upload-token" content="{{UPLOAD_TOKEN}}" />
   <title>DTM Vehicle Builder</title>
+  <script src="/ui/js/theme.js?v={{APP_VERSION}}"></script>
   <link rel="stylesheet" href="/ui/styles.css?v={{APP_VERSION}}">
+  <link rel="stylesheet" href="/ui/theme.css?v={{APP_VERSION}}">
 </head>
 <body>
 
@@ -118,6 +120,20 @@
         <div class="cloud-modal-meta" id="cloud-modal-qb-last-check">Checking shared catalog status…</div>
       </div>
       <button class="btn btn-secondary" id="cloud-modal-qb-action" type="button">Manage</button>
+    </div>
+
+    <div class="connection-modal-divider"></div>
+    <div class="connection-modal-heading">Appearance</div>
+    <div class="connection-modal-row">
+      <span class="connection-theme-icon" id="connection-theme-icon" aria-hidden="true">☾</span>
+      <div class="connection-modal-copy">
+        <div class="cloud-modal-name">Builder theme</div>
+        <div class="cloud-modal-email" id="connection-theme-detail">Light mode is active</div>
+      </div>
+      <button class="btn btn-secondary" id="theme-toggle" type="button"
+              aria-label="Switch to dark mode" title="Switch to dark mode">
+        <span id="theme-toggle-label">Use dark mode</span>
+      </button>
     </div>
 
     <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
@@ -258,6 +274,7 @@
     <button class="stab" data-stab="calendar-teams" data-stab-group="general">Teams & Calendar</button>
     <button class="stab" data-stab="sales-reps" data-stab-group="general">👤 Sales Reps</button>
     <button class="stab" data-stab="presets" data-stab-group="general">📂 Presets</button>
+    <button class="stab" data-stab="shopmonkey" data-stab-group="general">🐒 Shopmonkey</button>
     <button class="stab" data-stab="quickbooks" data-stab-group="general" hidden>💵 QuickBooks</button>
   </div>
   <!-- Advanced Settings stab-bar — review-gated config changes -->
@@ -1124,6 +1141,179 @@
     </div>
   </div>
 
+  <!-- ── SHOPMONKEY ── -->
+  <div id="stab-shopmonkey" hidden>
+    <div class="card shopmonkey-connection-card">
+      <div class="card-title shopmonkey-card-title">
+        <div>
+          <span>Shopmonkey</span>
+          <small>Connected catalog and cleanup tools</small>
+        </div>
+        <span id="shopmonkey-status-badge" class="shopmonkey-status-badge">● Not connected</span>
+      </div>
+
+      <div id="shopmonkey-connected-panel" hidden>
+        <p class="shopmonkey-help">
+          The API key is stored in this computer's operating-system keychain. Catalog writes are
+          limited to explicit administrator actions; customer, vehicle, order, and message review remains read-only.
+        </p>
+        <div class="shopmonkey-actions">
+          <button class="btn btn-secondary" id="shopmonkey-test-btn" type="button">Test connection</button>
+          <button class="btn btn-secondary" id="shopmonkey-disconnect-btn" type="button" style="color:var(--red)">Disconnect</button>
+          <span id="shopmonkey-verified-at" class="shopmonkey-verified-at"></span>
+        </div>
+      </div>
+
+      <div id="shopmonkey-credentials-panel" class="shopmonkey-credentials-panel">
+        <label for="shopmonkey-api-key">Shopmonkey API key</label>
+        <div class="shopmonkey-key-row">
+          <input id="shopmonkey-api-key" type="password" autocomplete="new-password" placeholder="Paste API key" />
+          <button class="btn btn-primary" id="shopmonkey-connect-btn" type="button">Connect securely</button>
+        </div>
+        <p class="shopmonkey-help">The key is tested before it is saved and is never written to workspace files.</p>
+      </div>
+      <p id="shopmonkey-admin-hint" class="shopmonkey-help" hidden>
+        An administrator must connect or replace the Shopmonkey API key on this computer.
+      </p>
+    </div>
+
+    <div class="card" id="shopmonkey-pricing-card" hidden>
+      <div class="card-title shopmonkey-card-title">
+        <div>
+          <span>Pricing Automation</span>
+          <small>Hosted customer types and brand-specific price rules</small>
+        </div>
+        <span id="shopmonkey-pricing-health" class="shopmonkey-status-badge">● Loading</span>
+      </div>
+      <p class="shopmonkey-help">
+        These settings are stored with the hosted webhook, so pricing continues when Builder is closed.
+        Customer types match exact Shopmonkey customer labels. Inventory Retail is treated as MSRP when
+        a rule uses the Retail basis. User-customized line prices are always preserved.
+      </p>
+
+      <div class="shopmonkey-pricing-workspace">
+        <div class="shopmonkey-pricing-options">
+          <label class="shopmonkey-check"><input id="shopmonkey-pricing-enabled" type="checkbox"> Pricing automation enabled</label>
+          <label>Operating mode
+            <select id="shopmonkey-pricing-mode">
+              <option value="test">Test estimate only</option>
+              <option value="production">Production — all matching customers</option>
+            </select>
+          </label>
+          <label id="shopmonkey-test-order-shell">Test order ID
+            <input id="shopmonkey-test-order-id" autocomplete="off" placeholder="Shopmonkey order UUID">
+          </label>
+        </div>
+
+        <details class="shopmonkey-pricing-advanced">
+          <summary>Safety &amp; delivery settings</summary>
+          <div class="shopmonkey-pricing-advanced-grid">
+            <label>New part eligibility window
+              <select id="shopmonkey-line-age">
+                <option value="120">2 minutes</option>
+                <option value="300">5 minutes</option>
+                <option value="600">10 minutes</option>
+                <option value="1800">30 minutes</option>
+                <option value="3600">1 hour</option>
+              </select>
+              <small>How long after Shopmonkey creates a part line the webhook may apply its first automatic price.</small>
+            </label>
+            <div class="shopmonkey-pricing-safety">
+              <strong>Custom price protection is always on</strong>
+              <span>A manually changed price is never overwritten. Authorized, invoiced, read-only, ambiguous, and unclassified orders are also skipped.</span>
+            </div>
+          </div>
+        </details>
+
+        <div class="shopmonkey-pricing-section">
+        <div class="shopmonkey-pricing-section-head">
+          <div><strong>Customer pricing types</strong><span>Each card matches one real Shopmonkey Customer label and contains the brand rules for that customer type.</span></div>
+          <div class="shopmonkey-pricing-heading-actions">
+            <span id="shopmonkey-pricing-choice-count" class="shopmonkey-verified-at"></span>
+            <button class="btn btn-secondary btn-sm" id="shopmonkey-pricing-refresh-choices" type="button">Refresh Shopmonkey choices</button>
+            <button class="btn btn-secondary btn-sm" id="shopmonkey-load-vendor-guide" type="button">Load DTM vendor guide</button>
+            <button class="btn btn-secondary btn-sm" id="shopmonkey-add-customer-type" type="button">+ Customer type</button>
+          </div>
+        </div>
+        <div id="shopmonkey-customer-types" class="shopmonkey-customer-rule-cards"></div>
+        </div>
+
+        <div id="shopmonkey-pricing-errors" class="shopmonkey-pricing-errors" hidden></div>
+        <div class="shopmonkey-actions shopmonkey-pricing-footer">
+          <button class="btn btn-secondary" id="shopmonkey-pricing-reload" type="button">Reload hosted settings</button>
+          <button class="btn btn-primary" id="shopmonkey-pricing-save" type="button">Save hosted settings</button>
+          <span id="shopmonkey-pricing-updated" class="shopmonkey-verified-at"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="shopmonkey-line-break-card" hidden>
+      <div class="card-title shopmonkey-card-title">
+        <div>
+          <span>Estimate Line Breaks</span>
+          <small>Seven reusable, zero-detail estimate headings</small>
+        </div>
+        <button class="btn btn-primary btn-sm" id="shopmonkey-line-break-create-btn" type="button">Create or verify</button>
+      </div>
+      <p class="shopmonkey-help">
+        Creates the category <strong>Estimate Line Breaks (Page, Heading, etc.)</strong> and the Front,
+        Side, Rear, Roof, Cabin, Technology, and Services divider parts. Existing exact matches are reused.
+        No SKU, part number, vendor, pricing, quantity, note, or tag values are added.
+      </p>
+      <div id="shopmonkey-line-break-result" class="shopmonkey-snapshot-detail" hidden></div>
+    </div>
+
+    <div class="card" id="shopmonkey-inventory-card" hidden>
+      <div class="card-title shopmonkey-card-title">
+        <div>
+          <span>Inventory Rebuild</span>
+          <small>Snapshot and reset preview</small>
+        </div>
+        <button class="btn btn-primary btn-sm" id="shopmonkey-inventory-snapshot-btn" type="button">Create snapshot &amp; preview</button>
+      </div>
+      <p class="shopmonkey-help">
+        Reads all active parts, tires, and inventory categories and saves a local recovery export.
+        Customers, fleets, vehicles, orders, and messages are excluded. This step cannot delete anything.
+      </p>
+      <div id="shopmonkey-inventory-summary" class="shopmonkey-summary" hidden></div>
+      <div id="shopmonkey-inventory-snapshot-detail" class="shopmonkey-snapshot-detail" hidden></div>
+      <input id="shopmonkey-inventory-filter" type="search" placeholder="Filter inventory by SKU, part number, brand, name, vendor, or category…" hidden />
+      <div id="shopmonkey-inventory-results" class="shopmonkey-results">
+        <p class="shopmonkey-empty">Create a snapshot before preparing the reset.</p>
+      </div>
+      <div id="shopmonkey-reset-lock" class="shopmonkey-reset-lock" hidden>
+        <strong>Reset locked</strong>
+        <span id="shopmonkey-reset-lock-reason">Stage and approve replacement price lists before enabling deletion.</span>
+      </div>
+    </div>
+
+    <div class="card" id="shopmonkey-cleanup-card" hidden>
+      <div class="card-title shopmonkey-card-title">
+        <div>
+          <span>Customer &amp; Fleet Cleanup</span>
+          <small>Live review; nothing is changed in Shopmonkey</small>
+        </div>
+        <button class="btn btn-primary btn-sm" id="shopmonkey-scan-btn" type="button">Scan Shopmonkey</button>
+      </div>
+      <div id="shopmonkey-summary" class="shopmonkey-summary" hidden></div>
+      <input id="shopmonkey-filter" type="search" placeholder="Filter customers, fleets, contacts, tax status, or issues…" hidden />
+      <div id="shopmonkey-results" class="shopmonkey-results">
+        <p class="shopmonkey-empty">Run a scan to review imported customers and fleets.</p>
+      </div>
+    </div>
+
+    <div class="card" id="shopmonkey-vehicles-card" hidden>
+      <div class="card-title shopmonkey-card-title">
+        <div>
+          <span id="shopmonkey-vehicles-title">Shopmonkey Vehicles</span>
+          <small id="shopmonkey-vehicles-summary"></small>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="shopmonkey-vehicles-close" type="button">Close</button>
+      </div>
+      <div id="shopmonkey-vehicles-results" class="shopmonkey-results"></div>
+    </div>
+  </div>
+
   <!-- ── QUICKBOOKS ── -->
   <div id="stab-quickbooks" hidden>
     <div class="card">
@@ -1490,6 +1680,7 @@
       </div>
       <div class="vehicle-sales-title-actions">
         <span id="vehicle-sales-save-state" class="vehicle-sales-save-state" role="status">Saved</span>
+        <button class="btn btn-secondary btn-sm" id="vehicle-sales-strip-documentation" type="button">Strip documentation</button>
         <button class="btn btn-gold btn-sm" id="vehicle-sales-print-pdf" type="button">Print PDF</button>
         <details class="proj-build-action-menu vehicle-sales-more-menu">
           <summary class="btn btn-secondary btn-sm">More</summary>
@@ -1507,6 +1698,23 @@
       <div><strong>Internal reference</strong><span id="vehicle-sales-link-label"></span></div>
       <span>Linked to its Builder vehicle.</span>
     </div>
+
+    <section class="vehicle-sales-relationships" aria-labelledby="vehicle-sales-relationships-title">
+      <div><strong id="vehicle-sales-relationships-title">Used vehicle relationships</strong><span>Purchase is already confirmed by this buyback record. Resolve the remaining items when known.</span></div>
+      <label>Does this vehicle require stripping?
+        <select id="vehicle-sales-strip-requirement">
+          <option value="undetermined">Not determined yet</option>
+          <option value="required">Yes - strip documentation required</option>
+          <option value="not_required">No - strip not required</option>
+        </select>
+      </label>
+      <label id="vehicle-sales-strip-reason-shell" hidden>Why is stripping not required?
+        <input id="vehicle-sales-strip-reason" maxlength="1000" placeholder="Record the reason">
+      </label>
+      <label>Equipment transfer build
+        <select id="vehicle-sales-transfer-build"><option value="">Not answered yet</option></select>
+      </label>
+    </section>
 
     <form id="vehicle-sales-form" class="vehicle-sales-form" autocomplete="off">
       <section class="vehicle-sales-section">
@@ -2421,6 +2629,11 @@
       <div class="vehicle-details-section-heading">
         <div><span>Existing / trade-in vehicle</span><small>The used vehicle related to this new build, if there is one.</small></div>
       </div>
+      <div class="form-group used-vehicle-link-field">
+        <label for="ind-edit-used-vehicle">Used vehicle already in DTM</label>
+        <select id="ind-edit-used-vehicle"><option value="">Enter a new used vehicle below</option></select>
+        <small id="ind-edit-used-vehicle-help">Matching vehicles from this agency will be suggested here. Selecting one reuses its saved details.</small>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label>Year</label>
@@ -2452,6 +2665,12 @@
       <div id="ind-edit-buyback" class="vehicle-details-buyback" hidden>
         <div id="ind-edit-buyback-content" class="vehicle-details-buyback-content" aria-live="polite"></div>
       </div>
+      <div id="ind-edit-strip-documentation" class="vehicle-details-buyback" hidden>
+        <div class="vehicle-details-buyback-content">
+          <div><span>Equipment removal</span><strong>Strip documentation</strong><small>Document the used vehicle whether DTM buys it or returns it to the agency.</small></div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="PT_openIndModalStripDocumentation()">Open form</button>
+        </div>
+      </div>
     </section>
 
     <section class="vehicle-details-section">
@@ -2470,6 +2689,79 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="PT_closeIndModal()">Close</button>
       <button class="btn btn-primary" id="ind-edit-save" onclick="PT_saveIndModal()">Save Details</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="strip-documentation-modal" role="dialog" aria-modal="true" aria-labelledby="strip-documentation-title">
+  <div class="modal strip-documentation-modal">
+    <div class="modal-title">
+      <span><span id="strip-documentation-title">Vehicle Strip Documentation</span><small>Equipment and insignia removal record</small></span>
+      <button class="modal-close" id="strip-documentation-close" type="button" title="Close">✕</button>
+    </div>
+    <div class="strip-documentation-banner">
+      <strong id="strip-documentation-vehicle-summary">Vehicle strip record</strong>
+      <span id="strip-documentation-vin-summary">VIN not entered</span>
+      <small>This DTM record supports the owner's separate Minnesota DVS certificate; it does not replace that state form.</small>
+    </div>
+    <div class="strip-documentation-tabs" role="tablist" aria-label="Strip documentation sections">
+      <button class="strip-documentation-tab active" id="strip-documentation-sales-tab" type="button" role="tab" aria-selected="true" aria-controls="strip-documentation-sales-panel" data-strip-tab="sales">Sales Intake</button>
+      <button class="strip-documentation-tab" id="strip-documentation-technician-tab" type="button" role="tab" aria-selected="false" aria-controls="strip-documentation-technician-section" data-strip-tab="technician">Technician Strip Documentation</button>
+    </div>
+    <form id="strip-documentation-form">
+      <div id="strip-documentation-sales-panel" role="tabpanel" aria-labelledby="strip-documentation-sales-tab">
+        <p id="strip-documentation-sales-read-only" class="strip-documentation-read-only" hidden>Sales intake details are read-only for Shop users.</p>
+        <section class="strip-documentation-section">
+          <h3>Sales intake</h3>
+          <div class="form-row">
+            <div class="form-group" style="flex:2"><label>Agency / owner</label><input data-strip-field="agency_name" type="text"></div>
+            <div class="form-group"><label>Unit #</label><input data-strip-field="unit_number" type="text"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Year</label><input data-strip-field="vehicle_year" type="text"></div>
+            <div class="form-group"><label>Make</label><input data-strip-field="vehicle_make" type="text"></div>
+            <div class="form-group" style="flex:2"><label>Model</label><input data-strip-field="vehicle_model" type="text"></div>
+            <div class="form-group"><label>Color</label><input data-strip-field="vehicle_color" type="text"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:2"><label>VIN</label><input data-strip-field="vin" type="text" maxlength="17"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Is DTM buying this vehicle?</label><select data-strip-field="disposition"><option value="">Select…</option><option value="purchased_by_dtm">Yes - DTM buyback</option><option value="returned_to_agency">No - returning to agency</option></select></div>
+            <div class="form-group"><label>Equipment transfer build</label><select id="strip-documentation-transfer-build"><option value="">Not answered yet</option><option value="__not_linked__">No equipment transfer</option></select></div>
+          </div>
+        </section>
+      </div>
+      <div id="strip-documentation-technician-section" role="tabpanel" aria-labelledby="strip-documentation-technician-tab" hidden>
+        <section class="strip-documentation-section">
+          <h3>Equipment checklist</h3>
+          <div class="form-row">
+            <div class="form-group"><label>Strip date</label><input data-strip-field="strip_date" type="date"></div>
+          </div>
+          <div id="strip-documentation-checklist" class="strip-documentation-checklist"></div>
+          <div class="form-group"><label>Removal notes</label><textarea data-strip-field="removal_notes" rows="3" placeholder="Condition, exceptions, damage, or work still required"></textarea></div>
+        </section>
+        <section class="strip-documentation-section">
+          <h3>Photo proof and signatures</h3>
+          <label class="strip-documentation-proof-check"><input data-strip-check="photo_proof_captured" type="checkbox"> Required photo proof was captured and reviewed</label>
+          <p class="strip-documentation-proof-help">Photo proof may ultimately be included with this form or retained as a separate related document.</p>
+          <div class="form-group"><label>Photo proof reference / note</label><input data-strip-field="photo_notes" type="text" placeholder="Optional"></div>
+          <p class="strip-documentation-signature-help">Each person types their full name once. It is used for both the printed-name field and the handwritten-style signature on the PDF.</p>
+          <div class="form-row">
+            <div class="form-group" style="flex:2"><label>Technician electronic signature</label><input data-strip-field="technician_signature" type="text" placeholder="Type full name" required></div>
+            <div class="form-group"><label>Date</label><input data-strip-field="technician_signed_date" type="date" required></div>
+            <div class="form-group" style="flex:2"><label>Reviewer electronic signature</label><input data-strip-field="reviewer_signature" type="text" placeholder="Type full name" required></div>
+            <div class="form-group"><label>Date</label><input data-strip-field="reviewer_signed_date" type="date" required></div>
+          </div>
+        </section>
+      </div>
+    </form>
+    <div id="strip-documentation-status" class="vehicle-details-save-status" role="status"></div>
+    <div class="modal-actions strip-documentation-actions">
+      <button class="btn btn-secondary" id="strip-documentation-open-pdf" type="button">Open PDF</button>
+      <span class="strip-documentation-actions-spacer"></span>
+      <button class="btn btn-secondary" id="strip-documentation-cancel" type="button">Close</button>
+      <button class="btn btn-primary" id="strip-documentation-save" type="button">Save intake</button>
     </div>
   </div>
 </div>
@@ -3060,6 +3352,7 @@
 <script src="/ui/js/settings/sales_reps.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/settings/presets_mgr.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/settings/project_defaults.js?v={{APP_VERSION}}"></script>
+<script src="/ui/js/shopmonkey.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/settings/quickbooks.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/settings/quickbooks_production_preview.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/settings/fixtures.js?v={{APP_VERSION}}"></script>
@@ -3081,6 +3374,7 @@
 <script src="/ui/js/projects/individual_modal.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/projects/wizard.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/projects/index.js?v={{APP_VERSION}}"></script>
+<script src="/ui/js/strip_documentation.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/vehicle_sales.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/operations.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/calendar.js?v={{APP_VERSION}}"></script>

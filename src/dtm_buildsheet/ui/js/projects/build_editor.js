@@ -111,7 +111,7 @@ function _pbeSetNotesStatus(text, isError = false) {
   const status = $("pbe-final-notes-status");
   if (!status) return;
   status.style.display = text ? "block" : "none";
-  status.style.background = isError ? "#fdecea" : "#f0f4ff";
+  status.style.background = isError ? "var(--danger-bg)" : "var(--surface-3)";
   status.style.color = isError ? "var(--red)" : "var(--navy)";
   status.textContent = text;
 }

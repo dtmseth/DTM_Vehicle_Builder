@@ -1,0 +1,591 @@
+/*
+ * Application color themes.
+ *
+ * The original UI grew around a light palette with a number of literal
+ * surface colors.  Keep the base stylesheet as the light-mode authority and
+ * layer dark-mode surface/semantic overrides here.  The dark palette follows
+ * the Shopmonkey pricing workspace: deep navy surfaces, slate borders, cool
+ * text, and a clear blue interaction accent.
+ */
+:root {
+  --surface: #fff;
+  --surface-2: #f5f7fb;
+  --surface-3: #eef2f8;
+  --field-bg: #fff;
+  --hover-bg: #eef4fc;
+  --accent: #1e2761;
+  --accent-strong: #161d4d;
+  --accent-text: #1e2761;
+  --focus-ring: rgba(30, 39, 97, .18);
+  --shadow-color: rgba(15, 23, 42, .18);
+  --success-bg: #e9f7ed;
+  --success-border: #b9dfc4;
+  --success-text: #166534;
+  --warning-bg: #fff8df;
+  --warning-border: #e0c995;
+  --warning-text: #72500f;
+  --danger-bg: #fff0ef;
+  --danger-border: #efb9b5;
+  --danger-text: #8c2d28;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  --navy: #5fa8ff;
+  --navy2: #84bdff;
+  --gold: #d5b95f;
+  --bg: #0a111d;
+  --card: #101a29;
+  --border: #33445c;
+  --text: #e8edf5;
+  --muted: #93a4ba;
+  --green: #62d19a;
+  --yellow: #f2bf64;
+  --red: #ff8e9d;
+  --surface: #101a29;
+  --surface-2: #141f2f;
+  --surface-3: #172437;
+  --field-bg: #111c2c;
+  --hover-bg: #1c2c42;
+  --accent: #3284e6;
+  --accent-strong: #5fa8ff;
+  --accent-text: #88c1ff;
+  --focus-ring: rgba(95, 168, 255, .22);
+  --shadow-color: rgba(0, 0, 0, .48);
+  --success-bg: #10291f;
+  --success-border: #285843;
+  --success-text: #7be0af;
+  --warning-bg: #2b2415;
+  --warning-border: #66552d;
+  --warning-text: #f2cf7b;
+  --danger-bg: #2a1720;
+  --danger-border: #743c48;
+  --danger-text: #ffacb8;
+  color-scheme: dark;
+}
+
+/* Appearance lives in the Connections/user modal so the already dense header
+   keeps the user chip visible at the minimum window width. */
+.connection-theme-icon {
+  align-items: center;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--accent-text);
+  display: inline-flex;
+  flex: 0 0 34px;
+  font-size: 18px;
+  height: 34px;
+  justify-content: center;
+}
+
+html[data-theme="dark"] body {
+  background: var(--bg);
+  color: var(--text);
+}
+html[data-theme="dark"] ::selection { background: #286fc2; color: #fff; }
+html[data-theme="dark"] .app-header { background: #0d1523; border-bottom: 1px solid #26364d; }
+html[data-theme="dark"] .card { box-shadow: 0 4px 16px rgba(0, 0, 0, .2); }
+
+/* Native controls and shared inputs. */
+html[data-theme="dark"] :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  background-color: var(--field-bg);
+  border-color: var(--border);
+  color: var(--text);
+}
+html[data-theme="dark"] :where(input, select, textarea)::placeholder { color: #71839a; opacity: 1; }
+html[data-theme="dark"] :where(input, select, textarea):focus {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+html[data-theme="dark"] input:disabled,
+html[data-theme="dark"] select:disabled,
+html[data-theme="dark"] textarea:disabled { background: #0e1725; color: #71839a; }
+
+html[data-theme="dark"] .btn-primary { background: var(--accent); color: #fff; }
+html[data-theme="dark"] .btn-primary:hover { background: #4292ed; }
+html[data-theme="dark"] .btn-secondary {
+  background: var(--surface-3);
+  border-color: #3b4d66;
+  color: #dfe7f1;
+}
+html[data-theme="dark"] .btn-secondary:hover { background: #1d3048; border-color: #52749c; }
+html[data-theme="dark"] .btn-danger { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-text); }
+html[data-theme="dark"] .btn-gold { color: #1d2430; }
+
+/* Reusable panels, menus, dialogs, and raised rows. */
+html[data-theme="dark"] :where(
+  .modal,
+  #picker-panel .picker-container,
+  .photo-cache-progress-panel,
+  .pv-inspector,
+  .sr-panel,
+  .sr-assignment-card,
+  .vehicle-card,
+  .location-row,
+  .sr-profile-card,
+  .rk-card,
+  .proj-ind-card,
+  .proj-build-card,
+  .proj-archive-agency,
+  .proj-archive-year,
+  .proj-completion-side,
+  .pdb-detail-pane,
+  .skg-prod,
+  .qbi-item,
+  .operations-vehicle,
+  .operations-status,
+  .operations-projection-detail,
+  .calendar-queue-project,
+  .calendar-queue-vehicle,
+  .calendar-bubble-overlay .calendar-detail,
+  .qb-estimate-result,
+  .qb-import-catalog-details dl,
+  .build-final-check,
+  .strip-documentation-section,
+  .proj-unit-quotes,
+  .proj-unit-quote,
+  .vehicle-details-selector-option,
+  .project-completion-options > label,
+  .picker-location-card,
+  .vehicle-sales-record,
+  .proj-reference-row,
+  .photo-gallery-note-editor,
+  .compat-chips
+) { background: var(--surface); border-color: var(--border); color: var(--text); }
+
+html[data-theme="dark"] :where(
+  .pv-view-tab,
+  .view-pill,
+  .radio-field select,
+  .radio-field input,
+  .pt-preview,
+  .console-faceplate-order-card,
+  .console-order-move,
+  .console-order-remove,
+  .vehicle-sales-section,
+  .vehicle-sales-match-card,
+  .proj-reference-browser-row,
+  .photo-gallery-card,
+  .photo-gallery-tab.active,
+  .build-final-summary,
+  .build-final-intro,
+  .proj-et-preset-dd,
+  .proj-existing-vehicle-fields,
+  .vehicle-details-section,
+  .vehicle-guided-picker,
+  .proj-unit-quote-result,
+  .skg-tb-sel,
+  .skg-tb-input,
+  .skg-in,
+  .skg-add,
+  .skg-sku-btns button,
+  .skg-move-opt
+) { background: var(--surface); border-color: var(--border); color: var(--text); }
+
+html[data-theme="dark"] :where(
+  .stab-bar,
+  .upload-job,
+  .stat-box,
+  .output-row,
+  .proj-created-tag,
+  .proj-ind-panel,
+  .proj-preset-row,
+  .proj-overview-card-title,
+  .proj-edit-unit-row,
+  .proj-unit-row,
+  .proj-archive-years,
+  .proj-preferences-intro,
+  .proj-preferences-default-action,
+  .proj-reference-overview-card,
+  .proj-project-notes-card,
+  .vehicle-details-selector-shell,
+  .vehicle-details-buyback-content,
+  .vehicle-details-build-action,
+  .used-vehicle-link-field,
+  .strip-documentation-banner,
+  .strip-documentation-tabs,
+  .strip-documentation-read-only,
+  .operations-project-group > summary,
+  .operations-section-heading,
+  .operations-status-grid,
+  .operations-quick-panel,
+  .operations-vehicle-quick,
+  .operations-vehicle-actions,
+  .operations-status-scope,
+  .operations-status-progress,
+  .operations-schedule-current > span,
+  .operations-schedule-clear,
+  .operations-history-loading,
+  .operations-history-empty,
+  .operations-timeline-change,
+  .operations-timeline-schedule,
+  .calendar-week-head,
+  .calendar-month-head,
+  .calendar-weekend,
+  .calendar-detail,
+  .qb-est-action-choices,
+  .build-readonly-table th,
+  .build-final-lock-note
+) { background: var(--surface-2); border-color: var(--border); color: var(--text); }
+
+html[data-theme="dark"] :where(
+  .vehicle-sales-match-assistant,
+  .photo-gallery-selection-bar,
+  .build-readonly-note,
+  .pbe-readonly-banner,
+  .console-component-current,
+  .console-kit-summary--empty
+) { background: var(--surface-2); border-color: var(--border); color: var(--text); }
+
+html[data-theme="dark"] :where(
+  .picker-location-chooser,
+  .pdb-tree-pane,
+  .skg-prod-body,
+  .skg-in[readonly],
+  .skg-chip,
+  .skg-bulk,
+  .dir-display,
+  .vehicle-sales-link,
+  .vehicle-sales-relationships,
+  .vehicle-sales-credit-row p,
+  .proj-reference-toolbar,
+  .build-readonly-empty,
+  .build-readonly-loading
+) { background: var(--surface-2); border-color: var(--border); color: var(--text); }
+
+html[data-theme="dark"] :where(
+  .stab.active,
+  .proj-row-menu > summary,
+  .proj-row-menu-items,
+  .proj-preset-dropdown,
+  .proj-build-action-menu-items,
+  .me-part-action-popover,
+  .sug-dropdown,
+  .vehicle-search-menu,
+  .vehicle-search-option,
+  .operations-action-menu > summary,
+  .operations-action-menu-popover,
+  .operations-quick-status,
+  .calendar-context-menu,
+  .calendar-drag-ghost
+) { background: var(--field-bg); border-color: var(--border); color: var(--text); box-shadow: 0 10px 28px var(--shadow-color); }
+
+html[data-theme="dark"] :where(
+  .stab:hover,
+  .proj-row-clickable:hover,
+  .proj-row-menu-items button:hover,
+  .proj-build-action-menu-items button:hover,
+  .proj-preset-option:hover,
+  .alm-import-item:hover,
+  .operations-action-menu > summary:hover,
+  .operations-action-menu[open] > summary,
+  .operations-action-menu-popover button:hover,
+  .operations-action-menu-popover button:focus-visible,
+  .calendar-context-menu button:hover,
+  .calendar-context-menu button:focus-visible,
+  .vehicle-search-option:hover,
+  .vehicle-search-option:focus
+) { background: var(--hover-bg); color: var(--accent-text); }
+
+html[data-theme="dark"] :where(
+  #drop-zone:hover,
+  #drop-zone.drag-over,
+  .upload-zone:hover,
+  .picker-location-card:hover,
+  .pp-head:hover,
+  .picker-seg-btn:hover:not(:disabled):not(.active),
+  .proj-ind-toggle:hover,
+  .vehicle-sales-record:hover,
+  .vehicle-details-selector-option:hover,
+  .strip-documentation-tab:hover:not(:disabled),
+  .proj-unit-quote-result:hover,
+  .sug-item:hover,
+  .sug-create:hover,
+  .skg-prod-head:hover,
+  .skg-move-opt:hover,
+  .pdb-tree-leaf:hover
+) { background: var(--hover-bg); border-color: #52749c; color: var(--text); }
+html[data-theme="dark"] .rk-card.selected,
+html[data-theme="dark"] .picker-location-card.is-selected { background: #142b42; border-color: var(--accent-strong); }
+html[data-theme="dark"] .catalog-tbl tr:hover td { background: var(--hover-bg); }
+html[data-theme="dark"] .proj-final-review-row:hover,
+html[data-theme="dark"] .proj-unit-notes--overflowing:hover,
+html[data-theme="dark"] .proj-unit-notes--overflowing:focus-within { background: var(--warning-bg); border-color: var(--warning-border); }
+html[data-theme="dark"] .proj-build-action-menu-items .pbe-build-action-danger:hover { background: var(--danger-bg); }
+
+html[data-theme="dark"] :where(.card-title, .modal-title, h2, h3, .proj-row-agency, .proj-ind-card-label, .proj-review-detail) {
+  color: var(--accent-text);
+}
+
+html[data-theme="dark"] :where(
+  .pv-view-tab.active,
+  .view-pill.active,
+  .view-check-label.checked,
+  .compat-chip.checked,
+  .picker-part-status-btn--active,
+  .pf-pill.active,
+  .pbt-cat-head.active,
+  .pbt-leaf.active,
+  .pbt-fam-select.active,
+  .picker-seg-btn.active,
+  .me-status-btn--active,
+  .pdb-tree-leaf.active,
+  .vehicle-details-selector-option.active
+) { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+html[data-theme="dark"] :where(
+  .photo-cache-progress-fill,
+  .upload-job-progress > span,
+  .wstep.active .wstep-num,
+  .picker-chip,
+  .picker-location-card.is-selected .picker-location-card-check,
+  .picker-dot-tip,
+  .toast,
+  .proj-preset-chip,
+  .proj-vehicle-details-icon,
+  .build-final-step
+) { background: var(--accent); }
+html[data-theme="dark"] :where(
+  .upload-job.complete .upload-job-progress > span,
+  .wstep.done .wstep-num,
+  .pp-match.ok,
+  .picker-dot.sel,
+  .skg-qb,
+  .skg-pill-qb,
+  .toast.success
+) { background: #27815b; color: #fff; }
+html[data-theme="dark"] .toast.error { background: #b84b58; color: #fff; }
+html[data-theme="dark"] .card-title,
+html[data-theme="dark"] .modal-title { border-color: var(--accent); }
+
+/* Tables and data grids. */
+html[data-theme="dark"] :where(.parts-tbl th, .sku-table th, .pdb-table th, .skg-table th) {
+  background: var(--surface-2);
+  color: var(--accent-text);
+}
+html[data-theme="dark"] :where(.parts-tbl td, .sku-table td, .pdb-table td, .skg-table td) { border-color: var(--border); }
+html[data-theme="dark"] :where(.qbpp-metric, .me-row, .sku-row, .sd-view-sub td) {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+/* Project and build workflow. */
+html[data-theme="dark"] .proj-ind-grid { background: var(--bg); border-color: var(--accent); }
+html[data-theme="dark"] :where(.proj-unit-group-hdr, .proj-unit-header, .proj-edit-unit-hdr, .me-cat-group-head, .vehicle-sales-section h3) {
+  background: #17385f;
+  color: #f2f6fb;
+}
+html[data-theme="dark"] .proj-row-menu[open] > summary,
+html[data-theme="dark"] .proj-build-action-menu[open] > summary { background: var(--hover-bg); border-color: #52749c; }
+html[data-theme="dark"] .proj-list-tab { background: var(--surface-2); border-color: var(--border); color: var(--muted); }
+html[data-theme="dark"] .proj-list-tab span { background: #26364d; color: var(--accent-text); }
+html[data-theme="dark"] .proj-list-tab:hover:not(.active) { background: var(--hover-bg); color: var(--accent-text); }
+html[data-theme="dark"] .proj-list-tab.active[data-project-list-status="started"] { background: #342b18; border-color: #6c592b; color: #f2cf7b; }
+html[data-theme="dark"] .proj-list-tab.active[data-project-list-status="active"] { background: #173326; border-color: #285843; color: #7be0af; }
+html[data-theme="dark"] .proj-list-tab.active[data-project-list-status="inactive"] { background: #351d25; border-color: #743c48; color: #ffacb8; }
+html[data-theme="dark"] .proj-list-tab.active[data-project-list-status="completed"] { background: #17643b; border-color: #27815b; }
+html[data-theme="dark"] :where(.me-cat-header, .proj-unit-notes, .build-readonly-note, .proj-unit-notes-modal-body) {
+  background: #2b2618;
+  border-color: #66552d;
+  color: #f0d995;
+}
+
+/* Part picker controls are themed; real light-head colors and preview imagery are not. */
+html[data-theme="dark"] :where(
+  .picker-part-status-btn,
+  .pf-pill,
+  .pbt-leaf,
+  .pbt-fam-select,
+  .picker-seg-btn,
+  .guided-option,
+  .guided-component-condition,
+  .system-product-choice,
+  .console-setup,
+  .console-catalog-card,
+  .console-empty,
+  .console-order-empty,
+  .console-component-section,
+  .console-printer-prompt,
+  .console-location-choice,
+  .pp-tint-window,
+  .pp-allocation-row,
+  .pp-round-color,
+  .pp-allocation-custom
+) { background: var(--surface); border-color: var(--border); color: var(--text); }
+html[data-theme="dark"] :where(.guided-system, .system-product-picker, .guided-system-header) {
+  --guided-soft: #102922;
+  --system-soft: #102922;
+  background: var(--surface-2);
+  border-color: #285843;
+}
+html[data-theme="dark"] :where(.guided-option:hover, .system-product-choice:hover, .console-catalog-card:hover:not(:disabled)) {
+  background: #142b42;
+}
+html[data-theme="dark"] :where(.guided-textarea, .guided-text-input, .console-faceplate-search input) {
+  background: var(--field-bg);
+  border-color: var(--border);
+  color: var(--text);
+}
+html[data-theme="dark"] .pp-location-allocation { background: #0e1827; border-color: var(--border); }
+
+/* Operations keeps its status semantics while moving neutral surfaces dark. */
+html[data-theme="dark"] .operations-project-body { background: #0d1624; }
+html[data-theme="dark"] .operations-vehicle-heading { background: linear-gradient(90deg, #141f2f 0, #101a29 68%); border-color: var(--border); }
+html[data-theme="dark"] .operations-vehicle-plan { background: var(--surface); border-color: var(--border); }
+html[data-theme="dark"] .operations-vehicle-plan span { color: #bdc9d8; }
+html[data-theme="dark"] .operations-vehicle-plan b { color: var(--muted); }
+html[data-theme="dark"] .operations-status.operations-status-tone-complete,
+html[data-theme="dark"] .operations-quick-status.active.operations-status-tone-complete { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
+html[data-theme="dark"] .operations-status.operations-status-tone-intermediate,
+html[data-theme="dark"] .operations-quick-status.active.operations-status-tone-intermediate { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning-text); }
+html[data-theme="dark"] .operations-status.operations-status-tone-unavailable,
+html[data-theme="dark"] .operations-quick-status.active.operations-status-tone-unstarted { background: #111823; border-color: #29384c; }
+html[data-theme="dark"] :where(.operations-status-guidance, .operations-projection-progress) { background: #142b42; border-color: #3a5878; color: #88c1ff; }
+html[data-theme="dark"] :where(.operations-status-guidance-warning, .operations-timeline-reason) { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning-text); }
+html[data-theme="dark"] .operations-history-error { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-text); }
+
+/* Calendar's late-loaded stylesheet is intentionally beaten by the added
+   html[data-theme] specificity. */
+html[data-theme="dark"] .calendar-board { border-color: var(--border); }
+html[data-theme="dark"] .calendar-fields input,
+html[data-theme="dark"] .calendar-fields select,
+html[data-theme="dark"] .calendar-fields textarea,
+html[data-theme="dark"] .calendar-team-settings input,
+html[data-theme="dark"] .calendar-team-settings select,
+html[data-theme="dark"] .calendar-team-settings textarea {
+  background: var(--field-bg);
+  border-color: var(--border);
+  color: var(--text);
+}
+html[data-theme="dark"] .calendar-lane { background: repeating-linear-gradient(to right, var(--border) 0, var(--border) 1px, transparent 1px, transparent 20%); }
+html[data-theme="dark"] :where(.calendar-week-head, .calendar-month-head, .calendar-weekend) { background: var(--surface-2); }
+html[data-theme="dark"] .calendar-month-days > span,
+html[data-theme="dark"] .calendar-days > span { border-color: var(--border); }
+html[data-theme="dark"] .calendar-today-date { background: #142b42; color: #88c1ff; }
+html[data-theme="dark"] .calendar-today-column { background: #16365a55; border-color: #4d7fb8; }
+html[data-theme="dark"] .calendar-drop-new { background: #142b42; }
+html[data-theme="dark"] .calendar-ready { background: #142b42; color: #a9d0ff; }
+html[data-theme="dark"] .calendar-team-settings.calendar-team-retired { background: var(--warning-bg); border-color: var(--warning-border); }
+html[data-theme="dark"] .calendar-team-retired legend,
+html[data-theme="dark"] .calendar-team-retired [data-team-active-label] { color: var(--warning-text); }
+html[data-theme="dark"] .calendar-save-status { background: #142b42; border-color: #3a5878; color: #a9d0ff; }
+html[data-theme="dark"] .calendar-save-status[data-state="complete"] { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
+html[data-theme="dark"] .calendar-save-status[data-state="failed"],
+html[data-theme="dark"] .calendar-save-status[data-state="interrupted"],
+html[data-theme="dark"] .calendar-save-status[data-state="conflict"] { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning-text); }
+html[data-theme="dark"] .calendar-status-green { background: #173326; color: #7be0af; }
+html[data-theme="dark"] .calendar-status-blue { background: #142b42; color: #88c1ff; }
+html[data-theme="dark"] .calendar-status-amber { background: #342b18; color: #f2cf7b; }
+html[data-theme="dark"] .calendar-status-slate { background: #202b3b; color: #bdc9d8; }
+
+/* Shared semantic messages. */
+html[data-theme="dark"] :where(
+  .result-banner.success,
+  .estimate-defaults-status--saved,
+  .build-final-clear,
+  .build-final-checks--clear,
+  .shopmonkey-snapshot-detail
+) { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
+html[data-theme="dark"] :where(
+  .warn-item,
+  .operations-message-warning,
+  .calendar-save-status[data-state="conflict"],
+  .qb-est-change-alert,
+  .build-final-warning,
+  .build-final-checks,
+  .project-creation-conflict-warning
+) { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning-text); }
+html[data-theme="dark"] :where(
+  .result-banner.error,
+  .estimate-defaults-status--error,
+  .operations-message-error,
+  .build-finalization-error,
+  .build-final-block,
+  .project-completion-overwrite-confirm
+) { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-text); }
+
+/* Shopmonkey pricing follows the global theme. Light mode deliberately uses
+   the same hierarchy as dark mode rather than becoming a separate design. */
+html[data-theme="light"] .shopmonkey-pricing-workspace {
+  background: #f5f7fc;
+  border-color: #c9d3ea;
+  color: var(--text);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .7);
+}
+html[data-theme="light"] .shopmonkey-pricing-options > label,
+html[data-theme="light"] .shopmonkey-pricing-advanced-grid > label,
+html[data-theme="light"] .shopmonkey-field > span { color: #596477; }
+html[data-theme="light"] :where(
+  .shopmonkey-pricing-options input,
+  .shopmonkey-pricing-options select,
+  .shopmonkey-pricing-advanced select,
+  .shopmonkey-field > input,
+  .shopmonkey-field > select,
+  .shopmonkey-percent-input,
+  .shopmonkey-pricing-options .shopmonkey-check
+) { background: #fff; border-color: #b8c5d8; color: var(--text); }
+html[data-theme="light"] .shopmonkey-pricing-options select:hover,
+html[data-theme="light"] .shopmonkey-pricing-advanced select:hover,
+html[data-theme="light"] .shopmonkey-field > select:hover {
+  background-color: #f3f7fd;
+  border-color: #7f94bd;
+}
+html[data-theme="light"] .shopmonkey-pricing-options select option,
+html[data-theme="light"] .shopmonkey-pricing-advanced select option,
+html[data-theme="light"] .shopmonkey-field > select option { background: #fff; color: var(--text); }
+html[data-theme="light"] .shopmonkey-pricing-advanced { background: #fff; border-color: #cbd5e4; }
+html[data-theme="light"] .shopmonkey-pricing-advanced summary { color: #44506b; }
+html[data-theme="light"] .shopmonkey-pricing-safety { background: #edf8f1; border-color: #a7d5b8; color: #17643b; }
+html[data-theme="light"] .shopmonkey-pricing-safety span { color: #4f6659; }
+html[data-theme="light"] .shopmonkey-pricing-section-head strong,
+html[data-theme="light"] .shopmonkey-customer-rule-head strong,
+html[data-theme="light"] .shopmonkey-brand-rules-head strong,
+html[data-theme="light"] .shopmonkey-brand-choice strong { color: var(--navy); }
+html[data-theme="light"] .shopmonkey-pricing-section-head span,
+html[data-theme="light"] .shopmonkey-brand-rules-head span,
+html[data-theme="light"] .shopmonkey-brand-choice small,
+html[data-theme="light"] .shopmonkey-card-kicker { color: var(--muted); }
+html[data-theme="light"] .shopmonkey-pricing-workspace .btn-secondary { background: #fff; border-color: #b8c5d8; color: var(--navy); }
+html[data-theme="light"] .shopmonkey-pricing-workspace .btn-secondary:hover { background: #eef4ff; border-color: #7f94bd; }
+html[data-theme="light"] .shopmonkey-customer-rule-card { background: #fff; border-color: #ccd6e5; box-shadow: 0 4px 12px rgba(30, 39, 97, .08); }
+html[data-theme="light"] .shopmonkey-customer-rule-card:hover { border-color: #8799be; }
+html[data-theme="light"] .shopmonkey-customer-rule-head,
+html[data-theme="light"] .shopmonkey-card-divider { border-color: #dce3ed; }
+html[data-theme="light"] .shopmonkey-card-divider { background: #dce3ed; }
+html[data-theme="light"] .shopmonkey-toggle { color: #596477; }
+html[data-theme="light"] .shopmonkey-toggle > span { background: #c9d2df; box-shadow: inset 0 0 0 1px #aeb9ca; }
+html[data-theme="light"] .shopmonkey-toggle > span::after { background: #fff; }
+html[data-theme="light"] .shopmonkey-icon-button { color: #6b7b90; }
+html[data-theme="light"] .shopmonkey-icon-button:hover { background: #fff0ef; border-color: #e8aaa5; color: #b84b58; }
+html[data-theme="light"] .shopmonkey-brand-rule { background: #f8f9fc; border-color: #d7dfeb; }
+html[data-theme="light"] .shopmonkey-add-rule-button { background: #edf4ff; border-color: #9ebbe0; color: #245a99; }
+html[data-theme="light"] .shopmonkey-add-rule-button:hover { background: #dfeeff; border-color: #6e9bd1; color: #174f8f; }
+html[data-theme="light"] .shopmonkey-empty-rules { border-color: #b9c5d5; color: var(--muted); }
+html[data-theme="light"] .shopmonkey-percent-input input { color: var(--text); }
+html[data-theme="light"] .shopmonkey-percent-input span { color: var(--muted); }
+html[data-theme="light"] .shopmonkey-picker-trigger { background: #fff; border-color: #b8c5d8; color: var(--text); }
+html[data-theme="light"] .shopmonkey-picker-trigger:hover,
+html[data-theme="light"] .shopmonkey-picker-trigger[aria-expanded="true"] { background: #f3f7fd; border-color: #7f94bd; }
+html[data-theme="light"] .shopmonkey-picker-menu { background: #fff; border-color: #b8c5d8; box-shadow: 0 14px 35px rgba(30, 39, 97, .2); }
+html[data-theme="light"] .shopmonkey-picker-search { background: #f5f7fb; border-color: #c3cfdf; color: var(--muted); }
+html[data-theme="light"] .shopmonkey-picker-search input { color: var(--text); }
+html[data-theme="light"] .shopmonkey-picker-option { color: var(--text); }
+html[data-theme="light"] .shopmonkey-picker-option:hover,
+html[data-theme="light"] .shopmonkey-picker-option.is-selected { background: #eaf2fc; }
+html[data-theme="light"] .shopmonkey-picker-meta,
+html[data-theme="light"] .shopmonkey-picker-empty,
+html[data-theme="light"] .shopmonkey-picker-placeholder,
+html[data-theme="light"] .shopmonkey-picker-chevron { color: var(--muted); }
+html[data-theme="light"] .shopmonkey-brand-mark { background: #e5effc; color: #286fc2; }
+html[data-theme="light"] .shopmonkey-pricing-advanced-grid small { color: var(--muted); }
+html[data-theme="light"] .shopmonkey-pricing-errors { background: #fff0ef; border-color: #e8aaa5; color: #8c2d28; }
+html[data-theme="light"] .shopmonkey-pricing-footer { border-color: #d4dce8; }
+html[data-theme="light"] .shopmonkey-pricing-footer .shopmonkey-verified-at { color: var(--muted); }
+
+/* Reassert the Shopmonkey reference palette after the general dark rules. */
+html[data-theme="dark"] .shopmonkey-pricing-workspace { background: #0d1523; border-color: #26364d; color: #e8edf5; }
+html[data-theme="dark"] .shopmonkey-customer-rule-card { background: #141f2f; border-color: #2b3b52; }
+html[data-theme="dark"] .shopmonkey-pricing-advanced { background: #101a29; border-color: #26364d; }
+html[data-theme="dark"] .shopmonkey-brand-rule { background: #0f1927; border-color: #29394f; }
+html[data-theme="dark"] .shopmonkey-picker-menu { background: #111b2a; border-color: #40536d; }

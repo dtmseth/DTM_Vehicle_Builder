@@ -93,6 +93,7 @@ class QuoteReference:
 @dataclass
 class IndividualUnit:
     individual_id: str
+    source_used_vehicle_id: str = ""
     unit_number: str = ""
     year: str = ""
     make: str = ""

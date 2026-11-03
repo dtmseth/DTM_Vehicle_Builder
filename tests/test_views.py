@@ -16,6 +16,27 @@ from dtm_buildsheet.config_loader import load_configs
 from dtm_buildsheet.paths import ensure_workspace
 
 
+def test_theme_toggle_loads_before_styles_and_shopmonkey_follows_theme():
+    ui_root = Path(__file__).parents[1] / "src" / "dtm_buildsheet" / "ui"
+    html = (ui_root / "index.html").read_text(encoding="utf-8")
+    theme_script = (ui_root / "js" / "theme.js").read_text(encoding="utf-8")
+    theme_styles = (ui_root / "theme.css").read_text(encoding="utf-8")
+    pyproject = (ui_root.parents[2] / "pyproject.toml").read_text(encoding="utf-8")
+
+    assert html.index('/ui/js/theme.js?v={{APP_VERSION}}') < html.index(
+        '/ui/styles.css?v={{APP_VERSION}}'
+    )
+    assert '/ui/theme.css?v={{APP_VERSION}}' in html
+    assert 'id="theme-toggle"' in html
+    assert html.index('id="theme-toggle"') > html.index('id="cloud-modal"')
+    assert 'const STORAGE_KEY = "dtm_builder_theme"' in theme_script
+    assert "root.dataset.theme = next" in theme_script
+    assert 'html[data-theme="dark"]' in theme_styles
+    assert 'html[data-theme="light"] .shopmonkey-pricing-workspace' in theme_styles
+    assert 'html[data-theme="dark"] .shopmonkey-pricing-workspace' in theme_styles
+    assert '"ui/theme.css"' in pyproject
+
+
 def test_build_actions_include_reset_and_clear_qb_import_label():
     ui_root = Path(__file__).parents[1] / "src" / "dtm_buildsheet" / "ui"
     html = (ui_root / "index.html").read_text(encoding="utf-8")

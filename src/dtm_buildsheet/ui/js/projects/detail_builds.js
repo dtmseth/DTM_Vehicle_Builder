@@ -4070,8 +4070,8 @@ async function _ptOpenBatchEstimateSetup(project) {
     }).join("")
     : `<div style="padding:10px;font-size:12px;color:var(--green)">Every configured vehicle is ready.</div>`;
   const customerStatus = customerReady
-    ? `<div style="padding:8px 10px;margin-bottom:12px;border:1px solid #86c99a;border-radius:6px;background:#f0fbf3;font-size:12px;color:var(--green)">✓ Customer is ready in QuickBooks.</div>`
-    : `<div style="padding:9px 11px;margin-bottom:12px;border:1px solid #f0c36d;border-radius:6px;background:#fff7e6;font-size:12px;line-height:1.45"><strong>Customer setup needed first.</strong> Create an estimate for one vehicle first to review and confirm the customer details. Then return here to create the rest as a batch.</div>`;
+    ? `<div style="padding:8px 10px;margin-bottom:12px;border:1px solid var(--success-border);border-radius:6px;background:var(--success-bg);font-size:12px;color:var(--success-text)">✓ Customer is ready in QuickBooks.</div>`
+    : `<div style="padding:9px 11px;margin-bottom:12px;border:1px solid var(--warning-border);border-radius:6px;background:var(--warning-bg);color:var(--warning-text);font-size:12px;line-height:1.45"><strong>Customer setup needed first.</strong> Create an estimate for one vehicle first to review and confirm the customer details. Then return here to create the rest as a batch.</div>`;
   const pdfStatus = missingPdfs.length
     ? `<div class="qb-est-pdf-required"><strong>${missingPdfs.length} build PDF${missingPdfs.length === 1 ? " is" : "s are"} required.</strong><p>Create ${missingPdfs.length === 1 ? "it" : "them"} now so every Estimate can include its build attachment. This can take several seconds per build.</p><button type="button" class="btn btn-primary" data-qb-batch-export-pdfs>Create missing PDF${missingPdfs.length === 1 ? "" : "s"}</button><div id="qb-est-batch-pdf-progress" class="qb-est-pdf-progress" hidden></div></div>`
     : `<div class="qb-est-pdf-ready">✓ Every ready build has a PDF attachment.</div>`;

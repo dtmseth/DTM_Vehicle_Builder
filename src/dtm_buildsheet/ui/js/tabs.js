@@ -39,6 +39,7 @@ const ALL_STAB_CONTENTS = [
   "stab-agencies",
   "stab-sales-reps",
   "stab-presets",
+  "stab-shopmonkey",
   "stab-quickbooks",
   "stab-quickbooks-production-preview",
   "stab-workbook-tools",
@@ -198,6 +199,7 @@ function _runStabSideEffects(stab) {
   }
   if (stab === "qb-inbox" && typeof initQbInboxTab === "function") initQbInboxTab();
   if (stab === "parts-db" && typeof initPartsDbTab === "function") initPartsDbTab();
+  if (stab === "shopmonkey" && typeof initShopmonkeyTab === "function") initShopmonkeyTab();
   if (stab === "quickbooks" && QUICKBOOKS_UI_ENABLED && typeof initQuickBooksTab === "function") initQuickBooksTab();
   if (stab === "quickbooks-production-preview" && typeof initQuickBooksProductionPreview === "function") initQuickBooksProductionPreview();
 }

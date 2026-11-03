@@ -584,7 +584,7 @@
         state.choices=result.choices;
         if(autoTeam){const preferred=result.choices.find(c=>c.team_id===$('calendar-job-team').value);const free=preferred&&!preferred.busy&&!preferred.blocking_conflicts.length?preferred:result.choices.find(c=>!c.busy&&!c.blocking_conflicts.length);if(free)$('calendar-job-team').value=free.team_id;previousTeam=$('calendar-job-team').value;}
         state.availability={source:result.source_revision,key:bookingInputKey(readEdit(),includeProject()),choices:result.choices};
-        for(const option of $('calendar-job-team').options){const choice=result.choices.find(c=>c.team_id===option.value),name=state.data.settings.teams.find(t=>t.id===option.value)?.name||option.value;option.textContent=(choice?.busy?'🔴 ':'')+name+(choice?.busy?' — Busy':'');option.style.color=choice?.busy?'#a52727':'';}
+        for(const option of $('calendar-job-team').options){const choice=result.choices.find(c=>c.team_id===option.value),name=state.data.settings.teams.find(t=>t.id===option.value)?.name||option.value;option.textContent=(choice?.busy?'🔴 ':'')+name+(choice?.busy?' — Busy':'');option.style.color=choice?.busy?'var(--red)':'';}
         const selected=result.choices.find(c=>c.team_id===$('calendar-job-team').value);
         if(selected){
           const assumptions=selected.assumptions||{},capacity=Number(assumptions.daily_capacity);

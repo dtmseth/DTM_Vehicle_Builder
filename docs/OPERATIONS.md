@@ -31,6 +31,44 @@ The request list is live; the processor remains Off and pre-pilot, and no Canvas
 An operations record is keyed by the existing `IndividualUnit.individual_id`. SharePoint's numeric
 item ID is an adapter detail and must never become the cross-system vehicle identity.
 
+### Used-vehicle strip documentation
+
+Equipment-removal work uses an independent opaque `used_vehicle_id`, because the same physical
+used vehicle may be linked to a replacement-build vehicle, a buyback/sale record, or both. Users
+never see that internal key; VIN is the visible vehicle identifier. Canonical record JSON lives in
+`Used Vehicles/Record Data`, while project `existing_*` fields, buyback records, and strip records
+are projections that reference it. The model stores no plate information and does not reuse the
+new-build `IndividualUnit.individual_id` or dealer held-for-resale/DVS reporting fields as identity.
+
+Purchase, equipment transfer, and strip requirement are separate decisions. Buyback creation
+confirms purchase; adding an existing vehicle to a new build confirms the transfer target and makes
+stripping required; opening Strip Documentation also makes stripping required. An explicitly
+no-transfer purchase may separately be marked strip-not-required with a reason. Exact full VIN is
+the only automatic cross-context match. Agency and unit similarity may produce a suggestion but
+never create a relationship without confirmation.
+
+The Company Files contract is:
+
+`Strip Documentation/{Agency}/{Vehicle Year}/{Vehicle Folder}/`
+
+Each vehicle folder contains `Before Photos`, `After Photos`, and `Documents`. A generated DTM
+strip-documentation PDF is stored in `Documents`; record JSON is mirrored under
+`Strip Documentation/Record Data`. The DTM form documents work and evidence but does not replace
+the vehicle owner's Minnesota DVS certificate of compliance.
+
+The digital form separates Sales Intake and Technician Strip Documentation into distinct tabs.
+Both tabs are always available: Shop users can view but cannot edit Sales-owned vehicle facts, VIN,
+or purchase/return selection, while users with completed-media capability can edit the equipment
+checklist, strip date, photo-proof confirmation, and technician/reviewer attestations. These field
+ownership rules are enforced by separate server endpoints, not only by disabled controls. Each
+signer types a full name once; the completed PDF uses it as both the standard printed name and the
+Caveat handwritten-style signature.
+
+Photo capture is intentionally a later client surface. A phone or shop-tablet flow should use the
+existing `used_vehicle_id` and standardized angle tokens, name files from agency/VIN/stage/angle,
+upload directly to the reserved folder, and only then mark photo documentation complete. A photo
+status must not be inferred merely from creation of the PDF or folders.
+
 ### Authorization and mutation boundary
 
 - Entra roles come from validated ID-token claims for the existing public-client app. The current

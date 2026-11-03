@@ -52,6 +52,7 @@ window._PT = {
   indModalIndId:      null,
   indModalFromDetail: false,
   indModalOriginalNotes: "",
+  indModalUsedVehicleId: "",
 
   // edit tab
   editTabEditable: false,
@@ -77,6 +78,10 @@ function _ptHasCapability(capability) {
 
 function _ptCanEditProjects() {
   return _ptHasCapability("projects.edit");
+}
+
+function _ptCanManageStripDocumentation() {
+  return _ptCanEditProjects() || _ptHasCapability("completed_media.upload");
 }
 
 function _ptCanUpdateProjectLifecycle() {
@@ -271,7 +276,7 @@ function _ptSetStatus(el, msg, mood) {
   const loading = mood === "loading";
   el.classList.toggle("loading", loading);
   el.style.display    = loading ? "flex" : "block";
-  el.style.background = mood === "good" ? "#e6f9f1" : mood === "err" ? "#fdecea" : "#f0f4ff";
+  el.style.background = mood === "good" ? "var(--success-bg)" : mood === "err" ? "var(--danger-bg)" : "var(--surface-3)";
   el.style.color      = mood === "good" ? "var(--green)" : mood === "err" ? "var(--red)" : "var(--navy)";
   el.replaceChildren();
   if (loading) {

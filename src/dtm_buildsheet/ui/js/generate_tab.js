@@ -135,7 +135,7 @@ $("btn-delete-prev").addEventListener("click", async()=>{
     _previousVersionPaths=[];
     setTimeout(()=>{ $("card-prev-versions").style.display="none"; }, 1500);
   } else {
-    el.style.color="#c0392b";
+    el.style.color="var(--red)";
     el.textContent="⚠️ "+(res.errors||[]).join(", ");
     $("btn-delete-prev").disabled=false; $("btn-keep-prev").disabled=false;
   }
@@ -157,16 +157,16 @@ $("btn-regen-template").addEventListener("click", async ()=>{
     const el = $("tpl-result");
     el.style.display="block";
     if(res.ok){
-      el.style.background="var(--green,#e8f5e9)"; el.style.color="#1b5e20";
+      el.style.background="var(--success-bg)"; el.style.color="var(--success-text)";
       el.textContent=`✅ Saved: ${res.filename}`;
       loadTemplateInfo();
     } else {
-      el.style.background="#fdecea"; el.style.color="#b71c1c";
+      el.style.background="var(--danger-bg)"; el.style.color="var(--danger-text)";
       el.textContent=`❌ ${res.error}`;
     }
   } catch(e){
     const el=$("tpl-result");
-    el.style.display="block"; el.style.background="#fdecea"; el.style.color="#b71c1c";
+    el.style.display="block"; el.style.background="var(--danger-bg)"; el.style.color="var(--danger-text)";
     el.textContent=`❌ ${e.message}`;
   }
   $("spinner-tpl").style.display="none";
@@ -193,7 +193,7 @@ $("btn-export-pdf").addEventListener("click", async ()=>{
     window._pdfPath=res.pdf_path; $("btn-open-pdf").style.display="block";
     showPreviousVersions(res.previous_versions||[]);
   } else {
-    el.style.color="#c0392b"; el.textContent="❌ "+res.error;
+    el.style.color="var(--red)"; el.textContent="❌ "+res.error;
   }
   $("btn-export-pdf").disabled=false;
 });

@@ -582,6 +582,7 @@ class TestHandleSaveProject:
         assert saved.existing_build_type == ""
         assert saved.existing_unit_number == ""
         assert saved.existing_vin == ""
+        assert saved.source_used_vehicle_id == ""
 
     def test_project_edit_refreshes_linked_draft_vehicle_fields(self, tmp_path):
         paths = _paths(tmp_path)
