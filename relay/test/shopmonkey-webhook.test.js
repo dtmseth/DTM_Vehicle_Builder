@@ -191,6 +191,14 @@ test("health fails closed until reconciliation is current", async () => {
     const after = await healthModule.handler({ httpMethod: "GET" });
     assert.equal(after.statusCode, 200);
     assert.equal(JSON.parse(after.body).status, "healthy");
+    await pricing.recordHealth({
+      last_received_at: new Date(NOW * 1000).toISOString(),
+      last_success_at: new Date(NOW * 1000).toISOString(),
+      last_result: "no_change",
+    });
+    const afterWebhook = await healthModule.handler({ httpMethod: "GET" });
+    assert.equal(afterWebhook.statusCode, 200);
+    assert.equal(JSON.parse(afterWebhook.body).reconciliation_fresh, true);
   } finally {
     Date.now = realNow;
   }

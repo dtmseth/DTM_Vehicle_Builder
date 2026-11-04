@@ -54,7 +54,7 @@ async function recentOrderIds(apiKey, nowSeconds) {
     .filter(Boolean);
 }
 
-async function runReconciliation() {
+async function runReconciliation({ onStage = () => {} } = {}) {
   const apiKey = process.env.SHOPMONKEY_API_KEY || "";
   const nowSeconds = Math.floor(Date.now() / 1000);
   const nowIso = new Date().toISOString();
@@ -62,6 +62,7 @@ async function runReconciliation() {
 
   try {
     const { config } = await loadConfig();
+    onStage("config_loaded", { mode: config.mode });
     if (!config.enabled) {
       await recordHealth({
         last_reconcile_at: nowIso,
@@ -76,6 +77,7 @@ async function runReconciliation() {
     const orderIds = config.mode === "test"
       ? (config.test_order_id ? [config.test_order_id] : [])
       : await recentOrderIds(apiKey, nowSeconds);
+    onStage("orders_selected", { orders: orderIds.length });
     const results = await mapWithConcurrency(orderIds, ORDER_CONCURRENCY, (orderId) => (
       applyPricingForOrder({
         apiKey,
@@ -86,6 +88,7 @@ async function runReconciliation() {
         allowPricingMatrix: false,
       })
     ));
+    onStage("orders_processed", { orders: results.length });
     const repriced = results.reduce((sum, result) => sum + Number(result.repriced || 0), 0);
     await recordHealth({
       last_reconcile_at: nowIso,
@@ -97,6 +100,7 @@ async function runReconciliation() {
       last_config_revision: config.revision,
       repriced_delta: repriced,
     });
+    onStage("health_recorded", { repriced });
     return { ok: true, orders: orderIds.length, repriced };
   } catch (_) {
     await recordHealth({

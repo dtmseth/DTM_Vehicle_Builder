@@ -8,7 +8,7 @@ const CONFIG_KEY = "config-v1";
 const HEALTH_KEY = "health-v1";
 const MANAGEMENT_TOLERANCE_SECONDS = 5 * 60;
 
-let testStoreFactory = null;
+let storeFactoryOverride = null;
 
 function clean(value) {
   return String(value == null ? "" : value).trim();
@@ -178,7 +178,7 @@ function targetPriceCents({ retailCostCents, wholesaleCostCents }, rule) {
 }
 
 async function pricingStore() {
-  if (testStoreFactory) return testStoreFactory(STORE_NAME);
+  if (storeFactoryOverride) return storeFactoryOverride(STORE_NAME);
   // Lambda-compatible functions receive the site and token context, but not
   // the uncached endpoint required by Netlify Blobs' strong-read mode. ETag
   // conditional writes below still prevent blind concurrent replacement.
@@ -250,6 +250,11 @@ async function recordHealth(patch) {
       last_error: clean(current.last_error).slice(0, 80),
       last_result: clean(current.last_result).slice(0, 80),
       last_config_revision: clean(current.last_config_revision),
+      last_reconcile_at: clean(current.last_reconcile_at),
+      last_reconcile_success_at: clean(current.last_reconcile_success_at),
+      last_reconcile_result: clean(current.last_reconcile_result).slice(0, 80),
+      last_api_check_at: clean(current.last_api_check_at),
+      last_api_check_ok: current.last_api_check_ok === true,
       repriced_total: (Number.isSafeInteger(current.repriced_total) ? current.repriced_total : 0) + delta,
       ...safePatch,
     };
@@ -289,8 +294,8 @@ function verifyManagementRequest({ secret, timestamp, nonce, method, body, signa
   return constantTimeTextEqual(signature, expected);
 }
 
-function setStoreFactoryForTests(factory) {
-  testStoreFactory = factory || null;
+function setStoreFactory(factory) {
+  storeFactoryOverride = factory || null;
 }
 
 module.exports = {
@@ -301,7 +306,8 @@ module.exports = {
   normalized,
   recordHealth,
   saveConfig,
-  setStoreFactoryForTests,
+  setStoreFactory,
+  setStoreFactoryForTests: setStoreFactory,
   targetPriceCents,
   validateAndNormalizeConfig,
   verifyManagementRequest,
