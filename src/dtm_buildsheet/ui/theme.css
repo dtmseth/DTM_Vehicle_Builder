@@ -254,7 +254,7 @@ html[data-theme="dark"] :where(
   .build-readonly-loading
 ) { background: var(--surface-2); border-color: var(--border); color: var(--text); }
 
-html[data-theme="dark"] :where(
+html[data-theme="dark"] :is(
   .stab.active,
   .proj-row-menu > summary,
   .proj-row-menu-items,
@@ -271,7 +271,7 @@ html[data-theme="dark"] :where(
   .calendar-drag-ghost
 ) { background: var(--field-bg); border-color: var(--border); color: var(--text); box-shadow: 0 10px 28px var(--shadow-color); }
 
-html[data-theme="dark"] :where(
+html[data-theme="dark"] :is(
   .stab:hover,
   .proj-row-clickable:hover,
   .proj-row-menu-items button:hover,
@@ -288,7 +288,7 @@ html[data-theme="dark"] :where(
   .vehicle-search-option:focus
 ) { background: var(--hover-bg); color: var(--accent-text); }
 
-html[data-theme="dark"] :where(
+html[data-theme="dark"] :is(
   #drop-zone:hover,
   #drop-zone.drag-over,
   .upload-zone:hover,
@@ -306,6 +306,30 @@ html[data-theme="dark"] :where(
   .skg-move-opt:hover,
   .pdb-tree-leaf:hover
 ) { background: var(--hover-bg); border-color: #52749c; color: var(--text); }
+/* List and picker hovers often have two-class selectors in the light sheet.
+   Keep these explicit so a light literal can never win on specificity. */
+html[data-theme="dark"] :is(
+  .picker-custom-part-btn:hover,
+  #picker-custom-part-recent-list button:hover,
+  .pbt-cat-head:hover,
+  .pbt-cat-caret-btn:hover,
+  .pbt-leaf:hover,
+  .pbt-fam-select:hover,
+  .pbt-fam-caret-btn:hover,
+  .picker-step-btn:hover:not(:disabled),
+  .pem-agency-option:hover,
+  .pem-vehicle-option:hover,
+  .pbe-load-preset-option:hover,
+  .proj-vehicle-details-button:hover,
+  .photo-gallery-tab:hover,
+  .vehicle-quick-row button:hover,
+  .vehicle-search-toggle:hover,
+  .operations-connect-estimate-header:hover,
+  .operations-quick-status:hover:not(:disabled),
+  .console-component-current:hover,
+  .console-location-choice:hover
+) { background: var(--hover-bg); border-color: #52749c; color: var(--text); }
+html[data-theme="dark"] .me-parent-row:hover { background: var(--hover-bg) !important; }
 html[data-theme="dark"] .rk-card.selected,
 html[data-theme="dark"] .picker-location-card.is-selected { background: #142b42; border-color: var(--accent-strong); }
 html[data-theme="dark"] .catalog-tbl tr:hover td { background: var(--hover-bg); }
@@ -372,6 +396,47 @@ html[data-theme="dark"] :where(.qbpp-metric, .me-row, .sku-row, .sd-view-sub td)
 
 /* Project and build workflow. */
 html[data-theme="dark"] .proj-ind-grid { background: var(--bg); border-color: var(--accent); }
+html[data-theme="dark"] .project-type-badge-build {
+  background: #172b45;
+  border-color: #31577f;
+  color: #9bc8ff;
+}
+html[data-theme="dark"] .project-type-badge-service {
+  background: #342b18;
+  border-color: #6c592b;
+  color: #f2cf7b;
+}
+html[data-theme="dark"] .project-type-badge-offsite {
+  background: #2b2342;
+  border-color: #5a4780;
+  color: #c9b6ff;
+}
+html[data-theme="dark"] .proj-progress-badge,
+html[data-theme="dark"] .proj-progress-badge-logistics {
+  background: #202b3b;
+  border-color: #40536d;
+  color: #bdc9d8;
+}
+html[data-theme="dark"] .proj-progress-badge-building {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+}
+html[data-theme="dark"] .proj-progress-badge-ready-build {
+  background: #142b42;
+  border-color: #3a5878;
+  color: #a9d0ff;
+}
+html[data-theme="dark"] .proj-progress-badge-ready-qc {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+html[data-theme="dark"] .proj-progress-badge-ready-deliver {
+  background: #17643b;
+  border-color: #27815b;
+  color: #fff;
+}
 html[data-theme="dark"] :where(.proj-unit-group-hdr, .proj-unit-header, .proj-edit-unit-hdr, .me-cat-group-head, .vehicle-sales-section h3) {
   background: #17385f;
   color: #f2f6fb;
@@ -390,6 +455,45 @@ html[data-theme="dark"] :where(.me-cat-header, .proj-unit-notes, .build-readonly
   border-color: #66552d;
   color: #f0d995;
 }
+html[data-theme="dark"] .vehicle-sales-year h2 span {
+  background: var(--surface-3);
+  color: var(--muted);
+}
+html[data-theme="dark"] .strip-documentation-tab.active {
+  background: var(--field-bg);
+  color: var(--accent-text);
+}
+
+/* Settings cards and their dense lists. */
+html[data-theme="dark"] :where(
+  .estimate-defaults-status,
+  .estimate-defaults-head,
+  .estimate-defaults-items,
+  .qb-est-additional-heading,
+  .qb-est-auto-fee,
+  .qb-est-charge-totals,
+  .qbi-item-ignored,
+  .qbi-modal-item,
+  .qbi-match,
+  .picker-filters,
+  .picker-custom-light-toggle,
+  .picker-custom-light-settings,
+  .picker-loc-stage,
+  .picker-sku-row,
+  .me-comp-row td,
+  .pem-agency-options,
+  .pem-vehicle-picker,
+  .pbe-load-preset-options
+) { background: var(--surface-2); border-color: var(--border); color: var(--text); }
+html[data-theme="dark"] :where(
+  .picker-custom-part-btn,
+  #picker-custom-part-recent-list button,
+  .pbt-cat-caret-btn,
+  .pbt-fam-caret-btn,
+  .picker-step-btn,
+  .me-acc-edit
+) { background: var(--surface); border-color: var(--border); color: var(--text); }
+html[data-theme="dark"] .me-acc-row td { background: #2b2415; }
 
 /* Part picker controls are themed; real light-head colors and preview imagery are not. */
 html[data-theme="dark"] :where(
@@ -430,6 +534,53 @@ html[data-theme="dark"] :where(.guided-textarea, .guided-text-input, .console-fa
 html[data-theme="dark"] .pp-location-allocation { background: #0e1827; border-color: var(--border); }
 
 /* Operations keeps its status semantics while moving neutral surfaces dark. */
+html[data-theme="dark"] .operations-readonly-badge {
+  background: var(--surface-3);
+  border-color: var(--border);
+  color: var(--muted);
+}
+html[data-theme="dark"] .operations-message {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--muted);
+}
+html[data-theme="dark"] .operations-schedule-filters {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+html[data-theme="dark"] .operations-schedule-filter.active {
+  background: var(--surface-3);
+  border-color: #52749c;
+  color: var(--accent-text);
+}
+html[data-theme="dark"] .operations-schedule-filter b { background: #26364d; color: var(--muted); }
+html[data-theme="dark"] .operations-filter.active[data-operations-filter="started"] {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+}
+html[data-theme="dark"] .operations-filter.active[data-operations-filter="active"] {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+html[data-theme="dark"] .operations-filter.active[data-operations-filter="completed"] {
+  background: #17643b;
+  border-color: #27815b;
+  color: #fff;
+}
+html[data-theme="dark"] .operations-filter.active span { background: #26364d; color: inherit; }
+html[data-theme="dark"] .operations-filter.active[data-operations-filter="completed"] span { background: rgba(255,255,255,.16); }
+html[data-theme="dark"] .operations-quote-status-complete {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+html[data-theme="dark"] .operations-quote-status-missing {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+}
 html[data-theme="dark"] .operations-project-body { background: #0d1624; }
 html[data-theme="dark"] .operations-vehicle-heading { background: linear-gradient(90deg, #141f2f 0, #101a29 68%); border-color: var(--border); }
 html[data-theme="dark"] .operations-vehicle-plan { background: var(--surface); border-color: var(--border); }
@@ -459,6 +610,31 @@ html[data-theme="dark"] .calendar-team-settings textarea {
   color: var(--text);
 }
 html[data-theme="dark"] .calendar-lane { background: repeating-linear-gradient(to right, var(--border) 0, var(--border) 1px, transparent 1px, transparent 20%); }
+html[data-theme="dark"] .calendar-color-blue { --calendar-color: #72b7ff; --calendar-wash: #142b42; }
+html[data-theme="dark"] .calendar-color-purple { --calendar-color: #c4a5ff; --calendar-wash: #2b2342; }
+html[data-theme="dark"] .calendar-color-teal { --calendar-color: #72d6c6; --calendar-wash: #12332f; }
+html[data-theme="dark"] .calendar-color-orange { --calendar-color: #f2bf64; --calendar-wash: #342b18; }
+html[data-theme="dark"] .calendar-color-rose { --calendar-color: #ff9fbb; --calendar-wash: #351d2b; }
+html[data-theme="dark"] .calendar-color-slate { --calendar-color: #bdc9d8; --calendar-wash: #202b3b; }
+html[data-theme="dark"] .calendar-blocked {
+  background: repeating-linear-gradient(135deg, var(--calendar-wash), var(--calendar-wash) 8px, #ffffff14 8px, #ffffff14 11px);
+}
+html[data-theme="dark"] .calendar-strip-segment { box-shadow: inset -2px 0 var(--surface); }
+html[data-theme="dark"] .calendar-dot { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--calendar-color); }
+html[data-theme="dark"] .calendar-key i { background: #202b3b; border-color: #526982; }
+html[data-theme="dark"] .calendar-key i.calendar-key-waiting {
+  background: repeating-linear-gradient(135deg, #202b3b, #202b3b 4px, #526982 4px, #526982 6px);
+}
+html[data-theme="dark"] .calendar-key i.calendar-key-strip { background: #202b3b; }
+html[data-theme="dark"] .calendar-key i.calendar-key-strip::before { border-color: var(--surface); }
+html[data-theme="dark"] .calendar-queue-project[open] summary { background: var(--surface-2); border-color: var(--border); }
+html[data-theme="dark"] .calendar-queue-vehicle.calendar-queue-scheduled {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+}
+html[data-theme="dark"] .calendar-slot-target:hover { background: #1c2c4280; }
+html[data-theme="dark"] .calendar-blackout { background: var(--danger-bg) !important; color: var(--danger-text) !important; }
+html[data-theme="dark"] .calendar-week-head .calendar-blackout strong { color: var(--danger-text); }
 html[data-theme="dark"] :where(.calendar-week-head, .calendar-month-head, .calendar-weekend) { background: var(--surface-2); }
 html[data-theme="dark"] .calendar-month-days > span,
 html[data-theme="dark"] .calendar-days > span { border-color: var(--border); }
@@ -466,6 +642,11 @@ html[data-theme="dark"] .calendar-today-date { background: #142b42; color: #88c1
 html[data-theme="dark"] .calendar-today-column { background: #16365a55; border-color: #4d7fb8; }
 html[data-theme="dark"] .calendar-drop-new { background: #142b42; }
 html[data-theme="dark"] .calendar-ready { background: #142b42; color: #a9d0ff; }
+html[data-theme="dark"] .calendar-next-opening {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
 html[data-theme="dark"] .calendar-team-settings.calendar-team-retired { background: var(--warning-bg); border-color: var(--warning-border); }
 html[data-theme="dark"] .calendar-team-retired legend,
 html[data-theme="dark"] .calendar-team-retired [data-team-active-label] { color: var(--warning-text); }

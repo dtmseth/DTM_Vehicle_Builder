@@ -34,6 +34,13 @@ def test_theme_toggle_loads_before_styles_and_shopmonkey_follows_theme():
     assert 'html[data-theme="dark"]' in theme_styles
     assert 'html[data-theme="light"] .shopmonkey-pricing-workspace' in theme_styles
     assert 'html[data-theme="dark"] .shopmonkey-pricing-workspace' in theme_styles
+    assert 'html[data-theme="dark"] :is(\n  .stab:hover,' in theme_styles
+    assert 'html[data-theme="dark"] .proj-progress-badge-logistics' in theme_styles
+    assert 'html[data-theme="dark"] .operations-message' in theme_styles
+    assert 'html[data-theme="dark"] .operations-schedule-filters' in theme_styles
+    assert 'html[data-theme="dark"] .calendar-next-opening' in theme_styles
+    assert 'html[data-theme="dark"] .calendar-color-blue' in theme_styles
+    assert 'html[data-theme="dark"] .vehicle-sales-year h2 span' in theme_styles
     assert '"ui/theme.css"' in pyproject
 
 
