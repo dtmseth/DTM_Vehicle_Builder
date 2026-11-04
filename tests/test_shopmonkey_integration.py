@@ -293,16 +293,26 @@ def test_vendor_guide_config_covers_every_available_brand_in_test_mode():
 
     assert config["mode"] == "test"
     assert config["preserve_custom_prices"] is True
-    assert len(rules) == 42
-    assert sum(row["enabled"] for row in rules.values()) == 36
+    assert len(rules) == 63
+    assert sum(row["enabled"] for row in rules.values()) == 22
+    assert config["customer_types"][2]["match_untagged"] is True
+    assert rules[("Gamber Johnson", "retail")]["percent"] == 40
+    assert rules[("Gamber Johnson", "wholesale")]["percent"] == 40
+    assert rules[("Gamber Johnson", "default")]["percent"] == 40
     assert rules[("Whelen", "retail")]["percent"] == 36
     assert rules[("Whelen", "wholesale")]["percent"] == 43
     assert rules[("Setina", "wholesale")]["percent"] == 30
-    assert rules[("Westin", "retail")]["percent"] == 15
-    assert rules[("Westin", "wholesale")]["basis"] == "cost"
-    assert rules[("Westin", "wholesale")]["operation"] == "markup"
+    assert rules[("Westin", "retail")]["basis"] == "cost"
+    assert rules[("Westin", "retail")]["operation"] == "markup"
+    assert rules[("Westin", "retail")]["percent"] == 25
+    assert rules[("Westin", "wholesale")]["enabled"] is False
+    assert rules[("Kussmaul", "retail")]["enabled"] is True
+    assert rules[("Kussmaul", "wholesale")]["enabled"] is False
+    assert rules[("Kussmaul", "default")]["enabled"] is False
     assert rules[("Angel Armor", "retail")]["enabled"] is False
-    assert len(pending) == 3
+    assert any("GAMBER JOHNSON CRADLE/DOCK" in row for row in pending)
+    assert any("Westin" in row and "conflicts" in row for row in pending)
+    assert len(pending) == 5
 
 
 def test_pricing_save_canonicalizes_live_shopmonkey_reference_names(monkeypatch, store):

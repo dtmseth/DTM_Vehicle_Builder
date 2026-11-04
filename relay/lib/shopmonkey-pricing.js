@@ -31,6 +31,7 @@ function defaultConfig(testOrderId = process.env.SHOPMONKEY_PRICING_TEST_ORDER_I
     customer_types: [
       { id: "retail", name: "Retail", label: "$ Retail $", enabled: true },
       { id: "wholesale", name: "Wholesale", label: "$ Wholesale $", enabled: true },
+      { id: "default", name: "Default / untagged", label: "", match_untagged: true, enabled: true },
     ],
     rules: [
       {
@@ -76,25 +77,32 @@ function validateAndNormalizeConfig(input, { testOrderId = "" } = {}) {
   const customerTypes = [];
   const typeIds = new Set();
   const labels = new Set();
+  let untaggedTypes = 0;
   for (const [index, row] of (Array.isArray(source.customer_types) ? source.customer_types : []).entries()) {
     if (!row || typeof row !== "object") continue;
     const name = clean(row.name).slice(0, 80);
-    const label = clean(row.label).slice(0, 120);
-    const labelId = clean(row.label_id).slice(0, 128);
+    const matchUntagged = row.match_untagged === true;
+    const label = matchUntagged ? "" : clean(row.label).slice(0, 120);
+    const labelId = matchUntagged ? "" : clean(row.label_id).slice(0, 128);
     const id = slug(row.id || name, `customer-type-${index + 1}`);
-    if (!name || !label) {
-      errors.push(`Customer type ${index + 1} needs a name and exact Shopmonkey label.`);
+    if (!name || (!matchUntagged && !label)) {
+      errors.push(`Customer type ${index + 1} needs a name and exact Shopmonkey label, or must match untagged customers.`);
       continue;
     }
-    if (schemaVersion >= 2 && row.enabled !== false && !labelId) {
+    if (schemaVersion >= 2 && row.enabled !== false && !matchUntagged && !labelId) {
       errors.push(`Customer type ${index + 1} must use an existing Shopmonkey Customer label.`);
     }
+    if (matchUntagged) untaggedTypes += 1;
     if (typeIds.has(id)) errors.push(`Customer type ID “${id}” is duplicated.`);
-    if (labels.has(normalized(label))) errors.push(`Customer label “${label}” is duplicated.`);
+    if (label && labels.has(normalized(label))) errors.push(`Customer label “${label}” is duplicated.`);
     typeIds.add(id);
-    labels.add(normalized(label));
-    customerTypes.push({ id, name, label_id: labelId, label, enabled: row.enabled !== false });
+    if (label) labels.add(normalized(label));
+    customerTypes.push({
+      id, name, label_id: labelId, label, match_untagged: matchUntagged,
+      enabled: row.enabled !== false,
+    });
   }
+  if (untaggedTypes > 1) errors.push("Only one customer type may match untagged customers.");
   if (!customerTypes.some((row) => row.enabled)) {
     errors.push("At least one customer type must be enabled.");
   }

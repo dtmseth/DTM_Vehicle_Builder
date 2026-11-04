@@ -220,16 +220,21 @@ async function applyPricingForOrder({
   const labels = new Set(
     labelRows.map((label) => normalized(label && label.name)),
   );
-  const matchingCustomerTypes = (config.customer_types || []).filter((row) => (
-    row.enabled && (row.label_id
+  const enabledCustomerTypes = (config.customer_types || []).filter((row) => row.enabled);
+  const matchingCustomerTypes = enabledCustomerTypes.filter((row) => (
+    !row.match_untagged && (row.label_id
       ? labelIds.has(String(row.label_id))
       : labels.has(normalized(row.label)))
   ));
-  if (!matchingCustomerTypes.length) return { result: "customer_type_missing", repriced: 0 };
   if (matchingCustomerTypes.length > 1) {
     return { result: "customer_type_ambiguous", repriced: 0 };
   }
-  const customerType = matchingCustomerTypes[0];
+  const untaggedCustomerTypes = enabledCustomerTypes.filter((row) => row.match_untagged);
+  if (!matchingCustomerTypes.length && untaggedCustomerTypes.length > 1) {
+    return { result: "customer_type_ambiguous", repriced: 0 };
+  }
+  const customerType = matchingCustomerTypes[0] || untaggedCustomerTypes[0];
+  if (!customerType) return { result: "customer_type_missing", repriced: 0 };
   const enabledRules = (config.rules || [])
     .filter((row) => row.enabled && row.customer_type_id === customerType.id);
   const rulesById = new Map(enabledRules.filter((row) => row.brand_id)

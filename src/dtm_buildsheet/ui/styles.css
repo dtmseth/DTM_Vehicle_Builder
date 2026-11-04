@@ -2387,6 +2387,13 @@
 .shopmonkey-pricing-advanced-grid small{color:#71839a;font-size:10px;font-weight:550;line-height:1.4;text-transform:none;letter-spacing:normal}
 .shopmonkey-pricing-safety{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:10px 12px;border:1px solid #285843;border-radius:7px;background:#10291f;color:#7be0af;font-size:11px}
 .shopmonkey-pricing-safety span{color:#aec2b8;line-height:1.45}
+.shopmonkey-pricing-audit{margin:12px 0 16px;border:1px solid #26364d;border-radius:8px;background:#101a29;color:#c4cfdd}
+.shopmonkey-pricing-audit summary{padding:11px 13px;cursor:pointer;font-size:12px;font-weight:750;list-style-position:inside}
+.shopmonkey-pricing-audit-body{padding:0 13px 13px;overflow:auto}
+.shopmonkey-pricing-audit table{width:100%;min-width:760px;border-collapse:collapse;font-size:11px}
+.shopmonkey-pricing-audit th,.shopmonkey-pricing-audit td{padding:7px 9px;border-bottom:1px solid #2b3b51;text-align:left;vertical-align:middle}
+.shopmonkey-pricing-audit th{color:#f0f4f9;background:#172437;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.shopmonkey-pricing-audit p{margin:12px 0 0;color:#93a4ba;font-size:11px;line-height:1.5}
 .shopmonkey-pricing-section{margin-top:4px}
 .shopmonkey-pricing-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:12px}
 .shopmonkey-pricing-section-head>div{display:flex;flex-direction:column;gap:3px}
@@ -2415,6 +2422,9 @@
 .shopmonkey-icon-button{display:grid;place-items:center;width:28px;height:28px;border:1px solid transparent;border-radius:6px;background:transparent;color:#8294aa;font-size:20px;line-height:1;cursor:pointer}
 .shopmonkey-icon-button:hover{border-color:#58394a;background:#2b1b27;color:#ff8e9d}
 .shopmonkey-customer-rule-identity{display:grid;grid-template-columns:minmax(220px,.65fr) minmax(340px,1.35fr);gap:16px;padding:15px 16px}
+.shopmonkey-untagged-match{min-height:42px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.035);padding:8px 11px;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.shopmonkey-untagged-match strong{font-size:13px;color:var(--text)}
+.shopmonkey-untagged-match small{font-size:11px;color:var(--muted);line-height:1.35}
 .shopmonkey-field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .shopmonkey-field>span{color:#8fa1b7;font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
 .shopmonkey-field>input,.shopmonkey-field>select{padding:0 10px}

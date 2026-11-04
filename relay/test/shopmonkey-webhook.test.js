@@ -335,6 +335,48 @@ test("schema v2 matches stable Shopmonkey label and brand IDs instead of typed n
   assert.equal(methods.includes("PUT"), true);
 });
 
+test("uses the default customer type when no configured pricing label matches", async () => {
+  const config = pricing.defaultConfig("order-test");
+  config.rules.push({
+    id: "whelen-default", brand: "Whelen", customer_type_id: "default",
+    basis: "retail", operation: "discount", percent: 20, enabled: true,
+  });
+  const methods = [];
+  global.fetch = async (url, options) => {
+    methods.push(options.method);
+    if (url.endsWith("/order/order-test")) {
+      return jsonResponse({ id: "order-test", customerId: "customer-test", authorized: false, invoiced: false, readOnly: false });
+    }
+    if (url.endsWith("/order/order-test/service")) {
+      return jsonResponse([{ id: "service-test", parts: [{
+        id: "line-test", inventoryPartId: "inventory-test", retailCostCents: 10000,
+        createdDate: new Date((NOW - 2) * 1000).toISOString(),
+      }] }]);
+    }
+    if (url.endsWith("/customer/customer-test")) {
+      return jsonResponse({ labels: [{ id: "rush-label", name: "Rush" }] });
+    }
+    if (url.endsWith("/inventory_part/inventory-test")) {
+      return jsonResponse({
+        id: "inventory-test", retailCostCents: 10000,
+        brand: { name: "Whelen" }, deleted: false,
+      });
+    }
+    if (url.includes("/part/line-test?includeOrder=false")) return jsonResponse({ id: "line-test" });
+    assert.fail(`unexpected URL: ${url}`);
+  };
+
+  const result = await webhookModule.__test.applyPricingForOrder({
+    apiKey: "api-key", orderId: "order-test", nowSeconds: NOW,
+    maxLineAgeSeconds: 600, config,
+  });
+
+  assert.equal(result.result, "repriced");
+  assert.equal(result.customer_type, "default");
+  assert.equal(result.target_cents, 8000);
+  assert.equal(methods.includes("PUT"), true);
+});
+
 test("schema v2 rejects typed labels and brands without real Shopmonkey IDs", () => {
   const config = pricing.defaultConfig("order-test");
   config.schema_version = 2;

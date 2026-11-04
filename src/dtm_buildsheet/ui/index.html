@@ -1187,9 +1187,35 @@
       </div>
       <p class="shopmonkey-help">
         These settings are stored with the hosted webhook, so pricing continues when Builder is closed.
-        Customer types match exact Shopmonkey customer labels. Inventory Retail is treated as MSRP when
-        a rule uses the Retail basis. User-customized line prices are always preserved.
+        Retail and Wholesale types match exact Shopmonkey customer labels. The Default / untagged type
+        applies only when neither pricing label matches. Inventory Retail is treated as MSRP when a rule
+        uses the Retail basis. User-customized line prices are always preserved.
       </p>
+
+      <details class="shopmonkey-pricing-audit">
+        <summary>QuickBooks price rule audit and vendor guide additions</summary>
+        <div class="shopmonkey-pricing-audit-body">
+          <table>
+            <thead><tr><th>QBO rule</th><th>Customers</th><th>Products and services</th><th>Adjustment</th></tr></thead>
+            <tbody>
+              <tr><td>Gamber Johnson 30%</td><td>Retail</td><td>GAMBER JOHNSON CRADLE/DOCK</td><td>30% off list</td></tr>
+              <tr><td>Gamber Johnson 40% Off List</td><td>All Customers</td><td>GAMBER JOHNSON</td><td>40% off list</td></tr>
+              <tr><td>Havis 20% Off List</td><td>All Customers</td><td>HAVIS</td><td>20% off list</td></tr>
+              <tr><td>Pac Tool 5% Off</td><td>Retail</td><td>PAC TOOL</td><td>5% off list</td></tr>
+              <tr><td>Santa Cruz 25% Off List</td><td>Retail</td><td>SANTA CRUZ</td><td>25% off list</td></tr>
+              <tr><td>Setina 20% Off List</td><td>Retail</td><td>SETINA</td><td>20% off list</td></tr>
+              <tr><td>Setina 30% Off List</td><td>Wholesale</td><td>SETINA</td><td>30% off list</td></tr>
+              <tr><td>SoundOff 45%</td><td>Retail</td><td>SOUNDOFF SIGNAL</td><td>45% off list</td></tr>
+              <tr><td>Tiger Tough 10% Off List</td><td>Retail</td><td>TIGER TOUGH</td><td>10% off list</td></tr>
+              <tr><td>Westin 25% Above Cost</td><td>Retail</td><td>WESTIN</td><td>Cost +25%</td></tr>
+              <tr><td>Whelen 36% Off List</td><td>Retail</td><td>WHELEN</td><td>36% off list</td></tr>
+              <tr><td>Whelen 43% Off</td><td>Wholesale</td><td>WHELEN</td><td>43% off list</td></tr>
+            </tbody>
+          </table>
+          <p><strong>Scope mapping:</strong> QBO “All Customers” rules are loaded for Retail, Wholesale, and Default / untagged customers. Retail-only and Wholesale-only rules stay limited to their matching labels.</p>
+          <p><strong>Vendor guide additions:</strong> Retail rules for Kussmaul, NightRide, Patrol PC, REDARC, and TruckVault, plus package, bulk, and volume programs that need separate approval or quantity logic. Westin conflicts with QBO, and Gamber Johnson’s 30% Retail rule needs product-level matching, so neither exception is silently generalized.</p>
+        </div>
+      </details>
 
       <div class="shopmonkey-pricing-workspace">
         <div class="shopmonkey-pricing-options">
@@ -1227,11 +1253,11 @@
 
         <div class="shopmonkey-pricing-section">
         <div class="shopmonkey-pricing-section-head">
-          <div><strong>Customer pricing types</strong><span>Each card matches one real Shopmonkey Customer label and contains the brand rules for that customer type.</span></div>
+          <div><strong>Customer pricing types</strong><span>Label cards match real Shopmonkey Customer labels; Default / untagged catches customers with neither pricing-type label.</span></div>
           <div class="shopmonkey-pricing-heading-actions">
             <span id="shopmonkey-pricing-choice-count" class="shopmonkey-verified-at"></span>
             <button class="btn btn-secondary btn-sm" id="shopmonkey-pricing-refresh-choices" type="button">Refresh Shopmonkey choices</button>
-            <button class="btn btn-secondary btn-sm" id="shopmonkey-load-vendor-guide" type="button">Load DTM vendor guide</button>
+            <button class="btn btn-secondary btn-sm" id="shopmonkey-load-vendor-guide" type="button">Load audited QBO + guide rules</button>
             <button class="btn btn-secondary btn-sm" id="shopmonkey-add-customer-type" type="button">+ Customer type</button>
           </div>
         </div>

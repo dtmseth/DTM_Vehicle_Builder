@@ -7,19 +7,23 @@
   let _pricingLoaded = false;
   let _pricingReferences = { customer_labels: [], brands: [] };
 
-  const _vendorGuideRules = {
-    "Gamber Johnson": [["retail", "discount", 30], ["retail", "discount", 40]],
-    "Kussmaul": [["retail", "discount", 10], ["retail", "discount", 10]],
-    "NightRide": [["cost", "markup", 25], ["cost", "markup", 25]],
-    "PAC Tool Mounts": [["retail", "discount", 5], ["retail", "discount", 5]],
-    "Patrol PC": [["retail", "discount", 26], ["retail", "discount", 26]],
-    "REDARC": [["retail", "discount", 10], ["retail", "discount", 10]],
-    "Santa Cruz Gunlocks": [["retail", "discount", 25], ["retail", "discount", 25]],
-    "Setina": [["retail", "discount", 20], ["retail", "discount", 30]],
-    "SoundOff Signal": [["retail", "discount", 45], ["retail", "discount", 45]],
-    "TigerTough": [["retail", "discount", 10], ["retail", "discount", 10]],
-    "TruckVault": [["retail", "discount", 10], ["retail", "discount", 10]],
-    "Whelen": [["retail", "discount", 36], ["retail", "discount", 43]],
+  // Audited in QBO on 2026-11-03. Each row is [Retail, Wholesale, Untagged]. A null
+  // customer-type rule is deliberately disabled rather than copying Standard
+  // Sell into a scope that QBO does not use. Guide-only rules extend Retail.
+  const _auditedPricingRules = {
+    "Gamber Johnson": [["retail", "discount", 40], ["retail", "discount", 40], ["retail", "discount", 40]],
+    "Havis": [["retail", "discount", 20], ["retail", "discount", 20], ["retail", "discount", 20]],
+    "Kussmaul": [["retail", "discount", 10], null, null],
+    "NightRide": [["cost", "markup", 25], null, null],
+    "PAC Tool Mounts": [["retail", "discount", 5], null, null],
+    "Patrol PC": [["retail", "discount", 26], null, null],
+    "REDARC": [["retail", "discount", 10], null, null],
+    "Santa Cruz Gunlocks": [["retail", "discount", 25], null, null],
+    "Setina": [["retail", "discount", 20], ["retail", "discount", 30], null],
+    "SoundOff Signal": [["retail", "discount", 45], null, null],
+    "TigerTough": [["retail", "discount", 10], null, null],
+    "TruckVault": [["retail", "discount", 10], null, null],
+    "Whelen": [["retail", "discount", 36], ["retail", "discount", 43], null],
   };
   const _westinBrands = new Set([
     "Brute", "Fey", "Superwinch", "SW Military", "Westin", "Westin Public Safety",
@@ -99,6 +103,7 @@
       customer_types: [
         { id: "retail", name: "Retail", label: "$ Retail $", label_id: "", enabled: true },
         { id: "wholesale", name: "Wholesale", label: "$ Wholesale $", label_id: "", enabled: true },
+        { id: "default", name: "Default / untagged", label: "", label_id: "", match_untagged: true, enabled: true },
       ],
       rules: [
         { id: "whelen-retail", brand: "Whelen", brand_id: "", customer_type_id: "retail", basis: "retail", operation: "discount", percent: 36, enabled: true },
@@ -161,11 +166,11 @@
       `</div></div>`;
   }
 
-  function _guideRuleValues(brandName) {
+  function _auditedRuleValues(brandName) {
     if (_westinBrands.has(brandName)) {
-      return [["retail", "discount", 15], ["cost", "markup", 25]];
+      return [["cost", "markup", 25], null, null];
     }
-    return _vendorGuideRules[brandName] || null;
+    return _auditedPricingRules[brandName] || null;
   }
 
   function _guideRuleId(brandName, customerTypeId) {
@@ -189,21 +194,25 @@
     ));
     const retailType = findType("retail", "$ Retail $") || { id: "retail" };
     const wholesaleType = findType("wholesale", "$ Wholesale $") || { id: "wholesale" };
+    const defaultType = existingTypes.find(row => row.match_untagged || row.id === "default") || { id: "default" };
     Object.assign(retailType, {
       name: "Retail", label: retailLabel.name, label_id: retailLabel.id, enabled: true,
     });
     Object.assign(wholesaleType, {
       name: "Wholesale", label: wholesaleLabel.name, label_id: wholesaleLabel.id, enabled: true,
     });
-    const replacedTypeIds = new Set([retailType.id, wholesaleType.id]);
+    Object.assign(defaultType, {
+      name: "Default / untagged", label: "", label_id: "", match_untagged: true, enabled: true,
+    });
+    const replacedTypeIds = new Set([retailType.id, wholesaleType.id, defaultType.id]);
     const preservedTypes = existingTypes.filter(row => !replacedTypeIds.has(row.id));
     const preservedRules = (candidate.rules || []).filter(row => !replacedTypeIds.has(row.customer_type_id));
     const rules = [];
     let pending = 0;
     _pricingReferences.brands.forEach(brand => {
-      const values = _guideRuleValues(brand.name);
+      const values = _auditedRuleValues(brand.name);
       if (!values) pending += 1;
-      [[retailType.id, values?.[0]], [wholesaleType.id, values?.[1]]].forEach(([customerTypeId, rule]) => {
+      [[retailType.id, values?.[0]], [wholesaleType.id, values?.[1]], [defaultType.id, values?.[2]]].forEach(([customerTypeId, rule]) => {
         rules.push({
           id: _guideRuleId(brand.name, customerTypeId),
           brand_id: brand.id,
@@ -219,13 +228,13 @@
     _pricingConfig = {
       ...candidate,
       mode: "test",
-      customer_types: [retailType, wholesaleType, ...preservedTypes],
+      customer_types: [retailType, wholesaleType, defaultType, ...preservedTypes],
       rules: [...rules, ...preservedRules],
     };
     _showPricingErrors([]);
     _renderPricing();
     toast(
-      `Loaded ${rules.length} test-mode rules from the DTM guide${pending ? `; ${pending} brands need review and remain disabled` : ""}. Review, then save.`,
+      `Loaded ${rules.filter(row => row.enabled).length} audited QBO and guide rules in test mode${pending ? `; ${pending} brands need review` : ""}. Disabled combinations have no audited customer-type rule. Review, then save.`,
       "success",
     );
   }
@@ -282,14 +291,18 @@
 
   function _renderCustomerTypeCard(row) {
     const rules = (_pricingConfig.rules || []).filter(rule => rule.customer_type_id === row.id);
-    return `<section class="shopmonkey-customer-rule-card${row.enabled === false ? " is-disabled" : ""}" data-pricing-customer-type="${attr(row.id)}">` +
+    const matchUntagged = row.match_untagged === true;
+    const customerMatch = matchUntagged
+      ? `<div class="shopmonkey-field"><span>Shopmonkey Customer match</span><div class="shopmonkey-untagged-match"><strong>No pricing-type label</strong><small>Used only when neither the Retail nor Wholesale pricing label matches.</small></div></div>`
+      : `<label class="shopmonkey-field"><span>Shopmonkey Customer label</span>${_referencePicker("label", "label_id", row.label, row.label_id, "Shopmonkey Customer label")}</label>`;
+    return `<section class="shopmonkey-customer-rule-card${row.enabled === false ? " is-disabled" : ""}" data-pricing-customer-type="${attr(row.id)}" data-pricing-untagged="${matchUntagged ? "true" : "false"}">` +
       `<div class="shopmonkey-customer-rule-head">` +
       `<div><span class="shopmonkey-card-kicker">Customer type</span><strong>${esc(row.name || "New customer type")}</strong></div>` +
       `<div class="shopmonkey-customer-rule-actions"><label class="shopmonkey-toggle"><input data-field="enabled" type="checkbox"${row.enabled !== false ? " checked" : ""}><span></span><em>Enabled</em></label><button class="shopmonkey-icon-button" type="button" data-remove-customer-type="${attr(row.id)}" aria-label="Remove customer type">×</button></div>` +
       `</div>` +
       `<div class="shopmonkey-customer-rule-identity">` +
       `<label class="shopmonkey-field"><span>Display name</span><input data-field="name" value="${attr(row.name)}" maxlength="80" aria-label="Customer type name"></label>` +
-      `<label class="shopmonkey-field"><span>Shopmonkey Customer label</span>${_referencePicker("label", "label_id", row.label, row.label_id, "Shopmonkey Customer label")}</label>` +
+      customerMatch +
       `</div>` +
       `<div class="shopmonkey-card-divider"></div>` +
       `<div class="shopmonkey-brand-rules-head"><div><strong>Brand pricing rules</strong><span>${rules.length} ${rules.length === 1 ? "brand" : "brands"} configured for ${esc(row.name || "this customer type")}</span></div><button class="shopmonkey-add-rule-button" type="button" data-add-price-rule="${attr(row.id)}">+ Add brand rule</button></div>` +
@@ -325,14 +338,16 @@
   function _readPricingFromDom() {
     const customerCards = [...document.querySelectorAll("#shopmonkey-customer-types [data-pricing-customer-type]")];
     const customerTypes = customerCards.map(card => {
+      const matchUntagged = card.dataset.pricingUntagged === "true";
       const referenceId = card.querySelector(':scope > .shopmonkey-customer-rule-identity [data-field="label_id"]')?.value || "";
-      const reference = _resolveReference("label", "", referenceId);
+      const reference = matchUntagged ? null : _resolveReference("label", "", referenceId);
       return {
         id: card.dataset.pricingCustomerType || "",
         enabled: !!card.querySelector(':scope > .shopmonkey-customer-rule-head [data-field="enabled"]')?.checked,
         name: card.querySelector(':scope > .shopmonkey-customer-rule-identity [data-field="name"]')?.value?.trim() || "",
         label_id: reference?.id || "",
         label: reference?.name || "",
+        match_untagged: matchUntagged,
       };
     });
     const rules = customerCards.flatMap(card => (
@@ -446,7 +461,7 @@
 
   function _addCustomerType() {
     _pricingConfig = _readPricingFromDom();
-    _pricingConfig.customer_types.push({ id: _rowId("customer-type"), name: "", label_id: "", label: "", enabled: true });
+    _pricingConfig.customer_types.push({ id: _rowId("customer-type"), name: "", label_id: "", label: "", match_untagged: false, enabled: true });
     _renderPricing();
     $("shopmonkey-customer-types")?.querySelector("section:last-child input[data-field='name']")?.focus();
   }

@@ -276,6 +276,10 @@ def _canonicalize_pricing_references(config: dict) -> tuple[dict, list[str]]:
     for index, row in enumerate(candidate.get("customer_types") or []):
         if not isinstance(row, dict):
             continue
+        if row.get("match_untagged") is True:
+            row["label_id"] = ""
+            row["label"] = ""
+            continue
         reference_id = _clean(row.get("label_id"))
         if reference_id not in labels:
             if row.get("enabled") is not False:

@@ -1,4 +1,4 @@
-"""Build the hosted Shopmonkey pricing matrix from DTM's vendor guide.
+"""Build the hosted Shopmonkey pricing matrix from audited QBO and guide rules.
 
 The command is dry-run by default. Pass ``--apply`` to write the generated
 configuration through the Builder's authenticated hosted-settings boundary.
@@ -16,23 +16,25 @@ import requests
 from dtm_buildsheet.app.services import shopmonkey_service
 
 
-# Standard Sell comes from DTM Vendor Pricing Guide.docx. The four explicit
-# Wholesale differences are the established QBO customer-price rules reviewed
-# with the owner. Where no separate Wholesale rule exists, Wholesale initially
-# matches Standard Sell rather than inventing a discount.
-_STANDARD_RULES = {
-    "Gamber Johnson": ("retail", "discount", 30, "retail", "discount", 40),
-    "Kussmaul": ("retail", "discount", 10, "retail", "discount", 10),
-    "NightRide": ("cost", "markup", 25, "cost", "markup", 25),
-    "PAC Tool Mounts": ("retail", "discount", 5, "retail", "discount", 5),
-    "Patrol PC": ("retail", "discount", 26, "retail", "discount", 26),
-    "REDARC": ("retail", "discount", 10, "retail", "discount", 10),
-    "Santa Cruz Gunlocks": ("retail", "discount", 25, "retail", "discount", 25),
-    "Setina": ("retail", "discount", 20, "retail", "discount", 30),
-    "SoundOff Signal": ("retail", "discount", 45, "retail", "discount", 45),
-    "TigerTough": ("retail", "discount", 10, "retail", "discount", 10),
-    "TruckVault": ("retail", "discount", 10, "retail", "discount", 10),
-    "Whelen": ("retail", "discount", 36, "retail", "discount", 43),
+# QBO customer scope and product groups were audited in the live company on
+# 2026-11-03. Each tuple is (Retail, Wholesale, Default/untagged). A missing rule stays disabled;
+# Standard Sell is not copied into Wholesale unless QBO explicitly applies the
+# rule to that customer type or All Customers. Guide-only Standard Sell rules
+# extend Retail for brands that have no QBO price rule.
+_AUDITED_RULES = {
+    "Gamber Johnson": (("retail", "discount", 40), ("retail", "discount", 40), ("retail", "discount", 40)),
+    "Havis": (("retail", "discount", 20), ("retail", "discount", 20), ("retail", "discount", 20)),
+    "Kussmaul": (("retail", "discount", 10), None, None),
+    "NightRide": (("cost", "markup", 25), None, None),
+    "PAC Tool Mounts": (("retail", "discount", 5), None, None),
+    "Patrol PC": (("retail", "discount", 26), None, None),
+    "REDARC": (("retail", "discount", 10), None, None),
+    "Santa Cruz Gunlocks": (("retail", "discount", 25), None, None),
+    "Setina": (("retail", "discount", 20), ("retail", "discount", 30), None),
+    "SoundOff Signal": (("retail", "discount", 45), None, None),
+    "TigerTough": (("retail", "discount", 10), None, None),
+    "TruckVault": (("retail", "discount", 10), None, None),
+    "Whelen": (("retail", "discount", 36), ("retail", "discount", 43), None),
 }
 
 _WESTIN_FAMILY = {
@@ -97,15 +99,16 @@ def build_config(current: dict, references: dict) -> tuple[dict, list[str]]:
     for name in sorted(brands, key=str.casefold):
         brand = brands[name]
         if name in _WESTIN_FAMILY:
-            retail = ("retail", "discount", 15)
-            wholesale = ("cost", "markup", 25)
-        elif name in _STANDARD_RULES:
-            values = _STANDARD_RULES[name]
-            retail = values[0:3]
-            wholesale = values[3:6]
+            retail = ("cost", "markup", 25)
+            wholesale = untagged = None
+        elif name in _AUDITED_RULES:
+            retail, wholesale, untagged = _AUDITED_RULES[name]
         else:
-            retail = wholesale = ("retail", "discount", 0)
+            retail = wholesale = untagged = None
             pending.append(f"{name}: {_PENDING_GUIDE_FORMULA.get(name, 'No reviewed rule')}")
+        retail = retail or ("retail", "discount", 0)
+        wholesale = wholesale or ("retail", "discount", 0)
+        untagged = untagged or ("retail", "discount", 0)
         rules.append(_rule(
             brand=brand, customer_type_id="retail", basis=retail[0],
             operation=retail[1], percent=retail[2], enabled=retail[2] > 0,
@@ -114,6 +117,22 @@ def build_config(current: dict, references: dict) -> tuple[dict, list[str]]:
             brand=brand, customer_type_id="wholesale", basis=wholesale[0],
             operation=wholesale[1], percent=wholesale[2], enabled=wholesale[2] > 0,
         ))
+        rules.append(_rule(
+            brand=brand, customer_type_id="default", basis=untagged[0],
+            operation=untagged[1], percent=untagged[2], enabled=untagged[2] > 0,
+        ))
+
+    if "Gamber Johnson" in brands:
+        pending.append(
+            "Gamber Johnson Retail: QBO's 30% rule is limited to the "
+            "GAMBER JOHNSON CRADLE/DOCK product group; the brand-wide matrix "
+            "uses QBO's 40% All Customers rule until product-level matching is added."
+        )
+    if any(name in brands for name in _WESTIN_FAMILY):
+        pending.append(
+            "Westin: QBO Retail uses cost +25%; the vendor guide's 15% off list "
+            "Standard Sell rule conflicts and is not loaded automatically."
+        )
 
     config = {
         "schema_version": 2,
@@ -133,6 +152,11 @@ def build_config(current: dict, references: dict) -> tuple[dict, list[str]]:
                 "id": "wholesale", "name": "Wholesale",
                 "label_id": labels["$ Wholesale $"]["id"],
                 "label": "$ Wholesale $", "enabled": True,
+            },
+            {
+                "id": "default", "name": "Default / untagged",
+                "label_id": "", "label": "", "match_untagged": True,
+                "enabled": True,
             },
         ],
         "rules": rules,
