@@ -147,11 +147,11 @@ Customer-label and Part-brand choices come from Shopmonkey's live list APIs. Sav
 provider IDs and canonical names; hosted pricing matches the IDs, with exact-name matching only as a
 compatibility path for the original test configuration.
 
-The hourly `shopmonkey-reconcile` scheduled function is a bounded safety net for missed
-events. It pages from the tail of Shopmonkey's order list, checks only recently changed orders,
-and refuses to use pricing-matrix metadata as evidence that a price is automatic. The public,
-data-free `shopmonkey-health` endpoint fails closed when configuration, credentials, or recent
-reconciliation are unavailable. Provider credentials and webhook bodies are never logged.
+Production pricing is webhook-only so a delayed background pass cannot mutate a quote after manual
+review. The reconciliation logic remains covered as a non-deployed recovery path, but no scheduled
+or publicly routable function invokes it. The public, data-free `shopmonkey-health` endpoint fails
+closed when configuration or credentials are unavailable and explicitly reports reconciliation as
+disabled. Provider credentials and webhook bodies are never logged.
 
 ## JS Patterns
 

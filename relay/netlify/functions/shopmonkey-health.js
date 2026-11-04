@@ -3,8 +3,6 @@
 const { connectLambda } = require("@netlify/blobs");
 const { loadConfig, loadHealth } = require("../../lib/shopmonkey-pricing");
 
-const MAX_RECONCILE_AGE_SECONDS = 75 * 60;
-
 function response(statusCode, payload) {
   return {
     statusCode,
@@ -30,10 +28,7 @@ exports.handler = async (event) => {
     const credentialsReady = Boolean(
       process.env.SHOPMONKEY_API_KEY && process.env.SHOPMONKEY_WEBHOOK_SECRET,
     );
-    const reconcileFresh = reconcileAgeSeconds !== null
-      && reconcileAgeSeconds <= MAX_RECONCILE_AGE_SECONDS
-      && health.last_api_check_ok === true;
-    const ok = credentialsReady && persisted && config.enabled && reconcileFresh;
+    const ok = credentialsReady && persisted && config.enabled;
     return response(ok ? 200 : 503, {
       ok,
       status: ok ? "healthy" : "not_ready",
@@ -41,7 +36,8 @@ exports.handler = async (event) => {
       config_persisted: persisted,
       pricing_enabled: config.enabled,
       credentials_ready: credentialsReady,
-      reconciliation_fresh: reconcileFresh,
+      reconciliation_enabled: false,
+      reconciliation_fresh: false,
       reconciliation_age_seconds: reconcileAgeSeconds,
       last_webhook_success_at: health.last_success_at || "",
       last_reconciliation_at: health.last_reconcile_success_at || "",

@@ -79,17 +79,17 @@ pair, using inventory Retail or Cost with a discount or markup. The hosted servi
 names are stored only for display and legacy compatibility.
 
 Custom-price protection is mandatory. Authorized, invoiced, read-only, unclassified, ambiguously
-classified, unknown-brand, missing-price, and manually priced lines are skipped. An hourly
-`shopmonkey-reconcile` function safely rechecks recent orders without trusting pricing-matrix
-metadata. Configure external uptime monitoring against:
+classified, unknown-brand, missing-price, and manually priced lines are skipped. Production
+pricing is webhook-only: no scheduled reconciliation mutates quotes after their initial event.
+Configure external uptime monitoring against:
 
 ```
 https://dtmvehiclebuilder.netlify.app/.netlify/functions/shopmonkey-health
 ```
 
 The health endpoint returns `200` only when hosted configuration is persisted, pricing is enabled,
-credentials are present, and the scheduled reconciliation has completed successfully within the
-last 75 minutes. It returns no customer, order, part, credential, or webhook data.
+and credentials are present. It reports that reconciliation is disabled and returns no customer,
+order, part, credential, or webhook data.
 
 ### Redirect URI to register in Intuit
 

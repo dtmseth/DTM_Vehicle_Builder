@@ -167,7 +167,7 @@ test("stores hosted pricing with optimistic revision checks", async () => {
     Date.now = realNow;
   }
 });
-test("health fails closed until reconciliation is current", async () => {
+test("health reflects webhook readiness while reconciliation is disabled", async () => {
   installEnvironment();
   const config = pricing.defaultConfig("order-test");
   config.revision = "revision";
@@ -177,13 +177,14 @@ test("health fails closed until reconciliation is current", async () => {
   Date.now = () => NOW * 1000;
   try {
     const before = await healthModule.handler({ httpMethod: "GET" });
-    assert.equal(before.statusCode, 503);
+    assert.equal(before.statusCode, 200);
+    assert.equal(JSON.parse(before.body).reconciliation_enabled, false);
     await pricing.recordHealth({
       last_reconcile_success_at: new Date((NOW - (76 * 60)) * 1000).toISOString(),
       last_api_check_ok: true,
     });
     const stale = await healthModule.handler({ httpMethod: "GET" });
-    assert.equal(stale.statusCode, 503);
+    assert.equal(stale.statusCode, 200);
     await pricing.recordHealth({
       last_reconcile_success_at: new Date((NOW - 60) * 1000).toISOString(),
       last_api_check_ok: true,
@@ -198,7 +199,7 @@ test("health fails closed until reconciliation is current", async () => {
     });
     const afterWebhook = await healthModule.handler({ httpMethod: "GET" });
     assert.equal(afterWebhook.statusCode, 200);
-    assert.equal(JSON.parse(afterWebhook.body).reconciliation_fresh, true);
+    assert.equal(JSON.parse(afterWebhook.body).reconciliation_fresh, false);
   } finally {
     Date.now = realNow;
   }
@@ -212,7 +213,7 @@ test("reconciliation only selects recently changed orders", () => {
   }, NOW), false);
 });
 
-test("scheduled reconciliation records health through the shared runner", async () => {
+test("explicit reconciliation records health through the shared runner", async () => {
   installEnvironment();
   const config = pricing.defaultConfig("order-test");
   config.enabled = false;

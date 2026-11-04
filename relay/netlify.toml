@@ -7,9 +7,6 @@
   # (including the Lambda-compatible Netlify Blobs context).
   node_bundler = "esbuild"
 
-[functions."shopmonkey-reconcile"]
-  schedule = "@hourly"
-
 [[headers]]
   for = "/*"
   [headers.values]
