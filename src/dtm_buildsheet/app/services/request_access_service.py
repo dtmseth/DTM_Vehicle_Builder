@@ -31,6 +31,7 @@ def required_capabilities(method: str, raw_path: str) -> frozenset[Capability]:
     if (
         path.startswith("/api/cloud/")
         or path.startswith("/api/update/")
+        or path.startswith("/api/ui-preferences")
         or path.startswith("/api/operations/")
         or path == "/api/calendar" or path.startswith("/api/calendar/")
         or path in {"/api/quickbooks/callback", "/api/quickbooks/complete"}

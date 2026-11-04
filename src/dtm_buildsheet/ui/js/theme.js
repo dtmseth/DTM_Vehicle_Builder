@@ -4,13 +4,32 @@
   const STORAGE_KEY = "dtm_builder_theme";
   const root = document.documentElement;
 
-  function storedTheme() {
+  function validTheme(value) {
+    return value === "dark" || value === "light" ? value : "";
+  }
+
+  function serverTheme() {
+    return validTheme(root.dataset.theme);
+  }
+
+  function browserTheme() {
     try {
-      const value = window.localStorage.getItem(STORAGE_KEY);
-      return value === "dark" ? "dark" : "light";
+      return validTheme(window.localStorage.getItem(STORAGE_KEY));
     } catch (_) {
-      return "light";
+      return "";
     }
+  }
+
+  function persistTheme(theme) {
+    fetch("/api/ui-preferences/theme", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme }),
+      cache: "no-store",
+    }).catch(() => {
+      // localStorage remains a session-level fallback when the local app
+      // server is shutting down or its preference file cannot be written.
+    });
   }
 
   function updateButton(theme) {
@@ -40,6 +59,7 @@
         // A locked-down WebView may reject local storage. The active session
         // still gets the selected theme.
       }
+      persistTheme(next);
     }
     updateButton(next);
     window.dispatchEvent(new CustomEvent("dtm-theme-change", { detail: { theme: next } }));
@@ -47,7 +67,9 @@
 
   // This script is intentionally loaded before the stylesheets. Applying the
   // saved value synchronously prevents a bright first frame in dark mode.
-  applyTheme(storedTheme(), false);
+  const initialServerTheme = serverTheme();
+  const initialBrowserTheme = browserTheme();
+  applyTheme(initialServerTheme || initialBrowserTheme || "light", false);
 
   window.DTMTheme = {
     current: () => root.dataset.theme || "light",
@@ -56,6 +78,10 @@
 
   window.addEventListener("DOMContentLoaded", () => {
     updateButton(root.dataset.theme || "light");
+    // One-time migration for existing installs that still have the old
+    // webview-only value. Future launches receive the durable value in the
+    // opening HTML, before styles render.
+    if (!initialServerTheme && initialBrowserTheme) persistTheme(initialBrowserTheme);
     document.getElementById("theme-toggle")?.addEventListener("click", () => {
       applyTheme(root.dataset.theme === "dark" ? "light" : "dark", true);
     });

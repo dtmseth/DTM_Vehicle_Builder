@@ -145,6 +145,7 @@ def make_handler(violations):
         def _serve_ui(self):
             from .app.server import _UI_FILE, _APP_VERSION
             html = _UI_FILE.read_text().replace("{{APP_VERSION}}", _APP_VERSION)
+            html = html.replace("{{THEME}}", "")
             html = html.replace("</body>", '<script src="/ui/js/local_pilot.js"></script></body>')
             self._send(200, html.encode(), "text/html; charset=utf-8")
 

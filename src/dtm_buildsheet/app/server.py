@@ -39,6 +39,7 @@ from .routes import projects as project_routes
 from .routes import quickbooks as quickbooks_routes
 from .routes import shopmonkey as shopmonkey_routes
 from .routes import templates as template_routes
+from .routes import ui_preferences as ui_preferences_routes
 from .routes import updates as update_routes
 from .routes import uploads as upload_routes
 from .routes import validation as validation_routes
@@ -91,6 +92,8 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_ui()
         elif path == "/status":
             self._api(generation_routes.get_status(self.paths))
+        elif path == "/api/ui-preferences":
+            self._api(ui_preferences_routes.get_preferences(self.paths))
         elif path in config_routes.GET_ROUTES:
             self._api(config_routes.get_config(path, self.paths))
         elif path == "/api/template/info":
@@ -201,6 +204,8 @@ class Handler(BaseHTTPRequestHandler):
             self._api(generation_routes.post_delete_old(body, self.paths))
         elif path == "/open":
             self._api(export_routes.post_open(body, self.paths))
+        elif path == "/api/ui-preferences/theme":
+            self._api(ui_preferences_routes.save_theme(body, self.paths))
         elif path == "/api/export/pdf":
             self._api(export_routes.post_pdf(body, self.paths))
         elif path in config_routes.POST_ROUTES:
@@ -316,6 +321,8 @@ class Handler(BaseHTTPRequestHandler):
         )
         html = html.replace("{{APP_VERSION}}", _APP_VERSION)
         html = html.replace("{{UPLOAD_TOKEN}}", self.upload_token)
+        theme = ui_preferences_routes.get_preferences(self.paths).get("theme", "")
+        html = html.replace("{{THEME}}", theme)
         self._send(200, html.encode("utf-8"), "text/html; charset=utf-8", cache_control="no-store")
 
     def _serve_static(self, rel_path: str):

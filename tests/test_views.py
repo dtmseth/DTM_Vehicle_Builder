@@ -9,11 +9,13 @@ from unittest.mock import MagicMock
 import pytest
 
 from dtm_buildsheet.app.services.preview_service import _view_metadata, _FALLBACK_VIEW_ORDER
+from dtm_buildsheet.app.services import ui_preferences_service
+from dtm_buildsheet.app.services.request_access_service import required_capabilities
 from dtm_buildsheet.config.schemas import validate_config_payload
 from dtm_buildsheet.config.loader import resolve_vehicle_type
 from dtm_buildsheet.config.migrations import migrate
 from dtm_buildsheet.config_loader import load_configs
-from dtm_buildsheet.paths import ensure_workspace
+from dtm_buildsheet.paths import AppPaths, ensure_workspace
 
 
 def test_theme_toggle_loads_before_styles_and_shopmonkey_follows_theme():
@@ -30,6 +32,8 @@ def test_theme_toggle_loads_before_styles_and_shopmonkey_follows_theme():
     assert 'id="theme-toggle"' in html
     assert html.index('id="theme-toggle"') > html.index('id="cloud-modal"')
     assert 'const STORAGE_KEY = "dtm_builder_theme"' in theme_script
+    assert 'fetch("/api/ui-preferences/theme"' in theme_script
+    assert 'data-theme="{{THEME}}"' in html
     assert "root.dataset.theme = next" in theme_script
     assert 'html[data-theme="dark"]' in theme_styles
     assert 'html[data-theme="light"] .shopmonkey-pricing-workspace' in theme_styles
@@ -42,6 +46,25 @@ def test_theme_toggle_loads_before_styles_and_shopmonkey_follows_theme():
     assert 'html[data-theme="dark"] .calendar-color-blue' in theme_styles
     assert 'html[data-theme="dark"] .vehicle-sales-year h2 span' in theme_styles
     assert '"ui/theme.css"' in pyproject
+
+
+def test_ui_theme_preference_is_local_durable_and_validated(tmp_path):
+    paths = AppPaths(
+        workspace_dir=tmp_path,
+        workspace_config_dir=tmp_path / "config",
+    )
+
+    assert ui_preferences_service.load_preferences(paths) == {"ok": True, "theme": ""}
+    assert ui_preferences_service.save_theme("dark", paths) == {"ok": True, "theme": "dark"}
+    assert ui_preferences_service.load_preferences(paths) == {"ok": True, "theme": "dark"}
+    assert json.loads((tmp_path / "ui_preferences.json").read_text("utf-8")) == {
+        "schema_version": 1,
+        "theme": "dark",
+    }
+    assert ui_preferences_service.save_theme("system", paths)["ok"] is False
+    assert ui_preferences_service.load_preferences(paths)["theme"] == "dark"
+    assert required_capabilities("GET", "/api/ui-preferences") == frozenset()
+    assert required_capabilities("POST", "/api/ui-preferences/theme") == frozenset()
 
 
 def test_build_actions_include_reset_and_clear_qb_import_label():
