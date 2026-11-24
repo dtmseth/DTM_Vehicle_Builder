@@ -24,35 +24,41 @@
   </div>
   <div class="header-tabs">
     <button class="htab" id="projects-header-tab" data-tab="projects" hidden>📋 Projects</button>
+    <button class="htab" id="forms-header-tab" data-tab="forms" hidden>📝 Forms</button>
     <button class="htab" id="vehicle-sales-header-tab" data-tab="vehicle-sales" hidden>🚙 Buyback &amp; Sales</button>
     <button class="htab" id="calendar-header-tab" data-tab="calendar" hidden>📅 Calendar</button>
     <button class="htab" id="operations-header-tab" data-tab="operations" hidden>🏭 Operations</button>
-    <button class="htab" id="general-settings-header-tab" data-tab="general-settings" hidden>⚙️ General Settings</button>
-    <button class="htab" id="advanced-settings-header-tab" data-tab="advanced-settings" hidden>🔧 Advanced Settings</button>
+    <button class="htab" id="pricing-header-tab" data-tab="pricing" hidden>💲 Price List Converter</button>
   </div>
-  <button class="upload-status" id="upload-status" type="button" hidden
-          aria-label="View upload status">
-    <span aria-hidden="true">↑</span>
-    <span id="upload-status-text">Uploads</span>
-  </button>
-  <!-- Cloud connection indicator — updated by refreshCloudStatus() in api.js.
-       Hidden via the `cloud-status-local` class which collapses the chip
-       down to a small badge in local mode. -->
-  <button class="cloud-status cloud-status-loading" id="cloud-status" type="button"
-          title="Checking cloud connection…" aria-label="Cloud connection settings">
-    <span class="cloud-status-dot" aria-hidden="true"></span>
-    <img class="cloud-status-photo" id="cloud-status-photo" alt="" hidden>
-    <span class="cloud-status-initials" id="cloud-status-initials" hidden></span>
-    <span class="cloud-status-text" id="cloud-status-text">Connecting…</span>
-    <span class="cloud-status-spinner" id="cloud-status-spinner" hidden aria-label="Syncing">⟳</span>
-    <span class="photo-cache-progress-panel" id="photo-cache-progress-panel" hidden>
-      <span class="photo-cache-progress-title" id="photo-cache-progress-title">Preparing photo thumbnails</span>
-      <span class="photo-cache-progress-track" id="photo-cache-progress-track" role="progressbar" aria-label="Photo thumbnail preparation">
-        <span class="photo-cache-progress-fill" id="photo-cache-progress-fill"></span>
+  <div class="header-actions">
+    <button class="upload-status" id="upload-status" type="button" hidden
+            aria-label="View upload status">
+      <span aria-hidden="true">↑</span>
+      <span id="upload-status-text">Uploads</span>
+    </button>
+    <button class="header-settings-button htab" id="settings-header-tab" data-tab="settings"
+            type="button" title="Settings" aria-label="Settings" hidden>
+      <span aria-hidden="true">⚙️</span>
+    </button>
+    <!-- Cloud connection indicator — updated by refreshCloudStatus() in api.js.
+         Hidden via the `cloud-status-local` class which collapses the chip
+         down to a small badge in local mode. -->
+    <button class="cloud-status cloud-status-loading" id="cloud-status" type="button"
+            title="Checking cloud connection…" aria-label="Cloud connection settings">
+      <span class="cloud-status-dot" aria-hidden="true"></span>
+      <img class="cloud-status-photo" id="cloud-status-photo" alt="" hidden>
+      <span class="cloud-status-initials" id="cloud-status-initials" hidden></span>
+      <span class="cloud-status-text" id="cloud-status-text">Connecting…</span>
+      <span class="cloud-status-spinner" id="cloud-status-spinner" hidden aria-label="Syncing">⟳</span>
+      <span class="photo-cache-progress-panel" id="photo-cache-progress-panel" hidden>
+        <span class="photo-cache-progress-title" id="photo-cache-progress-title">Preparing photo thumbnails</span>
+        <span class="photo-cache-progress-track" id="photo-cache-progress-track" role="progressbar" aria-label="Photo thumbnail preparation">
+          <span class="photo-cache-progress-fill" id="photo-cache-progress-fill"></span>
+        </span>
+        <span class="photo-cache-progress-count" id="photo-cache-progress-count"></span>
       </span>
-      <span class="photo-cache-progress-count" id="photo-cache-progress-count"></span>
-    </span>
-  </button>
+    </button>
+  </div>
 </div>
 
 <!-- ══ BACKGROUND UPLOAD MANAGER ══ -->
@@ -262,29 +268,43 @@
 
 
 
+<!-- ═══════════ PRICING CENTER ═══════════ -->
+<div id="tab-pricing" class="main-content" hidden>
+  <div id="pricing-center-root"></div>
+</div>
+
+
 <!-- ═══════════ SETTINGS TAB ═══════════
-     Container holds the stab content for both General and Advanced Settings.
-     The active header tab (general-settings vs advanced-settings) decides
-     which stab-bar is visible and which set of stabs are reachable. -->
+     General and Advanced settings share one top-level workspace. Each group
+     is shown only when the signed-in user has access to one of its tools. -->
 <div id="tab-settings" class="main-content" hidden>
-  <!-- General Settings stab-bar — easy edits, auto-merged with GitHub history -->
-  <div class="stab-bar" id="stab-bar-general" hidden>
-    <button class="stab" data-stab="projects-defaults" data-stab-group="general">📁 Projects</button>
-    <button class="stab" data-stab="agencies" data-stab-group="general">🏛 Agencies</button>
-    <button class="stab" data-stab="calendar-teams" data-stab-group="general">Teams & Calendar</button>
-    <button class="stab" data-stab="sales-reps" data-stab-group="general">👤 Sales Reps</button>
-    <button class="stab" data-stab="presets" data-stab-group="general">📂 Presets</button>
-    <button class="stab" data-stab="shopmonkey" data-stab-group="general">🐒 Shopmonkey</button>
-    <button class="stab" data-stab="quickbooks" data-stab-group="general" hidden>💵 QuickBooks</button>
-  </div>
-  <!-- Advanced Settings stab-bar — review-gated config changes -->
-  <div class="stab-bar" id="stab-bar-advanced" hidden>
-    <button class="stab" data-stab="placements" data-stab-group="advanced">📍 Placements</button>
-    <button class="stab" data-stab="sizes" data-stab-group="advanced">📐 Light Size Rules</button>
-    <button class="stab" data-stab="part-manager" data-stab-group="advanced">🔩 Part Manager</button>
-    <button class="stab" data-stab="vehicles" data-stab-group="advanced">🚗 Vehicle Manager</button>
-    <button class="stab" id="qbpp-stab-button" data-stab="quickbooks-production-preview" data-stab-group="advanced" hidden>⚖️ QB Catalog Preview</button>
-    <button class="stab" data-stab="workbook-tools" data-stab-group="advanced">🔧 Workbook Tools</button>
+  <div class="settings-nav-groups">
+    <!-- General Settings — easy edits, auto-merged with GitHub history -->
+    <section class="settings-nav-group" id="settings-nav-general" aria-labelledby="settings-nav-general-label" hidden>
+      <div class="settings-nav-label" id="settings-nav-general-label">General</div>
+      <div class="stab-bar" id="stab-bar-general">
+        <button class="stab" data-stab="projects-defaults" data-stab-group="general">📁 Projects</button>
+        <button class="stab" data-stab="agencies" data-stab-group="general">🏛 Agencies</button>
+        <button class="stab" data-stab="calendar-teams" data-stab-group="general">Teams & Calendar</button>
+        <button class="stab" data-stab="sales-reps" data-stab-group="general">👤 Sales Reps</button>
+        <button class="stab" data-stab="presets" data-stab-group="general">📂 Presets</button>
+        <button class="stab" data-stab="shopmonkey" data-stab-group="general">🐒 Shopmonkey</button>
+        <button class="stab" data-stab="quickbooks" data-stab-group="general" hidden>💵 QuickBooks</button>
+      </div>
+    </section>
+    <!-- Advanced Settings — review-gated config changes -->
+    <section class="settings-nav-group" id="settings-nav-advanced" aria-labelledby="settings-nav-advanced-label" hidden>
+      <div class="settings-nav-label" id="settings-nav-advanced-label">Advanced</div>
+      <div class="stab-bar" id="stab-bar-advanced">
+        <button class="stab" data-stab="placements" data-stab-group="advanced">📍 Placements</button>
+        <button class="stab" data-stab="sizes" data-stab-group="advanced">📐 Light Size Rules</button>
+        <button class="stab" data-stab="part-manager" data-stab-group="advanced">🔩 Part Manager</button>
+        <button class="stab" data-stab="vehicles" data-stab-group="advanced">🚗 Vehicle Manager</button>
+        <button class="stab" data-stab="navigation" data-stab-group="advanced">🧭 Navigation</button>
+        <button class="stab" id="qbpp-stab-button" data-stab="quickbooks-production-preview" data-stab-group="advanced" hidden>⚖️ QB Catalog Preview</button>
+        <button class="stab" data-stab="workbook-tools" data-stab-group="advanced">🔧 Workbook Tools</button>
+      </div>
+    </section>
   </div>
 
   <!-- Inner-stab bars: rendered above outer stabs that group two content
@@ -303,6 +323,28 @@
   </div>
 
   <div id="stab-calendar-teams" hidden></div>
+  <!-- ── NAVIGATION VISIBILITY (Advanced Settings) ── -->
+  <div id="stab-navigation" hidden>
+    <div class="card navigation-settings-card">
+      <div class="card-title navigation-settings-title">
+        <span>Navigation visibility</span>
+        <button class="btn btn-primary btn-sm" id="navigation-settings-save" type="button">Save navigation</button>
+      </div>
+      <p class="navigation-settings-intro">
+        Choose which workspaces appear in the top navigation for everyone. Hiding a workspace does not remove its feature or data; turn it back on here at any time.
+      </p>
+      <div class="navigation-settings-grid" id="navigation-settings-grid">
+        <label><input type="checkbox" data-navigation-tab="projects"> <span><strong>Projects</strong><small>Project records, builds, and exports</small></span></label>
+        <label><input type="checkbox" data-navigation-tab="forms"> <span><strong>Forms</strong><small>Operational forms and temporary tags</small></span></label>
+        <label><input type="checkbox" data-navigation-tab="vehicle-sales"> <span><strong>Buyback &amp; Sales</strong><small>Vehicle purchase and resale records</small></span></label>
+        <label><input type="checkbox" data-navigation-tab="calendar"> <span><strong>Calendar</strong><small>Production scheduling calendar</small></span></label>
+        <label><input type="checkbox" data-navigation-tab="operations"> <span><strong>Operations</strong><small>Shop production workspaces</small></span></label>
+        <label><input type="checkbox" data-navigation-tab="pricing"> <span><strong>Price List Converter</strong><small>Vendor pricing import and export tools</small></span></label>
+      </div>
+      <p class="navigation-settings-note">The Settings gear always remains available to authorized administrators.</p>
+      <div class="navigation-settings-status" id="navigation-settings-status" role="status"></div>
+    </div>
+  </div>
   <!-- ── PROJECTS (General Settings) ── -->
   <div id="stab-projects-defaults" hidden>
     <div class="card">
@@ -1675,6 +1717,72 @@
     </details>
   </div>
 </div><!-- end tab-settings -->
+
+
+<!-- ═══════════ PDF FORMS ═══════════ -->
+<div id="tab-forms" class="main-content" hidden>
+  <div class="card temporary-tags-shell">
+    <div class="card-title temporary-tags-title">
+      <div>
+        <span>Temporary Vehicle Tags</span>
+        <small>Fill, save, and batch-print yard tags</small>
+      </div>
+      <div class="temporary-tags-title-actions">
+        <span id="temporary-tags-save-state" class="vehicle-sales-save-state" role="status"></span>
+        <button class="btn btn-secondary btn-sm" id="temporary-tags-open-pdf" type="button">Open PDF</button>
+        <button class="btn btn-gold btn-sm" id="temporary-tags-print" type="button">Print batch</button>
+        <button class="btn btn-primary btn-sm" id="temporary-tags-save" type="button">Save batch</button>
+      </div>
+    </div>
+
+    <div class="temporary-tags-batch-toolbar">
+      <label>Saved batch
+        <select id="temporary-tags-saved"><option value="">New unsaved batch</option></select>
+      </label>
+      <button class="btn btn-secondary btn-sm" id="temporary-tags-new" type="button">+ New batch</button>
+      <button class="btn btn-secondary btn-sm" id="temporary-tags-refresh" type="button">Refresh vehicles</button>
+      <label class="temporary-tags-name">Batch name
+        <input id="temporary-tags-name" maxlength="160" placeholder="Temporary Tags - date">
+      </label>
+    </div>
+
+    <div id="temporary-tags-warning" class="temporary-tags-warning" role="status" hidden></div>
+
+    <div class="temporary-tags-layout">
+      <section class="temporary-tags-picker" aria-labelledby="temporary-tags-picker-title">
+        <div class="temporary-tags-section-heading">
+          <div><strong id="temporary-tags-picker-title">Choose vehicles</strong><span>Projects, buybacks, and used-vehicle records</span></div>
+          <button class="btn btn-secondary btn-sm" id="temporary-tags-add-manual" type="button">+ Manual tag</button>
+        </div>
+        <label class="temporary-tags-search">Search vehicles
+          <input id="temporary-tags-search" type="search" placeholder="Agency, VIN, unit, quote, or vehicle…" autocomplete="off">
+        </label>
+        <div id="temporary-tags-candidates" class="temporary-tags-candidates"></div>
+        <button class="btn btn-primary btn-block" id="temporary-tags-add-selected" type="button">Add selected vehicles</button>
+      </section>
+
+      <section class="temporary-tags-editor" aria-labelledby="temporary-tags-editor-title">
+        <div class="temporary-tags-section-heading">
+          <div><strong id="temporary-tags-editor-title">Tag batch</strong><span id="temporary-tags-count">0 sheets</span></div>
+        </div>
+        <p id="temporary-tags-empty" class="temporary-tags-empty">Select vehicles or add a manual tag. Each vehicle prints on its own Letter sheet with a large tag and matching tear-off tag.</p>
+        <div id="temporary-tags-items" class="temporary-tags-items"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="temporary-tags-warning-modal" role="dialog" aria-modal="true" aria-labelledby="temporary-tags-warning-title">
+  <div class="modal temporary-tags-warning-modal">
+    <div class="modal-title" id="temporary-tags-warning-title">Some tags are missing data</div>
+    <p>Review the highlighted fields. You can return to the batch or continue with blank values.</p>
+    <ul id="temporary-tags-warning-list"></ul>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="temporary-tags-warning-cancel" type="button">Go back</button>
+      <button class="btn btn-gold" id="temporary-tags-warning-continue" type="button">Continue anyway</button>
+    </div>
+  </div>
+</div>
 
 
 <!-- ═══════════ VEHICLE BUYBACK / SALE RECORDS ═══════════ -->
@@ -3379,6 +3487,7 @@
 <script src="/ui/js/settings/presets_mgr.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/settings/project_defaults.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/shopmonkey.js?v={{APP_VERSION}}"></script>
+<script src="/ui/js/pricing_center.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/settings/quickbooks.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/settings/quickbooks_production_preview.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/settings/fixtures.js?v={{APP_VERSION}}"></script>
@@ -3402,6 +3511,7 @@
 <script src="/ui/js/projects/index.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/strip_documentation.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/vehicle_sales.js?v={{APP_VERSION}}"></script>
+<script src="/ui/js/temporary_tags.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/operations.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/calendar.js?v={{APP_VERSION}}"></script>
 <script src="/ui/js/update_banner.js?v={{APP_VERSION}}"></script>

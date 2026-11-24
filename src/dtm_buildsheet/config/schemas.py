@@ -25,6 +25,9 @@ REQUIRED_CONFIG_FILES = {
     # [shared-settings] — per-build estimate labor/supplies presets and the
     # exact QBO service item names used for Additional charges.
     "estimate_charges.json",
+    # [shared-settings] — owner-controlled visibility for the top-level app
+    # navigation. Hidden workspaces remain implemented and can be restored.
+    "navigation_settings.json",
     # [shared-settings, Phase 3] — canonical parts database. Direct-mirrored
     # to SharePoint on save (alongside the proposal pipeline). Workbook /
     # parts_library / vehicle_layouts remain as dual-read fallbacks during
@@ -304,6 +307,29 @@ def _validate_app_settings(normalized: dict) -> None:
         raise ValueError(
             "app_settings.json 'dismissed_update_versions' must be a list of strings"
         )
+
+
+_NAVIGATION_TAB_IDS = (
+    "projects",
+    "forms",
+    "vehicle-sales",
+    "calendar",
+    "operations",
+    "pricing",
+)
+
+
+def _validate_navigation_settings(normalized: dict) -> None:
+    hidden_tabs = normalized.setdefault("hidden_tabs", [])
+    if not isinstance(hidden_tabs, list) or not all(isinstance(tab, str) for tab in hidden_tabs):
+        raise ValueError("navigation_settings.json 'hidden_tabs' must be a list of strings")
+    unknown = sorted(set(hidden_tabs) - set(_NAVIGATION_TAB_IDS))
+    if unknown:
+        raise ValueError(
+            "navigation_settings.json contains unknown tab(s): " + ", ".join(unknown)
+        )
+    hidden = set(hidden_tabs)
+    normalized["hidden_tabs"] = [tab for tab in _NAVIGATION_TAB_IDS if tab in hidden]
 
 
 _VALID_RULE_SEVERITIES = {"warning", "error"}
@@ -889,6 +915,7 @@ _VALIDATORS = {
     "build_rules.json": _validate_build_rules,
     "project_options.json": _validate_project_options,
     "estimate_charges.json": _validate_estimate_charges,
+    "navigation_settings.json": _validate_navigation_settings,
     "calendar_settings.json": lambda data: data.update(validate_settings(data)),
     "parts_db.json": _validate_parts_db,
     "legacy_workbook_index.json": _validate_legacy_workbook_index,

@@ -11,9 +11,9 @@ swatches keep their real presentation colors rather than inheriting the applicat
 
 ## Tab layout
 
-Four workspace families: **Projects**, **Calendar**, **Operations**, and **Settings**. Operations is hidden until
-the session API confirms `operations.view`; General and Advanced remain separate Settings header
-tabs.
+The header exposes **Projects**, **Forms**, **Buyback & Sales**, **Calendar**, and **Operations** as
+capability-gated workspaces. Settings uses a single icon-only action beside the profile badge. Its
+General and Advanced groups share one workspace and remain independently capability-gated.
 
 ### Calendar tab
 
@@ -157,13 +157,19 @@ placeholders that can be completed later through Vehicle Manager.
 source changed since `last_rendered_at`; a manual-edit-detection modal warns before discarding
 PowerPoint edits.
 
-### Settings tab
+### Settings workspace
 
-Two header tabs: **General** and **Advanced**, each with their own outer stabs.
+One icon-only header action opens both **General** and **Advanced** outer-stab groups. A group is
+hidden when the current user has no access to any of its tools.
 
 **General Settings**: `projects-defaults | agencies | sales-reps | presets | shopmonkey | quickbooks`
 
-**Advanced Settings**: `placements | sizes | part-manager | vehicles | workbook-tools`
+**Advanced Settings**: `placements | sizes | part-manager | vehicles | navigation | workbook-tools`
+
+The **Navigation** stab controls which top-level workspaces are shown for every user. Its shared
+`navigation_settings.json` stores only hidden workspace IDs, so retiring a workspace does not
+remove its implementation or data and an administrator can restore it later. Settings itself is
+not configurable and remains available to authorized administrators.
 
 Two Advanced stabs group inner stabs (rendered as a thin inner-stab-bar above content):
 - `placements` → inner stabs: `placements | fixtures`

@@ -168,6 +168,9 @@ class ShopmonkeyApiClient:
     def list_brands(self) -> list[dict]:
         return self._list_records("/brand", operation="brand_list")
 
+    def list_vendors(self) -> list[dict]:
+        return self._list_records("/vendor", operation="vendor_list")
+
     def search_customers(self, *, page_size: int = 100, max_records: int = 5000) -> list[dict]:
         """Return active customers with bounded skip/limit pagination."""
         customers: list[dict] = []
@@ -286,6 +289,54 @@ class ShopmonkeyApiClient:
         if not isinstance(data, dict):
             raise ShopmonkeyApiError("unparseable_response")
         return data
+
+    def find_inventory_part(self, inventory_part_id: str) -> dict:
+        """Fetch one inventory part for optimistic preflight/readback checks."""
+        safe_id = quote(str(inventory_part_id or "").strip(), safe="")
+        if not safe_id:
+            raise ValueError("inventory_part_id is required")
+        payload = self._request(
+            "GET",
+            f"/inventory_part/{safe_id}",
+            operation="inventory_part_find",
+        )
+        data = payload.get("data")
+        if not isinstance(data, dict):
+            raise ShopmonkeyApiError("unparseable_response")
+        return data
+
+    def update_inventory_part(
+        self,
+        inventory_part_id: str,
+        *,
+        wholesale_cost_cents: int | None = None,
+        retail_cost_cents: int | None = None,
+        note: str | None = None,
+    ) -> dict:
+        """Update only Pricing Center's allowlisted Shopmonkey fields."""
+        safe_id = quote(str(inventory_part_id or "").strip(), safe="")
+        if not safe_id:
+            raise ValueError("inventory_part_id is required")
+        body: dict[str, object] = {}
+        if wholesale_cost_cents is not None:
+            body["wholesaleCostCents"] = int(wholesale_cost_cents)
+        if retail_cost_cents is not None:
+            body["retailCostCents"] = int(retail_cost_cents)
+        if note is not None:
+            body["note"] = str(note)
+        if not body:
+            raise ValueError("at least one pricing field is required")
+        payload = self._request(
+            "PUT",
+            f"/inventory_part/{safe_id}",
+            operation="inventory_part_update_pricing",
+            body=body,
+        )
+        data = payload.get("data")
+        if not isinstance(data, dict):
+            raise ShopmonkeyApiError("unparseable_response")
+        return data
+
     def search_inventory_tires(self) -> list[dict]:
         return self._search_inventory(
             "/inventory_tire/search", operation="inventory_tire_search"

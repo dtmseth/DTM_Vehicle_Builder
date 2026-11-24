@@ -3,7 +3,7 @@
   "metadata": {
     "last_updated": "2026-09-30T14:59:33.392247+00:00",
     "updated_by": "part-manager-ui",
-    "edit_revision": "df099c5f52f6477182d4bdad1d1e53b0"
+    "edit_revision": "54a24e72f3224521871d5656eaf84cf1"
   },
   "types": {
     "extras": {
@@ -12798,8 +12798,8 @@
           "tertiary_color": "",
           "lens_type": "",
           "friendly_name": "Mustang '24-25, driver",
-          "qb_sales_description": "WHELEN SA-315 SIREN MOUNT KIT, 2024-2025 FORD MUSTANG FASTBACK, DRIVER SIDE",
-          "qb_last_synced": "2026-08-11T17:04:28Z"
+          "qb_sales_description": "WHELEN 2020-2026 FORD POLICE INTERCEPTOR UTILITY, DRIVER SIDE FRAME MOUNT, BEHIND THE BUMPER",
+          "qb_last_synced": "2026-11-10T21:43:20Z"
         },
         {
           "part_number": "SAK70",
@@ -15544,8 +15544,8 @@
           "qb_item_id": "258",
           "qb_sku": "",
           "qb_unit_price": 450.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_inactive": true,
+          "qb_last_synced": "2026-11-20T15:21:44Z",
           "price_usd": 450,
           "vehicle_tags": [
             "any"

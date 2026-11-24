@@ -25,8 +25,9 @@ because a legacy consumer still reads them.
 10. [Preset Files](#preset-files)
 11. [parts_db.json](#parts_dbjson)
 12. [estimate_charges.json](#estimate_chargesjson)
-13. [cloud_config.json](#cloud_configjson)
-14. [Common Conventions](#common-conventions)
+13. [navigation_settings.json](#navigation_settingsjson)
+14. [cloud_config.json](#cloud_configjson)
+15. [Common Conventions](#common-conventions)
 
 ---
 
@@ -711,6 +712,24 @@ All four preset IDs (`patrol`, `undercover`, `admin`, `custom`) are required. Am
 non-negative, but estimate creation requires labor and install supplies to be greater than zero.
 Delivery is optional per estimate. The card fee is `card_fee_percent` of materials + labor + install
 supplies + delivery, excluding the card-fee line itself.
+
+---
+
+## navigation_settings.json
+
+Shared, administrator-managed visibility for top-level navigation workspaces. A hidden workspace is
+not deleted and its data is not changed; removing its ID from `hidden_tabs` restores it. The
+Settings workspace is intentionally not a valid ID and cannot be hidden.
+
+```json
+{
+  "schema_version": 1,
+  "hidden_tabs": ["forms", "vehicle-sales"]
+}
+```
+
+Valid IDs are `projects`, `forms`, `vehicle-sales`, `calendar`, `operations`, and `pricing`.
+The file is mirrored through shared Settings so the selection applies across workstations.
 
 ---
 

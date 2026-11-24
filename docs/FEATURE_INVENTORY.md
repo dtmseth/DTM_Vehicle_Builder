@@ -516,6 +516,7 @@ Identical option sets are cached and the same `DataValidation` object is reused,
 | `build_rules.json` | Dependency, incompatibility, vehicle/location compatibility, group, and preset rules |
 | `parts_db.json` | Canonical picker/catalog hierarchy, SKU identity/prices, accessories, and type-level render metadata |
 | `estimate_charges.json` | Labor/install-supplies presets and QuickBooks service-item names |
+| `navigation_settings.json` | Shared list of top-level workspaces hidden from all users |
 
 ### Validation (`config/schemas.py`)
 - All files must be JSON objects.
@@ -530,6 +531,7 @@ Identical option sets are cached and the same `DataValidation` object is reused,
 - `parts_db.json`: validates hierarchy references, locations, SKU/catalog fields, picker capabilities,
   accessories, and guided-system data.
 - `estimate_charges.json`: validates charge categories, build-type defaults, and non-negative amounts.
+- `navigation_settings.json`: accepts only known top-level workspace IDs and keeps Settings visible.
 
 ### Save Behavior
 - Config saves write with 2-space indentation and a final newline.
@@ -849,6 +851,19 @@ Load Preset next to Save as New Preset in both action areas.
 
 ---
 
+## PDF Forms
+
+The capability-gated **Forms** workspace provides saved, batch-oriented PDF paperwork without
+modifying project records. Temporary Vehicle Tags can select and deduplicate vehicles from Builder
+projects, buyback/sale records, and the canonical used-vehicle registry; users may also add manual
+tags. Agency, VIN, quote number, and date received remain editable per sheet. Missing values are
+highlighted before output, and opening or printing an incomplete batch requires explicit
+confirmation. Each vehicle produces one landscape Letter sheet containing the matching large yard
+tag and tear-off tag. Generated batches are flattened to prevent repeated AcroForm field names from
+sharing values across pages; the saved JSON batch remains the editable source of truth.
+
+---
+
 ## GUI HTTP Server & API Routes
 
 **Modules**: `gui_server.py` compatibility shim, `app/server.py`, `app/routes/*`, `app/services/*` — HTTP server on `127.0.0.1:7655`
@@ -864,6 +879,7 @@ Load Preset next to Save as New Preset in both action areas.
 | `/api/parts-library` | Returns `parts_library.json` |
 | `/api/workbook-rules` | Returns `workbook_rules.json` |
 | `/api/app-settings` | Returns `app_settings.json` |
+| `/api/navigation-settings` | Returns shared top-level navigation visibility |
 | `/api/template/info` | Returns info about current template file |
 | `/api/template/pick-folder` | Opens native folder picker dialog |
 | `/api/assets/list` | Lists available workspace asset files |
@@ -877,6 +893,8 @@ Load Preset next to Save as New Preset in both action areas.
 | `/api/presets/{id}/export-workbook` | Download preset as filled `.xlsx` |
 | `/api/projects` | List all projects |
 | `/api/project/{project_id}` | Get single project |
+| `/api/temporary-tags` | List saved temporary-tag batches |
+| `/api/temporary-tags/candidates` | List deduplicated project, buyback, and used-vehicle choices |
 | `/api/vehicle-catalog/makes?year=…&query=…` | Common automobile makes by default; broader type-tagged NHTSA make search (no-store) |
 | `/api/vehicle-catalog/models?year=…&make=…` | NHTSA vPIC models for a make/year (no-store) |
 | `/api/vehicle-catalog/police` | Maintained police/special-service package overlay (no-store) |
@@ -894,6 +912,7 @@ Load Preset next to Save as New Preset in both action areas.
 | `/api/parts-library/save` | Validate and save `parts_library.json` |
 | `/api/workbook-rules/save` | Validate and save `workbook_rules.json` |
 | `/api/app-settings/save` | Validate and save `app_settings.json` |
+| `/api/navigation-settings/save` | Validate and share navigation visibility (Admin only) |
 | `/api/assets/upload` | Upload image file to workspace assets |
 | `/api/assets/delete` | Remove image file from workspace assets |
 | `/api/template/generate` | Regenerate Excel template workbook |
@@ -906,6 +925,10 @@ Load Preset next to Save as New Preset in both action areas.
 | `/api/presets/save` | Create or update preset |
 | `/api/presets/{id}/clone` | Clone preset with new ID |
 | `/api/project/save` | Create or update project |
+| `/api/temporary-tags/new` | Create an unsaved temporary-tag batch shell |
+| `/api/temporary-tags/save` | Save a batch and regenerate its flattened PDF |
+| `/api/temporary-tags/open-pdf` | Open a saved batch PDF after incomplete-data confirmation when needed |
+| `/api/temporary-tags/print-pdf` | Send every sheet in a saved batch to the default printer |
 | `/api/project/{id}/unit/{uid}/create-draft` | Create build draft for a BuildUnit |
 | `/api/project/{id}/unit/{uid}/individual/{iid}/create-draft` | Create build draft for an IndividualUnit |
 | `/api/project/{id}/unit/{uid}/finalization/check` | Evaluate PDF currency and final build warnings |

@@ -38,6 +38,12 @@ class Capability(StrEnum):
     PROJECT_MEDIA_UPLOAD = "project_media.upload"
     COMPLETED_MEDIA_UPLOAD = "completed_media.upload"
     ESTIMATES_MANAGE = "estimates.manage"
+    PRICING_VIEW = "pricing.view"
+    PRICING_IMPORT = "pricing.import"
+    PRICING_RULES_MANAGE = "pricing.rules.manage"
+    PRICING_EXPORT = "pricing.export"
+    PRICING_API_APPLY = "pricing.api.apply"
+    PRICING_PRESETS_MANAGE = "pricing.presets.manage"
     SETTINGS_GENERAL_MANAGE = "settings.general.manage"
     SETTINGS_ADVANCED_MANAGE = "settings.advanced.manage"
     ROLES_INSPECT = "roles.inspect"
@@ -72,7 +78,10 @@ def normalize_app_role(value: AppRole | str) -> AppRole | None:
 
 ROLE_CAPABILITIES: dict[AppRole, frozenset[Capability]] = {
     AppRole.ADMIN: ALL_CAPABILITIES,
-    AppRole.STAFF: ALL_CAPABILITIES - frozenset({Capability.SETTINGS_ADVANCED_MANAGE}),
+    AppRole.STAFF: ALL_CAPABILITIES - frozenset({
+        Capability.SETTINGS_ADVANCED_MANAGE,
+        Capability.PRICING_API_APPLY,
+    }),
     AppRole.SHOP: frozenset({
         Capability.OPERATIONS_VIEW,
         Capability.OPERATIONS_SHOP_UPDATE,

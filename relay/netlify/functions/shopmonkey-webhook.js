@@ -248,6 +248,7 @@ async function applyPricingForOrder({
   let missingRule = 0;
   let invalidPriceBasis = 0;
   let lastTargetCents = null;
+  const pendingUpdates = [];
   const recentLines = partsFromServices(services).filter(({ part }) => (
     isRecentLine(part, nowSeconds, maxLineAgeSeconds)
   ));
@@ -307,11 +308,20 @@ async function applyPricingForOrder({
     const serviceId = String(service.id || "");
     const lineId = String(part.id || "");
     if (!serviceId || !lineId) throw new UpstreamError(502);
+    pendingUpdates.push({ serviceId, lineId, targetCents });
+  }
+
+  for (const [index, update] of pendingUpdates.entries()) {
+    // Shopmonkey stores the line value when includeOrder=false, but its quote UI
+    // and order totals remain stale until one update includes the recalculated
+    // order. Recalculate once, on the final changed line, to avoid an expensive
+    // full-order response for every part in a multi-line quote.
+    const includeOrder = index === pendingUpdates.length - 1;
     await shopmonkeyRequest(
       apiKey,
       "PUT",
-      `/order/${encodedOrderId}/service/${encodeURIComponent(serviceId)}/part/${encodeURIComponent(lineId)}?includeOrder=false`,
-      { retailCostCents: targetCents },
+      `/order/${encodedOrderId}/service/${encodeURIComponent(update.serviceId)}/part/${encodeURIComponent(update.lineId)}?includeOrder=${includeOrder}`,
+      { retailCostCents: update.targetCents },
     );
     repriced += 1;
   }

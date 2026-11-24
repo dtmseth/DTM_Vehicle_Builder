@@ -110,6 +110,7 @@ _MIGRATIONS: dict[str, list] = {
     "parts_db.json": [],
     "legacy_workbook_index.json": [],
     "estimate_charges.json": [],
+    "navigation_settings.json": [],
     "calendar_settings.json": [],
 }
 

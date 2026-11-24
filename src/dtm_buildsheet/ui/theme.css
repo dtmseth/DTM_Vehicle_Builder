@@ -778,3 +778,14 @@ html[data-theme="dark"] .shopmonkey-customer-rule-card { background: #141f2f; bo
 html[data-theme="dark"] .shopmonkey-pricing-advanced { background: #101a29; border-color: #26364d; }
 html[data-theme="dark"] .shopmonkey-brand-rule { background: #0f1927; border-color: #29394f; }
 html[data-theme="dark"] .shopmonkey-picker-menu { background: #111b2a; border-color: #40536d; }
+
+/* Pricing Center rule tones stay subdued against the dark workspace. */
+html[data-theme="dark"] .pricing-rule-pill-discount { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
+html[data-theme="dark"] .pricing-rule-pill-discount > strong { color: var(--success-text); }
+html[data-theme="dark"] .pricing-rule-pill-markup { background: #2d2018; border-color: #70492f; color: #f1b47c; }
+html[data-theme="dark"] .pricing-rule-pill-markup > strong { color: #f1b47c; }
+html[data-theme="dark"] .pricing-rule-pill-margin { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning-text); }
+html[data-theme="dark"] .pricing-rule-pill-margin > strong { color: var(--warning-text); }
+html[data-theme="dark"] .pricing-rule-pill-other,
+html[data-theme="dark"] .pricing-rule-pill-empty { background: var(--surface); border-color: var(--border); color: var(--muted); }
+html[data-theme="dark"] .pricing-rule-pill-other > strong { color: var(--text); }

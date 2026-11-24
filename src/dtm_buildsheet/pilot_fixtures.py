@@ -8,7 +8,7 @@ import shutil
 
 CONFIG_NAMES = (
     "asset_manifest.json", "build_rules.json", "estimate_charges.json",
-    "legacy_workbook_index.json", "part_catalog.json", "parts_db.json",
+    "legacy_workbook_index.json", "navigation_settings.json", "part_catalog.json", "parts_db.json",
     "parts_library.json", "project_options.json", "vehicle_layouts.json", "workbook_rules.json",
 )
 ASSET_GROUPS = ("bumpers", "equipment", "lights", "vehicles")

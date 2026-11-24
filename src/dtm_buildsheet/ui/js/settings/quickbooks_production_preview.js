@@ -259,7 +259,7 @@
     window.history.replaceState({}, "", window.location.pathname + (params.toString() ? `?${params}` : ""));
     toast("Production catalog preview connected", "success");
     if (typeof switchTab === "function") {
-      switchTab("advanced-settings");
+      switchTab("settings");
       setTimeout(() => $("qbpp-stab-button")?.click(), 0);
     }
     return true;

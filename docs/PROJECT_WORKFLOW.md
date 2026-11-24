@@ -34,6 +34,7 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 | Canonical used vehicles | `workspace/used_vehicles/{used_vehicle_id}.json` — synced from SharePoint `/Used Vehicles/Record Data/` | `app/services/used_vehicle_service.py` |
 | Buyback/sale records | `workspace/vehicle_sales/{record_id}.json` | `app/services/vehicle_sale_service.py` |
 | Strip records and PDFs | `workspace/strip_documentation/{record_id}.json` and `workspace/output/strip_documentation/` — synced under `/Strip Documentation/` | `app/services/strip_documentation_service.py` |
+| Temporary tag batches | `workspace/temporary_vehicle_tags/{batch_id}.json`; flattened PDFs under `workspace/output/Forms/Temporary Vehicle Tags/{year}/` | `app/services/temporary_tag_service.py` |
 | Generated outputs | Timestamped local files in `workspace/output/`; PDF-only cloud distribution | `generation_service.py`, `export_service.py`, `company_vehicle_folder_service.py`, `shop_publication_service.py` |
 
 ---
@@ -54,6 +55,7 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 | Suggest/link/update used vehicles | `GET/POST /api/used-vehicles/*` | `used_vehicle_service.py` |
 | Buyback/sale records | `GET/POST /api/vehicle-sales/*` | `vehicle_sale_service.py` |
 | Strip intake and technician documentation | `GET/POST /api/strip-documentation/*` | `strip_documentation_service.py` |
+| List vehicle choices and save/open/print temporary-tag batches | `GET/POST /api/temporary-tags/*` | `temporary_tag_service.py` |
 
 ---
 

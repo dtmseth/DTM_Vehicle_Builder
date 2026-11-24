@@ -269,7 +269,7 @@ test("reprices any recent Whelen line from its current inventory Retail value", 
     if (url.endsWith("/customer/customer-test")) {
       return jsonResponse({ id: "customer-test", labels: [{ name: "$ Retail $" }] });
     }
-    if (url.includes("/part/line-test?includeOrder=false")) return jsonResponse({ id: "line-test" });
+    if (url.includes("/part/line-test?includeOrder=true")) return jsonResponse({ id: "line-test" });
     assert.fail(`unexpected URL: ${url}`);
   };
   try {
@@ -282,10 +282,57 @@ test("reprices any recent Whelen line from its current inventory Retail value", 
     assert.equal(body.eligible_lines, 1);
     assert.equal(body.customer_type, "retail");
     const update = calls.find((call) => call.options.method === "PUT");
+    assert.match(update.url, /includeOrder=true$/);
     assert.deepEqual(JSON.parse(update.options.body), { retailCostCents: 19200 });
   } finally {
     Date.now = realNow;
   }
+});
+
+test("recalculates the visible order once after repricing multiple lines", async () => {
+  const config = pricing.defaultConfig("order-test");
+  const updateUrls = [];
+  global.fetch = async (url, options) => {
+    if (url.endsWith("/order/order-test")) {
+      return jsonResponse({ id: "order-test", customerId: "customer-test", authorized: false, invoiced: false, readOnly: false });
+    }
+    if (url.endsWith("/order/order-test/service")) {
+      return jsonResponse([{ id: "service-test", parts: [
+        {
+          id: "line-one", inventoryPartId: "inventory-one", retailCostCents: 30000,
+          createdDate: new Date((NOW - 2) * 1000).toISOString(),
+        },
+        {
+          id: "line-two", inventoryPartId: "inventory-two", retailCostCents: 20000,
+          createdDate: new Date((NOW - 2) * 1000).toISOString(),
+        },
+      ] }]);
+    }
+    if (url.endsWith("/customer/customer-test")) {
+      return jsonResponse({ labels: [{ name: "$ Retail $" }] });
+    }
+    if (url.endsWith("/inventory_part/inventory-one")) {
+      return jsonResponse({ id: "inventory-one", retailCostCents: 30000, brand: { name: "Whelen" }, deleted: false });
+    }
+    if (url.endsWith("/inventory_part/inventory-two")) {
+      return jsonResponse({ id: "inventory-two", retailCostCents: 20000, brand: { name: "Whelen" }, deleted: false });
+    }
+    if (options.method === "PUT" && url.includes("/part/line-")) {
+      updateUrls.push(url);
+      return jsonResponse({ id: url.includes("line-one") ? "line-one" : "line-two" });
+    }
+    assert.fail(`unexpected URL: ${url}`);
+  };
+
+  const result = await webhookModule.__test.applyPricingForOrder({
+    apiKey: "api-key", orderId: "order-test", nowSeconds: NOW,
+    maxLineAgeSeconds: 600, config,
+  });
+
+  assert.equal(result.repriced, 2);
+  assert.equal(updateUrls.length, 2);
+  assert.match(updateUrls[0], /includeOrder=false$/);
+  assert.match(updateUrls[1], /includeOrder=true$/);
 });
 
 test("schema v2 matches stable Shopmonkey label and brand IDs instead of typed names", async () => {
@@ -321,7 +368,7 @@ test("schema v2 matches stable Shopmonkey label and brand IDs instead of typed n
         brand: { id: "whelen-brand-id", name: "renamed Whelen" }, deleted: false,
       });
     }
-    if (url.includes("/part/line-test?includeOrder=false")) return jsonResponse({ id: "line-test" });
+    if (url.includes("/part/line-test?includeOrder=true")) return jsonResponse({ id: "line-test" });
     assert.fail(`unexpected URL: ${url}`);
   };
 
@@ -362,7 +409,7 @@ test("uses the default customer type when no configured pricing label matches", 
         brand: { name: "Whelen" }, deleted: false,
       });
     }
-    if (url.includes("/part/line-test?includeOrder=false")) return jsonResponse({ id: "line-test" });
+    if (url.includes("/part/line-test?includeOrder=true")) return jsonResponse({ id: "line-test" });
     assert.fail(`unexpected URL: ${url}`);
   };
 

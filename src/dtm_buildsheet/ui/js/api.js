@@ -287,6 +287,9 @@ function _refreshVisibleDataAfterSync(){
   // deletion shows up in the local file but the rendered list stays
   // stale until the user navigates away and back.
   try {
+    if (typeof loadNavigationSettings === "function") {
+      loadNavigationSettings().catch(e => console.warn("Post-sync navigation refresh failed:", e));
+    }
     if (typeof _ptLoadAll === "function") {
       _ptLoadAll().then(() => {
         if (typeof _ptRenderList === "function") _ptRenderList();
@@ -745,7 +748,7 @@ async function _doQuickBooksAction(){
   const btn = $("cloud-modal-qb-action");
   if (_lastQbConnectionStatus?.connected) {
     closeCloudModal();
-    if (typeof switchTab === "function") switchTab("general-settings");
+    if (typeof switchTab === "function") switchTab("settings");
     document.querySelector('.stab[data-stab="quickbooks"]')?.click();
     return;
   }

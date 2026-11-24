@@ -38,6 +38,7 @@ from .routes import presets as preset_routes
 from .routes import projects as project_routes
 from .routes import quickbooks as quickbooks_routes
 from .routes import shopmonkey as shopmonkey_routes
+from .routes import pricing as pricing_routes
 from .routes import templates as template_routes
 from .routes import ui_preferences as ui_preferences_routes
 from .routes import updates as update_routes
@@ -47,6 +48,7 @@ from .routes import vehicle_catalog as vehicle_catalog_routes
 from .routes import vehicle_sales as vehicle_sales_routes
 from .routes import used_vehicles as used_vehicles_routes
 from .routes import strip_documentation as strip_documentation_routes
+from .routes import temporary_tags as temporary_tags_routes
 from .services.template_service import pick_folder as _pick_folder
 from .services.request_access_service import authorize_request
 
@@ -154,6 +156,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith(shopmonkey_routes.ROUTE_PREFIX):
             if not shopmonkey_routes.route_shopmonkey(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path.startswith(pricing_routes.ROUTE_PREFIX):
+            if not pricing_routes.route_pricing(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
         elif path.startswith(vehicle_catalog_routes.ROUTE_PREFIX):
             if not vehicle_catalog_routes.route_vehicle_catalog(self, "GET", path):
                 self._send(404, b"Not found", "text/plain")
@@ -169,6 +174,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith(strip_documentation_routes.ROUTE_PREFIX):
             if not strip_documentation_routes.route_strip_documentation(
+                self, "GET", path, {}, self.paths,
+            ):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith(temporary_tags_routes.ROUTE_PREFIX):
+            if not temporary_tags_routes.route_temporary_tags(
                 self, "GET", path, {}, self.paths,
             ):
                 self._send(404, b"Not found", "text/plain")
@@ -269,6 +279,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith(shopmonkey_routes.ROUTE_PREFIX):
             if not shopmonkey_routes.route_shopmonkey(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path.startswith(pricing_routes.ROUTE_PREFIX):
+            if not pricing_routes.route_pricing(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
         elif path.startswith(used_vehicles_routes.ROUTE_PREFIX):
             if not used_vehicles_routes.route_used_vehicles(
                 self, "POST", path, body, self.paths,
@@ -281,6 +294,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith(strip_documentation_routes.ROUTE_PREFIX):
             if not strip_documentation_routes.route_strip_documentation(
+                self, "POST", path, body, self.paths,
+            ):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith(temporary_tags_routes.ROUTE_PREFIX):
+            if not temporary_tags_routes.route_temporary_tags(
                 self, "POST", path, body, self.paths,
             ):
                 self._send(404, b"Not found", "text/plain")
@@ -1027,6 +1045,37 @@ def main(paths: AppPaths | None = None):
                 if self.window is not None:
                     self.window.destroy()
                 return True
+
+            def save_pricing_export(self, artifact_id):
+                """Save a Pricing Center artifact through the native file dialog.
+
+                WebKit treats the local attachment route as a page navigation and
+                reports "Load failed".  Keeping the transfer inside the desktop
+                bridge avoids navigating the app window away from the converter.
+                """
+                if self.window is None:
+                    return {"ok": False, "error": "The save window is not ready."}
+                try:
+                    from .services.pricing_center_service import get_artifact
+
+                    content, _mime, filename = get_artifact(active_paths, str(artifact_id or ""))
+                    downloads = Path.home() / "Downloads"
+                    selection = self.window.create_file_dialog(
+                        webview.SAVE_DIALOG,
+                        directory=str(downloads if downloads.is_dir() else Path.home()),
+                        save_filename=filename,
+                    )
+                    if not selection:
+                        return {"ok": True, "cancelled": True}
+                    selected_path = selection[0] if isinstance(selection, (list, tuple)) else selection
+                    destination = Path(selected_path)
+                    destination.write_bytes(content)
+                    return {"ok": True, "cancelled": False, "path": str(destination)}
+                except Exception as exc:
+                    logging.getLogger(__name__).warning(
+                        "Pricing export save failed: %s", type(exc).__name__
+                    )
+                    return {"ok": False, "error": "The export file could not be saved."}
 
         desktop_api = _DesktopUploadApi()
         update_routes.set_desktop_install_handler(desktop_api.install_update)

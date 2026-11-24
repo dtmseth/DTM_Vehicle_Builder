@@ -120,6 +120,11 @@ class AppPaths:
         """Durable local staging and job state for background media uploads."""
         return self.workspace_dir / "uploads"
 
+    @property
+    def workspace_pricing_dir(self) -> Path:
+        """Local Pricing Center state and generated import artifacts."""
+        return self.workspace_dir / "pricing_center"
+
 
 def _md5(path: Path) -> str:
     # This digest only detects changed bundled files; it is not an integrity or

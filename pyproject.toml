@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
   "lxml>=6.1,<7",
   "openpyxl>=3.1,<4",
+  "xlrd>=2.0,<3",
   "Pillow>=13.0,<14",
   "pillow-heif>=1.1,<2",
   "PyMuPDF>=1.27,<2",
@@ -88,6 +89,7 @@ dtm_buildsheet = [
   "ui/js/settings/*.js",
   "ui/images/*",
   "resources/config/*.json",
+  "resources/forms/*.pdf",
   "resources/default_data/*.json",
   "resources/presets/*.json",
   "resources/templates/*.pptx",

@@ -44,6 +44,28 @@ def required_capabilities(method: str, raw_path: str) -> frozenset[Capability]:
     if path.startswith("/api/shopmonkey/"):
         return _shopmonkey_capabilities(method, path)
 
+    if path.startswith("/api/pricing/"):
+        if path == "/api/pricing/api/apply":
+            return frozenset({Capability.PRICING_API_APPLY})
+        if path.startswith("/api/pricing/rules/"):
+            return frozenset({Capability.PRICING_RULES_MANAGE})
+        if path.startswith("/api/pricing/presets/"):
+            return frozenset({Capability.PRICING_PRESETS_MANAGE})
+        if path in {
+            "/api/pricing/export", "/api/pricing/export/bulk",
+            "/api/pricing/export/mark-imported", "/api/pricing/export/mark-all-imported",
+            "/api/pricing/api/plan",
+        } or path.startswith("/api/pricing/download/"):
+            return frozenset({Capability.PRICING_EXPORT})
+        if method == "POST":
+            return frozenset({Capability.PRICING_IMPORT})
+        return frozenset({Capability.PRICING_VIEW})
+
+    # Yard tags are read-oriented operational paperwork. Office users and Shop
+    # users may both select known vehicles, save a batch, and print it.
+    if path.startswith("/api/temporary-tags"):
+        return frozenset({Capability.PROJECTS_VIEW, Capability.OPERATIONS_VIEW})
+
     # Buyback / sale records contain purchase and buyer information.  Staff
     # and Admin both have projects.edit; Shop deliberately does not.
     if path.startswith("/api/vehicle-sales"):
@@ -70,6 +92,12 @@ def required_capabilities(method: str, raw_path: str) -> frozenset[Capability]:
         return frozenset({Capability.PROJECTS_EDIT, Capability.COMPLETED_MEDIA_UPLOAD})
 
     if method == "GET":
+        if path == "/api/navigation-settings":
+            return frozenset({
+                Capability.PROJECTS_VIEW,
+                Capability.OPERATIONS_VIEW,
+                Capability.PRICING_VIEW,
+            })
         if path == "/api/uploads/status":
             return frozenset({Capability.PROJECTS_VIEW})
         if path.startswith("/api/"):

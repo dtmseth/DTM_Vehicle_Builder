@@ -188,10 +188,10 @@ Every tab, stab, and inner-stab activates cleanly.
 
 1. `goto` → wait `.htab[data-tab='projects']`.
 2. Click `.htab[data-tab='projects']` → wait `#tab-projects:not([hidden])`.
-3. Click `.htab[data-tab='general-settings']` → wait `#stab-bar-general:not([hidden])`;
+3. Click `.htab[data-tab='settings']` → wait `#settings-nav-general:not([hidden])`;
    click each `.stab[data-stab=…]` of `projects-defaults, agencies, sales-reps, presets,
    quickbooks`.
-4. Click `.htab[data-tab='advanced-settings']` → wait `#stab-bar-advanced:not([hidden])`;
+4. In the same Settings workspace, confirm `#settings-nav-advanced:not([hidden])`;
    `placements` → inner stabs `placements, fixtures`; `sizes`; `part-manager` → inner
    stabs `sku-grid, parts-db, catalog, parts`; `vehicles`; `workbook-tools`.
 5. `wait_for_load_state("networkidle")` so late fetch failures are captured.

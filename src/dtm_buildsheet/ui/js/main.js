@@ -15,6 +15,7 @@ window.addEventListener("DOMContentLoaded", async()=>{
     const settings=await api("/api/app-settings");
     if(settings && !_appSettings) _appSettings=settings;
   }catch(e){}
+  if (typeof loadNavigationSettings === "function") await loadNavigationSettings();
   // Resolve Entra roles before exposing any editable workspace. This prevents
   // older Builder controls from briefly appearing for read-only users.
   const accessSession = typeof initOperationsAccess === "function"

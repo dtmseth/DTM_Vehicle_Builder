@@ -38,6 +38,7 @@ CONFIG_PROPOSAL_CATEGORY: dict[str, ProposalCategory] = {
     "parts_db.json":                "general",
     "legacy_workbook_index.json":   "general",
     "estimate_charges.json":        "general",
+    "navigation_settings.json":     "general",
 }
 
 # Files that also direct-mirror to SharePoint /Settings/ on save, alongside
@@ -55,6 +56,7 @@ _DIRECT_MIRROR_FILES = {
     "parts_db.json",
     "legacy_workbook_index.json",
     "estimate_charges.json",
+    "navigation_settings.json",
 }
 
 

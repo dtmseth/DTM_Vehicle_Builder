@@ -509,7 +509,7 @@
     window.history.replaceState({}, "", clean);
 
     if (typeof switchTab === "function") {
-      switchTab("general-settings");
+      switchTab("settings");
       setTimeout(() => document.querySelector('.stab[data-stab="quickbooks"]')?.click(), 0);
     }
     return true;
